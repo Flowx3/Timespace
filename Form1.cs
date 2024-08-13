@@ -77,6 +77,8 @@ namespace TimeSpace
                 config = JsonConvert.DeserializeObject<Config>(File.ReadAllText("./config.json"));
             }
             textBox1.Text = config.TimespacesFilePath;
+            textBox11.Text = config.GameMapsPath;
+            textBox12.Text = config.GameDataPath;
             var deserializer = new DeserializerBuilder()
                     .WithNamingConvention(CamelCaseNamingConvention.Instance)
                     .Build();
@@ -168,6 +170,56 @@ namespace TimeSpace
         private void button6_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void button7_Click(object sender, EventArgs e)
+        {
+            string mapsPath = "";
+            using (var openFileDialog = new FolderBrowserDialog())
+            {
+                openFileDialog.Description = "Select Maps Path";
+
+                var result = openFileDialog.ShowDialog();
+
+                if (result == DialogResult.OK)
+                {
+                    mapsPath = openFileDialog.SelectedPath;
+                }
+                else
+                {
+                    if (mapsPath != null)
+                        mapsPath = config.GameMapsPath;
+                    else
+                        throw new InvalidOperationException("A required path was not provided.");
+                }
+            }
+            config.GameMapsPath = mapsPath;
+            textBox11.Text = config.GameMapsPath;
+        }
+
+        private void button8_Click(object sender, EventArgs e)
+        {
+            string DatPath = "";
+            using (var openFileDialog = new FolderBrowserDialog())
+            {
+                openFileDialog.Description = "Select Dat Path";
+
+                var result = openFileDialog.ShowDialog();
+
+                if (result == DialogResult.OK)
+                {
+                    DatPath = openFileDialog.SelectedPath;
+                }
+                else
+                {
+                    if (DatPath != null)
+                    DatPath = config.GameDataPath;
+                    else
+                        throw new InvalidOperationException("A required path was not provided.");
+                }
+            }
+            config.GameDataPath = DatPath;
+            textBox12.Text = config.GameDataPath;
         }
     }
 }

@@ -30,6 +30,10 @@
         {
             tabControl1 = new TabControl();
             tabPage1 = new TabPage();
+            button8 = new Button();
+            button7 = new Button();
+            textBox12 = new TextBox();
+            textBox11 = new TextBox();
             button1 = new Button();
             textBox1 = new TextBox();
             tabPage2 = new TabPage();
@@ -85,15 +89,53 @@
             // 
             // tabPage1
             // 
+            tabPage1.Controls.Add(button8);
+            tabPage1.Controls.Add(button7);
+            tabPage1.Controls.Add(textBox12);
+            tabPage1.Controls.Add(textBox11);
             tabPage1.Controls.Add(button1);
             tabPage1.Controls.Add(textBox1);
             tabPage1.Location = new Point(4, 24);
             tabPage1.Name = "tabPage1";
             tabPage1.Padding = new Padding(3);
-            tabPage1.Size = new Size(1522, 585);
+            tabPage1.Size = new Size(1823, 830);
             tabPage1.TabIndex = 0;
             tabPage1.Text = "Settings";
             tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // button8
+            // 
+            button8.Location = new Point(532, 68);
+            button8.Name = "button8";
+            button8.Size = new Size(75, 23);
+            button8.TabIndex = 7;
+            button8.Text = "Browse";
+            button8.UseVisualStyleBackColor = true;
+            button8.Click += button8_Click;
+            // 
+            // button7
+            // 
+            button7.Location = new Point(532, 39);
+            button7.Name = "button7";
+            button7.Size = new Size(75, 23);
+            button7.TabIndex = 6;
+            button7.Text = "Browse";
+            button7.UseVisualStyleBackColor = true;
+            button7.Click += button7_Click;
+            // 
+            // textBox12
+            // 
+            textBox12.Location = new Point(8, 64);
+            textBox12.Name = "textBox12";
+            textBox12.Size = new Size(512, 23);
+            textBox12.TabIndex = 5;
+            // 
+            // textBox11
+            // 
+            textBox11.Location = new Point(8, 35);
+            textBox11.Name = "textBox11";
+            textBox11.Size = new Size(512, 23);
+            textBox11.TabIndex = 4;
             // 
             // button1
             // 
@@ -103,6 +145,7 @@
             button1.TabIndex = 3;
             button1.Text = "Browse";
             button1.UseVisualStyleBackColor = true;
+            button1.Click += button1_Click;
             // 
             // textBox1
             // 
@@ -140,7 +183,7 @@
             tabPage2.Location = new Point(4, 24);
             tabPage2.Name = "tabPage2";
             tabPage2.Padding = new Padding(3);
-            tabPage2.Size = new Size(1522, 585);
+            tabPage2.Size = new Size(1823, 830);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "TimeSpace Configuration";
             tabPage2.UseVisualStyleBackColor = true;
@@ -467,5 +510,9 @@
         private Button button5;
         private Button button4;
         private TabControl tabControl2;
+        private Button button8;
+        private Button button7;
+        private TextBox textBox12;
+        private TextBox textBox11;
     }
 }

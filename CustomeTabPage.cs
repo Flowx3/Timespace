@@ -91,7 +91,7 @@ namespace TimeSpace
         { 0x4, Color.Blue }, // UnknownYet
         { 0x8, Color.Green }, // IsMonsterAggroDisabled
         { 0x10, Color.Purple }, // IsPvpDisabled
-            {0xB,Color.FromArgb(255, 152, 100, 100) },
+        {0xB,Color.FromArgb(255, 152, 100, 100) },
         { 0x20, Color.Orange } // MateDoll
     };
         private Color GetColor(byte value)
@@ -187,7 +187,7 @@ namespace TimeSpace
                 Location = new Point(150, 70),
                 Width = 200,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                Items = { "None", "KillAllMonsters" }
+                Items = { "None", "KillAllMonsters", "Survive" }
             };
             var lblTaskText = new Label { Text = "Task Text:", Location = new Point(10, 100) };
             var txtTaskText = new TextBox { Location = new Point(150, 100), Width = 200 };
