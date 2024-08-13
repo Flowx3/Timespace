@@ -96,6 +96,13 @@ namespace TimeSpace
                 {
                     timespaceTranslation = openFileDialog.FileName;
                 }
+                else
+                {
+                    if(config.TimespacesFilePath != null)
+                        timespaceTranslation = config.TimespacesFilePath;
+                    else
+                        throw new InvalidOperationException("A required path was not provided.");
+                }
             }
             config.TimespacesFilePath = timespaceTranslation;
             textBox1.Text = config.TimespacesFilePath;
@@ -187,7 +194,7 @@ namespace TimeSpace
                 }
                 else
                 {
-                    if (mapsPath != null)
+                    if (config.GameDataPath != null)
                         mapsPath = config.GameMapsPath;
                     else
                         throw new InvalidOperationException("A required path was not provided.");
@@ -212,7 +219,7 @@ namespace TimeSpace
                 }
                 else
                 {
-                    if (DatPath != null)
+                    if (config.GameMapsPath != null)
                     DatPath = config.GameDataPath;
                     else
                         throw new InvalidOperationException("A required path was not provided.");
