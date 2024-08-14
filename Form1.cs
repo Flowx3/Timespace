@@ -15,6 +15,7 @@ namespace TimeSpace
     public partial class Form1 : Form
     {
         private List<CustomeTabPage> mapTabs = new List<CustomeTabPage>();
+        public Func<List<string>> getMapNames;
         public List<MapDataDTO> loadedMaps = [];
         private Config config;
         private Dictionary<string, string> timespacesData;
@@ -160,7 +161,7 @@ namespace TimeSpace
 
         private void button5_Click(object sender, EventArgs e)
         {
-            var newTab = new CustomeTabPage("test", this);
+            var newTab = new CustomeTabPage("test", this, GetMapNames);
             tabControl2.TabPages.Add(newTab);
             mapTabs.Add(newTab);
         }
@@ -280,7 +281,10 @@ namespace TimeSpace
                 }
             }
         }
-
+        private List<string> GetMapNames()
+        {
+            return mapTabs.Select(m => m.MapName).ToList();
+        }
         private void button7_Click(object sender, EventArgs e)
         {
             string mapsPath = "";

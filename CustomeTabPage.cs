@@ -138,11 +138,17 @@ namespace TimeSpace
     public class CustomeTabPage : TabPage
     {
         public string MapName { get; private set; }
+        public Func<List<string>> getMapNames;
+        public List<Portal> Portals { get; private set; } = new List<Portal>();
+        public List<Monster> MonsterEvents { get; private set; } = new List<Monster>();
         private Task _gridCreationTask;
         private readonly TextBox txtMapVNUM;
         private readonly TextBox txtMapCoordinates;
         private readonly TextBox txtTaskText;
         private readonly ComboBox cboTaskType;
+        private FlowLayoutPanel portalPanel;
+        private DataGridView monsterDataGridView;
+        private FlowLayoutPanel eventPanel;
         private void DisplayMapGrid(MapDataDTO mapData)
         {
             MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).First();
@@ -155,9 +161,11 @@ namespace TimeSpace
             // Handle the cell click event
             MessageBox.Show($"Cell clicked at ({e.CellX}, {e.CellY})");
         }
-        public CustomeTabPage(string MapName,Form1 form)
+        public CustomeTabPage(string MapName,Form1 form, Func<List<string>> getMapNames)
         {
+            MonsterEvents = new List<Monster>();
             Text = MapName;
+            this.getMapNames = getMapNames;
             this.MapName = MapName;
             var containerPanel = new Panel { Dock = DockStyle.Fill };
             var leftPanel = new Panel { Width = 1000, Dock = DockStyle.Left };
@@ -197,7 +205,7 @@ namespace TimeSpace
             txtTaskText = new TextBox { Location = new Point(150, 100), Width = 200 };
 
             // Initialize portal panel  
-            var portalPanel = new FlowLayoutPanel
+            portalPanel = new FlowLayoutPanel
             {
                 Location = new Point(10, 130),
                 Width = 800,
@@ -208,14 +216,14 @@ namespace TimeSpace
                 Padding = new Padding(0, 5, 0, 5)
             };
             var btnAddPortal = new Button { Text = "Add Portal", Location = new Point(10, 390) };
-            //btnAddPortal.Click += BtnAddPortal_Click;
+            btnAddPortal.Click += BtnAddPortal_Click;
             var btnRemovePortal = new Button { Text = "Remove Last Portal", Location = new Point(150, 390) };
-            //btnRemovePortal.Click += BtnRemovePortal_Click;
+            btnRemovePortal.Click += BtnRemovePortal_Click;
             var btnSavePortal = new Button { Text = "Save Portals", Location = new Point(290, 390) };
             //btnSavePortal.Click += BtnSavePortal_Click;
 
             // Initialize event panel  
-            var eventPanel = new FlowLayoutPanel
+            eventPanel = new FlowLayoutPanel
             {
                 Location = new Point(10, 420),
                 Width = 800,
@@ -226,7 +234,7 @@ namespace TimeSpace
                 Padding = new Padding(0, 5, 0, 5)
             };
             var btnAddEvent = new Button { Text = "Add Monster Event", Location = new Point(10, 680) };
-            //btnAddEvent.Click += BtnAddEvent_Click;
+            btnAddEvent.Click += BtnAddEvent_Click;
             var btnRemoveEvent = new Button { Text = "Remove Last Monster Event", Location = new Point(150, 680) };
             //btnRemoveEvent.Click += BtnRemoveEvent_Click;
             var btnSaveMonster = new Button { Text = "Save Monsters", Location = new Point(290, 680) };
@@ -281,6 +289,36 @@ namespace TimeSpace
             containerPanel.Controls.Add(rightPanel);
             containerPanel.Controls.Add(leftPanel);
             this.Controls.Add(containerPanel);
+            InitializeDataGridView();
+        }
+        private void InitializeDataGridView()
+        {
+            monsterDataGridView = new DataGridView
+            {
+                Width = 800,
+                Height = 200,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize,
+                AllowUserToAddRows = false
+            };
+
+            monsterDataGridView.Columns.Add(new DataGridViewTextBoxColumn { Name = "Vnum", HeaderText = "Vnum" });
+            monsterDataGridView.Columns.Add(new DataGridViewTextBoxColumn { Name = "X", HeaderText = "X" });
+            monsterDataGridView.Columns.Add(new DataGridViewTextBoxColumn { Name = "Y", HeaderText = "Y" });
+            monsterDataGridView.Columns.Add(new DataGridViewComboBoxColumn
+            {
+                Name = "AdditionalAttribute",
+                HeaderText = "Additional Attribute",
+                Items =
+                {
+                    "SpawnAfterMobsKilled", "WithCustomLevel", "SpawnAfterTaskStart",
+                    "OnThreeFourthsHP", "OnHalfHp", "OnQuarterHp", "none"
+                }
+            });
+            monsterDataGridView.Columns.Add(new DataGridViewTextBoxColumn { Name = "AdditionalValue", HeaderText = "Additional Value" });
+            monsterDataGridView.Columns.Add(new DataGridViewCheckBoxColumn { Name = "AsTarget", HeaderText = "As Target" });
+
+            eventPanel.Controls.Add(monsterDataGridView);
         }
         public string GenerateMapScript()
         {
@@ -288,6 +326,35 @@ namespace TimeSpace
             sb.AppendLine($"local {txtMapVNUM.Text} = Map.Create().WithMapId({txtMapCoordinates.Text}).SetMapCoordinates({txtMapCoordinates.Text}).WithTask(");
             sb.AppendLine($"    TimeSpaceTask.Create(TimeSpaceTaskType.{cboTaskType.SelectedItem}).WithTaskText(\"{txtTaskText?.Text}\"))");
             return sb.ToString();
+        }
+        private void BtnAddPortal_Click(object sender, EventArgs e)
+        {
+            if (Portals.Count >= 4)
+            {
+                MessageBox.Show("You dont need more than 4 Portals.");
+                return;
+            }
+            var portal = new Portal("DefaultFrom", "DefaultTo", "Type1", "North", 0, 0, 0, 0, getMapNames);
+            Portals.Add(portal);
+            this.portalPanel.Controls.Add(portal.CreatePortal());
+        }
+        private void BtnRemovePortal_Click(object sender, EventArgs e)
+        {
+            if (Portals.Count > 0)
+            {
+                var lastPortal = Portals.Last();
+                Portals.Remove(lastPortal);
+                portalPanel.Controls.Remove(lastPortal.Panel);
+                portalPanel.Refresh();
+            }
+        }
+        private void BtnAddEvent_Click(object sender, EventArgs e)
+        {
+            var monster = new Monster(MapName);
+            MonsterEvents.Add(monster);
+
+            // Add a new row to the existing DataGridView  
+            monsterDataGridView.Rows.Add();
         }
     }
 }
