@@ -137,11 +137,14 @@ namespace TimeSpace
     }
     public class CustomeTabPage : TabPage
     {
+        public string MapName { get; private set; }
         private Task _gridCreationTask;
+        private readonly TextBox txtMapVNUM;
+        private readonly TextBox txtMapCoordinates;
+        private readonly TextBox txtTaskText;
+        private readonly ComboBox cboTaskType;
         private void DisplayMapGrid(MapDataDTO mapData)
         {
-
-
             MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).First();
             // Populate cellColors array with your grid data
             mapGridPanel.SetGrid(mapData.Width, mapData.Height, mapData.Grid);
@@ -152,13 +155,14 @@ namespace TimeSpace
             // Handle the cell click event
             MessageBox.Show($"Cell clicked at ({e.CellX}, {e.CellY})");
         }
-        public CustomeTabPage(string Title,Form1 form)
+        public CustomeTabPage(string MapName,Form1 form)
         {
-            Text = Title;
+            Text = MapName;
+            this.MapName = MapName;
             var containerPanel = new Panel { Dock = DockStyle.Fill };
             var leftPanel = new Panel { Width = 1000, Dock = DockStyle.Left };
             var lblMapVNUM = new Label { Text = "Map Vnum:", Location = new Point(10, 10) };
-            var txtMapVNUM = new TextBox { Name = "txtMapVNUM", Location = new Point(150, 10), Width = 200 };
+            txtMapVNUM = new TextBox { Name = "txtMapVNUM", Location = new Point(150, 10), Width = 200 };
             var btnLoadMap = new Button { Text = "Load Map", Location = new Point(360, 10) };
             btnLoadMap.Click += (sender, e) =>
             {
@@ -180,9 +184,9 @@ namespace TimeSpace
                 }
             };
             var lblMapCoordinates = new Label { Text = "Map Coordinates:", Location = new Point(10, 40) };
-            var txtMapCoordinates = new TextBox { Location = new Point(150, 40), Width = 200 };
+            txtMapCoordinates = new TextBox { Location = new Point(150, 40), Width = 200 };
             var lblTaskType = new Label { Text = "Task Type:", Location = new Point(10, 70) };
-            var cboTaskType = new ComboBox
+            cboTaskType = new ComboBox
             {
                 Location = new Point(150, 70),
                 Width = 200,
@@ -190,7 +194,7 @@ namespace TimeSpace
                 Items = { "None", "KillAllMonsters", "Survive" }
             };
             var lblTaskText = new Label { Text = "Task Text:", Location = new Point(10, 100) };
-            var txtTaskText = new TextBox { Location = new Point(150, 100), Width = 200 };
+            txtTaskText = new TextBox { Location = new Point(150, 100), Width = 200 };
 
             // Initialize portal panel  
             var portalPanel = new FlowLayoutPanel
@@ -277,7 +281,13 @@ namespace TimeSpace
             containerPanel.Controls.Add(rightPanel);
             containerPanel.Controls.Add(leftPanel);
             this.Controls.Add(containerPanel);
-
+        }
+        public string GenerateMapScript()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"local {txtMapVNUM.Text} = Map.Create().WithMapId({txtMapCoordinates.Text}).SetMapCoordinates({txtMapCoordinates.Text}).WithTask(");
+            sb.AppendLine($"    TimeSpaceTask.Create(TimeSpaceTaskType.{cboTaskType.SelectedItem}).WithTaskText(\"{txtTaskText?.Text}\"))");
+            return sb.ToString();
         }
     }
 }

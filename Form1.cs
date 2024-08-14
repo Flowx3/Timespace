@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using System.Text;
 using System.Windows.Forms;
+using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -13,6 +14,7 @@ namespace TimeSpace
     }
     public partial class Form1 : Form
     {
+        private List<CustomeTabPage> mapTabs = new List<CustomeTabPage>();
         public List<MapDataDTO> loadedMaps = [];
         private Config config;
         private Dictionary<string, string> timespacesData;
@@ -158,19 +160,32 @@ namespace TimeSpace
 
         private void button5_Click(object sender, EventArgs e)
         {
-            tabControl2.TabPages.Add(new CustomeTabPage("test", this));
+            var newTab = new CustomeTabPage("test", this);
+            tabControl2.TabPages.Add(newTab);
+            mapTabs.Add(newTab);
         }
+
 
         private void button4_Click(object sender, EventArgs e)
         {
             if (tabControl2.TabPages.Count < 1)
                 return;
-            tabControl2.TabPages.Remove(tabControl2.SelectedTab);
+
+            var selectedTab = tabControl2.SelectedTab;
+
+            if (selectedTab != null)
+            {
+                tabControl2.TabPages.Remove(selectedTab);
+
+                if (mapTabs.Contains((CustomeTabPage)selectedTab))
+                {
+                    mapTabs.Remove((CustomeTabPage)selectedTab);
+                }
+            }
         }
 
         private void Form1_Load(object sender, EventArgs e)
-        {
-
+        { 
             loadedMaps = mapResourceFileLoader.LoadAsync().GetAwaiter().GetResult().ToList();
         }
 
@@ -201,10 +216,10 @@ namespace TimeSpace
 
             // Generate map scripts  
             var mapScripts = new StringBuilder();
-            //foreach (var mapTab in maptabs)
-            //{
-            //    mapScripts.AppendLine(mapTab.GenerateMapScript());
-            //}
+            foreach (var mapTab in mapTabs)
+            {
+                mapScripts.AppendLine(mapTab.GenerateMapScript());
+            }
 
             // Add an empty line between sections  
             mapScripts.AppendLine();
@@ -242,10 +257,10 @@ namespace TimeSpace
             luaScript.AppendLine(eventHandlingScripts.ToString());
 
             // Final TimeSpace creation script  
-            //var mapNames = string.Join(", ", mapTabs.Select(m => m.MapName));
+            var mapNames = string.Join(", ", mapTabs.Select(m => m.MapName));
             luaScript.AppendLine($"local ts = TimeSpace.Create({textBox2.Text})  -- TimeSpace ID");
-            //luaScript.AppendLine($"    .SetMaps({{{mapNames}}})");
-            //luaScript.AppendLine($"    .SetSpawn(Location.InMap({mapTabs[0].MapName}).At({textBox3.Text}, {textBox5.Text}))");
+            luaScript.AppendLine($"    .SetMaps({{{mapNames}}})");
+            luaScript.AppendLine($"    .SetSpawn(Location.InMap({mapTabs[0].MapName}).At({textBox3.Text}, {textBox5.Text}))");
             luaScript.AppendLine($"    .SetLives({numericUpDown1.Value})");
             luaScript.AppendLine($"    .SetObjectives(objectives)");
             luaScript.AppendLine($"    .SetDurationInSeconds({textBox7.Text})");
