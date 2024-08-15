@@ -236,7 +236,7 @@ namespace TimeSpace
             var btnAddEvent = new Button { Text = "Add Monster Event", Location = new Point(10, 680) };
             btnAddEvent.Click += BtnAddEvent_Click;
             var btnRemoveEvent = new Button { Text = "Remove Last Monster Event", Location = new Point(150, 680) };
-            //btnRemoveEvent.Click += BtnRemoveEvent_Click;
+            btnRemoveEvent.Click += BtnRemoveEvent_Click;
             var btnSaveMonster = new Button { Text = "Save Monsters", Location = new Point(290, 680) };
             //btnSaveMonster.Click += BtnSaveMonster_Click;
 
@@ -356,5 +356,19 @@ namespace TimeSpace
             // Add a new row to the existing DataGridView  
             monsterDataGridView.Rows.Add();
         }
+        private void BtnRemoveEvent_Click(object sender, EventArgs e)
+        {
+            if (monsterDataGridView.Rows.Count > 0)
+            {
+                int lastRowIndex = monsterDataGridView.Rows.Count - 1;
+                monsterDataGridView.Rows.RemoveAt(lastRowIndex);
+                int lastMonsterIndex = MonsterEvents.Count - 1;
+                if (lastMonsterIndex >= 0)
+                {
+                    MonsterEvents.RemoveAt(lastMonsterIndex);
+                }
+            }
+        }
+
     }
 }
