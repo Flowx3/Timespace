@@ -208,7 +208,7 @@ namespace TimeSpace
             portalPanel = new FlowLayoutPanel
             {
                 Location = new Point(10, 130),
-                Width = 800,
+                Width = 1000,
                 Height = 250,
                 AutoScroll = true,
                 FlowDirection = FlowDirection.TopDown,
@@ -226,7 +226,7 @@ namespace TimeSpace
             eventPanel = new FlowLayoutPanel
             {
                 Location = new Point(10, 420),
-                Width = 800,
+                Width = 1000,
                 Height = 250,
                 AutoScroll = true,
                 FlowDirection = FlowDirection.TopDown,

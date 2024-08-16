@@ -414,7 +414,7 @@
             tabControl2.Location = new Point(6, 3);
             tabControl2.Name = "tabControl2";
             tabControl2.SelectedIndex = 0;
-            tabControl2.Size = new Size(1811, 746);
+            tabControl2.Size = new Size(1811, 1000);
             tabControl2.TabIndex = 4;
             // 
             // button6
@@ -460,6 +460,7 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1831, 858);
             Controls.Add(tabControl1);
+            this.Resize += new EventHandler(Form1_Resize);
             Name = "Form1";
             Text = "Form1";
             Load += Form1_Load;

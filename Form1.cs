@@ -24,6 +24,7 @@ namespace TimeSpace
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             InitializeComponent();
+            AdjustLayout();
             if (!File.Exists("./config.json"))
             {
                 string DatPath = "";
@@ -308,6 +309,33 @@ namespace TimeSpace
             }
             config.GameMapsPath = mapsPath;
             textBox11.Text = config.GameMapsPath;
+        }
+        private void Form1_Resize(object sender, EventArgs e)  
+        {
+            AdjustLayout();
+        }
+        private void AdjustLayout()
+        {
+            // Assuming you have a TabControl named tabControl2  
+            // and three buttons named button4, button5, and button6  
+
+            int buttonHeight = button4.Height; // Assuming all buttons have the same height  
+            int padding = 10; // The gap you want between the TabControl and buttons  
+
+            // Adjust the TabControl height dynamically  
+            tabControl2.Height = this.ClientSize.Height - buttonHeight - (padding * 2); // Include extra padding  
+
+            // Set the Y position for the buttons to be at the bottom of the form  
+            int buttonYPosition = this.ClientSize.Height - buttonHeight - padding;
+
+            button4.Location = new Point(button4.Location.X, buttonYPosition);
+            button5.Location = new Point(button5.Location.X, buttonYPosition);
+            button6.Location = new Point(button6.Location.X, buttonYPosition);
+        }
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            AdjustLayout();
         }
 
         private void button8_Click(object sender, EventArgs e)
