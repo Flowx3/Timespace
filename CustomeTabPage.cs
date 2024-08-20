@@ -140,7 +140,10 @@ namespace TimeSpace
         public string MapName { get; private set; }
         public Func<List<string>> getMapNames;
         public List<Portal> Portals { get; private set; } = new List<Portal>();
+        public List<MapObject> Objects { get; private set; } = new List<MapObject>();
+        private List<string> allPortalsList = new List<string>();
         public List<Monster> MonsterEvents { get; private set; } = new List<Monster>();
+        private List<CustomeTabPage> mapTabs = new List<CustomeTabPage>();
         private Task _gridCreationTask;
         private readonly TextBox txtMapVNUM;
         private readonly TextBox txtMapCoordinates;
@@ -149,6 +152,7 @@ namespace TimeSpace
         private FlowLayoutPanel portalPanel;
         private DataGridView monsterDataGridView;
         private FlowLayoutPanel eventPanel;
+        private FlowLayoutPanel objectivePanel;
         private void DisplayMapGrid(MapDataDTO mapData)
         {
             MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).First();
@@ -220,7 +224,7 @@ namespace TimeSpace
             var btnRemovePortal = new Button { Text = "Remove Last Portal", Location = new Point(150, 390) };
             btnRemovePortal.Click += BtnRemovePortal_Click;
             var btnSavePortal = new Button { Text = "Save Portals", Location = new Point(290, 390) };
-            //btnSavePortal.Click += BtnSavePortal_Click;
+            btnSavePortal.Click += BtnSavePortal_Click;
 
             // Initialize event panel  
             eventPanel = new FlowLayoutPanel
@@ -264,8 +268,9 @@ namespace TimeSpace
 
             mapGridPanel.CellClicked += MapGridPanel_CellClicked;
             var lblHoverPosition = new Label { Dock = DockStyle.Top, AutoSize = true, Text = "Hover Position: " };
-            var objectivePanel = new FlowLayoutPanel
+            objectivePanel = new FlowLayoutPanel
             {
+                Location = new Point(10, 800),
                 Dock = DockStyle.Fill,
                 Width = 980,
                 Height = 250,
@@ -274,7 +279,7 @@ namespace TimeSpace
                 WrapContents = false
             };
             var btnAddObjective = new Button { Text = "Add Objective", Dock = DockStyle.Bottom, Height = 30 };
-            //btnAddObjective.Click += BtnAddObjective_Click;
+            btnAddObjective.Click += BtnAddObjective_Click;
             var btnRemoveObjective = new Button { Text = "Remove Last Objective", Dock = DockStyle.Bottom, Height = 30 };
             //btnRemoveObjective.Click += BtnRemoveObjective_Click;
             var btnSaveObjective = new Button { Text = "Save Objectives", Dock = DockStyle.Bottom, Height = 30 };
@@ -348,6 +353,31 @@ namespace TimeSpace
                 portalPanel.Refresh();
             }
         }
+        private void BtnSavePortal_Click(Object sender, EventArgs e)
+        {
+            var localPortalScript = new StringBuilder();
+            var addPortalScript = new StringBuilder();
+            allPortalsList.Clear();
+            foreach (var mapTab in mapTabs)
+            {
+                foreach (var portal in Portals)
+                {
+                    portal.MapFrom = portal.cboMapFrom.SelectedItem.ToString();
+                    portal.MapTo = portal.cboMapTo.SelectedItem.ToString();
+                    portal.PortalType = portal.cboPortalType.SelectedItem.ToString();
+                    portal.MinimapOrientation = portal.cboMinimapOrientation.SelectedItem.ToString();
+                    portal.FromX = int.Parse(portal.txtFromX.Text);
+                    portal.FromY = int.Parse(portal.txtFromY.Text);
+
+                    // Generate scripts and add to StringBuilder  
+                    localPortalScript.AppendLine(portal.GenerateLocalPortalScript());
+                    addPortalScript.AppendLine(portal.GenerateAddPortalScript());
+                    allPortalsList.Add(portal.GeneratePortalIdentifier());
+                }
+            }
+            File.WriteAllText("localPortals.lua", localPortalScript.ToString());
+            File.WriteAllText("addPortals.lua", addPortalScript.ToString());
+        }
         private void BtnAddEvent_Click(object sender, EventArgs e)
         {
             var monster = new Monster(MapName);
@@ -368,6 +398,12 @@ namespace TimeSpace
                     MonsterEvents.RemoveAt(lastMonsterIndex);
                 }
             }
+        }
+        private void BtnAddObjective_Click(object sender, EventArgs e)
+        {
+            var Object = new MapObject("Object", 0, 0, allPortalsList);
+            Objects.Add(Object);
+            this.objectivePanel.Controls.Add(Object.CreateObject());
         }
 
     }
