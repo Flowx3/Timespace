@@ -16,6 +16,7 @@ namespace TimeSpace
     {
         private List<CustomeTabPage> mapTabs = new List<CustomeTabPage>();
         public Func<List<string>> getMapNames;
+        private int mapCount = 0;
         public List<MapDataDTO> loadedMaps = [];
         private Config config;
         private Dictionary<string, string> timespacesData;
@@ -162,9 +163,10 @@ namespace TimeSpace
 
         private void button5_Click(object sender, EventArgs e)
         {
-            var newTab = new CustomeTabPage("test", this, GetMapNames);
+            var newTab = new CustomeTabPage($"map_3_{mapCount}", this, GetMapNames);
             tabControl2.TabPages.Add(newTab);
             mapTabs.Add(newTab);
+            mapCount++;
         }
 
 

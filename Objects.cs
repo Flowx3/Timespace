@@ -31,7 +31,7 @@ namespace TimeSpace
 
         public Panel CreateObject()
         {
-            Panel = new Panel { Width = 400, Height = 140 };
+            var panel = new Panel { Width = 600, Height = 100 };
             var lblObjectiveType = new Label { Text = "Objective Type:", Location = new System.Drawing.Point(0, 5), AutoSize = true };
             cboObjectiveType = new ComboBox { Location = new System.Drawing.Point(100, 0), Width = 150 };
             cboObjectiveType.Items.AddRange(new string[] { "OldBox", "RegularBox", "LuxuriousBox", "Lever" });
@@ -41,15 +41,17 @@ namespace TimeSpace
             var lblY = new Label { Text = "Y:", Location = new System.Drawing.Point(110, 35), AutoSize = true };
             txtY = new TextBox { Location = new System.Drawing.Point(130, 30), Width = 50 };
             var btnSelectPosition = new Button { Text = "Select Position", Location = new System.Drawing.Point(190, 30) };
-            Panel.Controls.Add(lblObjectiveType);
-            Panel.Controls.Add(cboObjectiveType);
-            Panel.Controls.Add(lblX);
-            Panel.Controls.Add(txtX);
-            Panel.Controls.Add(lblY);
-            Panel.Controls.Add(txtY);
-            Panel.Controls.Add(btnSelectPosition);
+            panel.Controls.Add(lblObjectiveType);
+            panel.Controls.Add(cboObjectiveType);
+            panel.Controls.Add(lblX);
+            panel.Controls.Add(txtX);
+            panel.Controls.Add(lblY);
+            panel.Controls.Add(txtY);
+            panel.Controls.Add(btnSelectPosition);
 
-            return Panel;
+            Panel = panel;
+
+            return panel;
         }
 
         private void CboObjectiveType_SelectedIndexChanged(object sender, EventArgs e)

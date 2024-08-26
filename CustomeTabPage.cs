@@ -16,7 +16,7 @@ namespace TimeSpace
         private int _cellSize;
 
         private const int FixedPanelWidth = 790;
-        private const int FixedPanelHeight = 570;
+        private const int FixedPanelHeight = 450;
 
         public event EventHandler<CellClickedEventArgs> CellClicked;
 
@@ -270,19 +270,19 @@ namespace TimeSpace
             var lblHoverPosition = new Label { Dock = DockStyle.Top, AutoSize = true, Text = "Hover Position: " };
             objectivePanel = new FlowLayoutPanel
             {
-                Location = new Point(10, 800),
-                Dock = DockStyle.Fill,
+                Location = new Point(10, 500),
                 Width = 980,
-                Height = 250,
+                Height = 400,
                 AutoScroll = true,
                 FlowDirection = FlowDirection.TopDown,
-                WrapContents = false
+                WrapContents = false,
+                Padding = new Padding(0, 5, 0, 5)
             };
-            var btnAddObjective = new Button { Text = "Add Objective", Dock = DockStyle.Bottom, Height = 30 };
+            var btnAddObjective = new Button { Text = "Add Objective", Location = new Point(10, 470) };
             btnAddObjective.Click += BtnAddObjective_Click;
-            var btnRemoveObjective = new Button { Text = "Remove Last Objective", Dock = DockStyle.Bottom, Height = 30 };
-            //btnRemoveObjective.Click += BtnRemoveObjective_Click;
-            var btnSaveObjective = new Button { Text = "Save Objectives", Dock = DockStyle.Bottom, Height = 30 };
+            var btnRemoveObjective = new Button { Text = "Remove Last Objective", Location = new Point(100, 470) };
+            btnRemoveObjective.Click += BtnRemoveObjective_Click;
+            var btnSaveObjective = new Button { Text = "Save Objectives", Location = new Point(200, 470) };
             //btnSaveObjective.Click += BtnSaveObjective_Click;
 
             rightPanel.Controls.Add(mapGridPanel);
@@ -401,10 +401,24 @@ namespace TimeSpace
         }
         private void BtnAddObjective_Click(object sender, EventArgs e)
         {
+            if (Objects.Count >= 4)
+            {
+                MessageBox.Show("You dont need more than 4 Objects.");
+                return;
+            }
             var Object = new MapObject("Object", 0, 0, allPortalsList);
             Objects.Add(Object);
             this.objectivePanel.Controls.Add(Object.CreateObject());
         }
-
+        private void BtnRemoveObjective_Click(object sender, EventArgs e)
+        {
+            if (Objects.Count > 0)
+            {
+                var lastObject = Objects.Last();
+                Objects.Remove(lastObject);
+                objectivePanel.Controls.Remove(lastObject.Panel);
+                objectivePanel.Refresh();
+            }
+        }
     }
 }
