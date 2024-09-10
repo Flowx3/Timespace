@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Drawing;
 
 namespace TimeSpace
 {
@@ -70,7 +72,6 @@ namespace TimeSpace
             txtFromY = new TextBox { Location = new Point(100, 30), Width = 50 };
             txtFromY.Text = FromY.ToString();
 
-
             panel.Controls.Add(lblMapFrom);
             panel.Controls.Add(cboMapFrom);
             panel.Controls.Add(lblMapTo);
@@ -85,31 +86,25 @@ namespace TimeSpace
             panel.Controls.Add(txtFromY);
 
             Panel = panel; // Assign the panel to the portal  
-
             return panel;
-        }
-
-        public void SetInitialPortalCoordinates()
-        {
-            // Your implementation here  
         }
 
         public string GenerateLocalPortalScript()
         {
-            // Your implementation here  
-            return string.Empty;
+            return $"local {GeneratePortalIdentifier()} = Portal.Create(PortalType.{PortalType})" +
+                   $".From(map_{MapFrom}, {FromX}, {FromY})" +
+                   $".To(map_{MapTo}, {ToX}, {ToY})" +
+                   $".MinimapOrientation(PortalMinimapOrientation.{MinimapOrientation})";
         }
 
         public string GenerateAddPortalScript()
         {
-            // Your implementation here  
-            return string.Empty;
+            return $"map_{MapFrom}.AddPortal({GeneratePortalIdentifier()})";
         }
 
         public string GeneratePortalIdentifier()
         {
-            // Your implementation here  
-            return string.Empty;
+            return $"portal_{MapFrom}_to_{MapTo}";
         }
     }
 }

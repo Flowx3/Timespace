@@ -358,9 +358,10 @@ namespace TimeSpace
             var localPortalScript = new StringBuilder();
             var addPortalScript = new StringBuilder();
             allPortalsList.Clear();
+
             foreach (var mapTab in mapTabs)
             {
-                foreach (var portal in Portals)
+                foreach (var portal in mapTab.Portals)
                 {
                     portal.MapFrom = portal.cboMapFrom.SelectedItem.ToString();
                     portal.MapTo = portal.cboMapTo.SelectedItem.ToString();
@@ -375,9 +376,11 @@ namespace TimeSpace
                     allPortalsList.Add(portal.GeneratePortalIdentifier());
                 }
             }
+
             File.WriteAllText("localPortals.lua", localPortalScript.ToString());
             File.WriteAllText("addPortals.lua", addPortalScript.ToString());
         }
+
         private void BtnAddEvent_Click(object sender, EventArgs e)
         {
             var monster = new Monster(MapName);

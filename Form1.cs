@@ -195,6 +195,7 @@ namespace TimeSpace
 
         private void button6_Click(object sender, EventArgs e)
         {
+            
             var luaScript = new StringBuilder();
 
             // Add the initial required imports  
@@ -214,7 +215,7 @@ namespace TimeSpace
             luaScript.AppendLine("local TimeSpaceTask = require('TimeSpaceTask')");
             luaScript.AppendLine();
 
-            //Generate objective script
+            // Generate objective script  
             luaScript.AppendLine($"local objectives = {GenerateObjectiveScript()}");
             luaScript.AppendLine();
 
@@ -228,34 +229,26 @@ namespace TimeSpace
             // Add an empty line between sections  
             mapScripts.AppendLine();
 
-            // Generate portal scripts  
-            var localPortalScript = new StringBuilder();
-            var addPortalScript = new StringBuilder();
-            //foreach (var mapTab in mapTabs)
-            //{
-            //    foreach (var portal in mapTab.Portals)
-            //    {
-            //        localPortalScript.AppendLine(portal.GenerateLocalPortalScript());
-            //        addPortalScript.AppendLine(portal.GenerateAddPortalScript());
-            //    }
-            //}
+            // Load saved portal scripts  
+            var localPortalScript = File.ReadAllText("localPortals.lua");
+            var addPortalScript = File.ReadAllText("addPortals.lua");
 
             // Append the map scripts to the main script  
             luaScript.AppendLine(mapScripts.ToString());
 
             // Append the portal scripts to the main script  
-            luaScript.AppendLine(localPortalScript.ToString());
-            luaScript.AppendLine(addPortalScript.ToString());
+            luaScript.AppendLine(localPortalScript);
+            luaScript.AppendLine(addPortalScript);
 
             // Add an empty line between sections  
             luaScript.AppendLine();
 
             // Generate event handling scripts  
             var eventHandlingScripts = new StringBuilder();
-            //foreach (var mapTab in mapTabs)
-            //{
-            //    eventHandlingScripts.AppendLine(mapTab.GenerateEventHandlingScript());
-            //}
+            //foreach (var mapTab in mapTabs)  
+            //{  
+            //    eventHandlingScripts.AppendLine(mapTab.GenerateEventHandlingScript());  
+            //}  
 
             // Append the event handling scripts to the main script  
             luaScript.AppendLine(eventHandlingScripts.ToString());
@@ -284,6 +277,7 @@ namespace TimeSpace
                 }
             }
         }
+
         private List<string> GetMapNames()
         {
             return mapTabs.Select(m => m.MapName).ToList();

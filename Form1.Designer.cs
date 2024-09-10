@@ -244,6 +244,7 @@
             button3.TabIndex = 19;
             button3.Text = "Generate";
             button3.UseVisualStyleBackColor = true;
+            button3.Click += button6_Click;
             // 
             // button2
             // 
@@ -322,7 +323,7 @@
             // comboBox1
             // 
             comboBox1.FormattingEnabled = true;
-            comboBox1.Items.AddRange(new object[] { "Kill All Monster", "Kill Monster Vnum", "Collect Item Vnum", "Interact Objects Vnum", "Conversation", "Go To Exist" });
+            comboBox1.Items.AddRange(new object[] { "Kill All Monster", "Kill Monster Vnum", "Collect Item Vnum", "Interact Objects Vnum", "Conversation", "Go To Exit" });
             comboBox1.Location = new Point(89, 143);
             comboBox1.Name = "comboBox1";
             comboBox1.Size = new Size(152, 23);
