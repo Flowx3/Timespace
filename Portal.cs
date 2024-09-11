@@ -25,6 +25,8 @@ namespace TimeSpace
         public ComboBox cboMinimapOrientation;
         public TextBox txtFromX;
         public TextBox txtFromY;
+        public TextBox txtToX;
+        public TextBox txtToY;
         public Func<List<string>> getMapNames;
 
         public Portal(string mapFrom, string mapTo, string portalType, string minimapOrientation, int fromX, int fromY, int toX, int toY, Func<List<string>> GetMapNames)
@@ -64,13 +66,21 @@ namespace TimeSpace
             cboMinimapOrientation.Items.AddRange(new string[] { "North", "South", "East", "West" });
             cboMinimapOrientation.SelectedItem = MinimapOrientation;
 
-            var lblFromX = new Label { Text = "X:", Location = new Point(0, 35), AutoSize = true };
-            txtFromX = new TextBox { Location = new Point(20, 30), Width = 50 };
+            var lblFromX = new Label { Text = "From X:", Location = new Point(0, 35), AutoSize = true };
+            txtFromX = new TextBox { Location = new Point(60, 30), Width = 50 };
             txtFromX.Text = FromX.ToString();
 
-            var lblFromY = new Label { Text = "Y:", Location = new Point(80, 35), AutoSize = true };
-            txtFromY = new TextBox { Location = new Point(100, 30), Width = 50 };
+            var lblFromY = new Label { Text = "From Y:", Location = new Point(120, 35), AutoSize = true };
+            txtFromY = new TextBox { Location = new Point(180, 30), Width = 50 };
             txtFromY.Text = FromY.ToString();
+
+            var lblToX = new Label { Text = "To X:", Location = new Point(240, 35), AutoSize = true };
+            txtToX = new TextBox { Location = new Point(300, 30), Width = 50 };
+            txtToX.Text = ToX.ToString();
+
+            var lblToY = new Label { Text = "To Y:", Location = new Point(360, 35), AutoSize = true };
+            txtToY = new TextBox { Location = new Point(420, 30), Width = 50 };
+            txtToX.Text = ToX.ToString();
 
             panel.Controls.Add(lblMapFrom);
             panel.Controls.Add(cboMapFrom);
@@ -84,6 +94,10 @@ namespace TimeSpace
             panel.Controls.Add(txtFromX);
             panel.Controls.Add(lblFromY);
             panel.Controls.Add(txtFromY);
+            panel.Controls.Add(lblToX);
+            panel.Controls.Add(lblToY);
+            panel.Controls.Add(txtToX);
+            panel.Controls.Add(txtToY);
 
             Panel = panel; // Assign the panel to the portal  
             return panel;
@@ -91,19 +105,35 @@ namespace TimeSpace
 
         public string GenerateLocalPortalScript()
         {
+            MapFrom = MapFrom.Replace("map_", "");
+            MapTo = MapTo.Replace("map_", "");
+            int toX = MapTo.Equals("UNKNOWN", StringComparison.OrdinalIgnoreCase) ? FromX : ToX;
+            int toY = MapTo.Equals("UNKNOWN", StringComparison.OrdinalIgnoreCase) ? FromY : ToY;
+            string toLine;
+            if (MapTo.Equals("UNKNOWN", StringComparison.OrdinalIgnoreCase))
+            {
+                toLine = $".To(map_{MapFrom}, {FromX}, {FromY})";
+            }
+            else
+            {
+                toLine = $".To(map_{MapTo}, {ToX}, {ToY})";
+            }
             return $"local {GeneratePortalIdentifier()} = Portal.Create(PortalType.{PortalType})" +
                    $".From(map_{MapFrom}, {FromX}, {FromY})" +
-                   $".To(map_{MapTo}, {ToX}, {ToY})" +
+                   toLine +
                    $".MinimapOrientation(PortalMinimapOrientation.{MinimapOrientation})";
         }
 
         public string GenerateAddPortalScript()
         {
+            MapFrom = MapFrom.Replace("map_", "");
             return $"map_{MapFrom}.AddPortal({GeneratePortalIdentifier()})";
         }
 
         public string GeneratePortalIdentifier()
         {
+            MapFrom = MapFrom.Replace("map_", "");
+            MapTo = MapTo.Replace("map_", "");
             return $"portal_{MapFrom}_to_{MapTo}";
         }
     }

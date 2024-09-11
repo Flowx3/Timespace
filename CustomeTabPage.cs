@@ -143,7 +143,8 @@ namespace TimeSpace
         public List<MapObject> Objects { get; private set; } = new List<MapObject>();
         private List<string> allPortalsList = new List<string>();
         public List<Monster> MonsterEvents { get; private set; } = new List<Monster>();
-        private List<CustomeTabPage> mapTabs = new List<CustomeTabPage>();
+        private List<DataGridView> monsterDataGrids;
+        private List<CustomeTabPage> mapTabs = Form1.mapTabs;
         private Task _gridCreationTask;
         private readonly TextBox txtMapVNUM;
         private readonly TextBox txtMapCoordinates;
@@ -242,7 +243,7 @@ namespace TimeSpace
             var btnRemoveEvent = new Button { Text = "Remove Last Monster Event", Location = new Point(150, 680) };
             btnRemoveEvent.Click += BtnRemoveEvent_Click;
             var btnSaveMonster = new Button { Text = "Save Monsters", Location = new Point(290, 680) };
-            //btnSaveMonster.Click += BtnSaveMonster_Click;
+            btnSaveMonster.Click += BtnSaveMonster_Click;
 
             leftPanel.Controls.Add(lblMapVNUM);
             leftPanel.Controls.Add(txtMapVNUM);
@@ -328,7 +329,7 @@ namespace TimeSpace
         public string GenerateMapScript()
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"local {txtMapVNUM.Text} = Map.Create().WithMapId({txtMapCoordinates.Text}).SetMapCoordinates({txtMapCoordinates.Text}).WithTask(");
+            sb.AppendLine($"local {MapName} = Map.Create().WithMapId({txtMapVNUM.Text}).SetMapCoordinates({txtMapCoordinates.Text}).WithTask(");
             sb.AppendLine($"    TimeSpaceTask.Create(TimeSpaceTaskType.{cboTaskType.SelectedItem}).WithTaskText(\"{txtTaskText?.Text}\"))");
             return sb.ToString();
         }
@@ -369,7 +370,16 @@ namespace TimeSpace
                     portal.MinimapOrientation = portal.cboMinimapOrientation.SelectedItem.ToString();
                     portal.FromX = int.Parse(portal.txtFromX.Text);
                     portal.FromY = int.Parse(portal.txtFromY.Text);
-
+                    if (portal.MapTo == "UNKNOWN")
+                    {
+                        portal.ToX = 1;
+                        portal.ToY = 1;
+                    }
+                    else
+                    {
+                        portal.ToX = int.Parse(portal.txtToX?.Text);
+                        portal.ToY = int.Parse(portal.txtToY?.Text);
+                    }
                     // Generate scripts and add to StringBuilder  
                     localPortalScript.AppendLine(portal.GenerateLocalPortalScript());
                     addPortalScript.AppendLine(portal.GenerateAddPortalScript());
@@ -402,6 +412,49 @@ namespace TimeSpace
                 }
             }
         }
+        public void BtnSaveMonster_Click(object sender, EventArgs e)
+        {
+            var mapMonsters = new Dictionary<string, List<string>>();
+            MonsterEvents.Clear();
+
+            foreach (DataGridViewRow row in monsterDataGridView.Rows)
+            {
+                if (!row.IsNewRow)
+                {
+                    var monster = new Monster(MapName)
+                    {
+                        Vnum = row.Cells["Vnum"].Value.ToString(),
+                        X = int.Parse(row.Cells["X"].Value.ToString()),
+                        Y = int.Parse(row.Cells["Y"].Value.ToString()),
+                        AdditionalAttribute = row.Cells["AdditionalAttribute"].Value?.ToString(),
+                        AdditionalValue = row.Cells["AdditionalValue"].Value?.ToString(),
+                        AsTarget = Convert.ToBoolean(row.Cells["AsTarget"].Value)
+                    };
+                    var monsterScript = monster.GenerateMonsterScript(row);
+
+                    if (!mapMonsters.ContainsKey(MapName))
+                    {
+                        mapMonsters[MapName] = new List<string>();
+                    }
+                    mapMonsters[MapName].Add(monsterScript);
+                    MonsterEvents.Add(monster);
+                }
+            }
+
+            var finalScript = new StringBuilder();
+            foreach (var map in mapMonsters.Keys)
+            {
+                finalScript.AppendLine($"{map}.AddMonsters({{");
+                finalScript.AppendLine(string.Join(", \n", mapMonsters[map]));
+                finalScript.AppendLine("})");
+                finalScript.AppendLine($"{map}.OnMapJoin({{");
+                finalScript.AppendLine($"    Event.TryStartTaskForMap({map}),");
+                finalScript.AppendLine("})");
+            }
+
+            File.WriteAllText("MonsterEvents.lua", finalScript.ToString());
+        }
+
         private void BtnAddObjective_Click(object sender, EventArgs e)
         {
             if (Objects.Count >= 4)

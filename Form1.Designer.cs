@@ -323,7 +323,7 @@
             // comboBox1
             // 
             comboBox1.FormattingEnabled = true;
-            comboBox1.Items.AddRange(new object[] { "Kill All Monster", "Kill Monster Vnum", "Collect Item Vnum", "Interact Objects Vnum", "Conversation", "Go To Exit" });
+            comboBox1.Items.AddRange(new object[] { "KillAllMonster", "KillMonsterVnum", "CollectItemVnum", "InteractObjectsVnum", "Conversation", "GoToExit" });
             comboBox1.Location = new Point(89, 143);
             comboBox1.Name = "comboBox1";
             comboBox1.Size = new Size(152, 23);
