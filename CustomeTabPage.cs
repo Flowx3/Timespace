@@ -354,7 +354,7 @@ namespace TimeSpace
                 portalPanel.Refresh();
             }
         }
-        private void BtnSavePortal_Click(Object sender, EventArgs e)
+        public void BtnSavePortal_Click(Object sender, EventArgs e)
         {
             var localPortalScript = new StringBuilder();
             var addPortalScript = new StringBuilder();
@@ -447,11 +447,13 @@ namespace TimeSpace
                 finalScript.AppendLine($"{map}.AddMonsters({{");
                 finalScript.AppendLine(string.Join(", \n", mapMonsters[map]));
                 finalScript.AppendLine("})");
-                finalScript.AppendLine($"{map}.OnMapJoin({{");
-                finalScript.AppendLine($"    Event.TryStartTaskForMap({map}),");
+            }
+            foreach(var map in mapTabs)
+            {
+                finalScript.AppendLine($"{map.MapName}.OnMapJoin({{");
+                finalScript.AppendLine($"    Event.TryStartTaskForMap({map.MapName}),");
                 finalScript.AppendLine("})");
             }
-
             File.WriteAllText("MonsterEvents.lua", finalScript.ToString());
         }
 
@@ -475,6 +477,11 @@ namespace TimeSpace
                 objectivePanel.Controls.Remove(lastObject.Panel);
                 objectivePanel.Refresh();
             }
+        }
+        public void SaveAllValues(object sender, EventArgs e)
+        {
+            BtnSaveMonster_Click(sender, e);
+            BtnSavePortal_Click(sender, e);
         }
     }
 }
