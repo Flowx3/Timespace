@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 
 namespace TimeSpace
 {
@@ -330,7 +331,8 @@ namespace TimeSpace
         {
             var sb = new StringBuilder();
             sb.AppendLine($"local {MapName} = Map.Create().WithMapId({txtMapVNUM.Text}).SetMapCoordinates({txtMapCoordinates.Text}).WithTask(");
-            sb.AppendLine($"    TimeSpaceTask.Create(TimeSpaceTaskType.{cboTaskType.SelectedItem}).WithTaskText(\"{txtTaskText?.Text}\"))");
+            sb.AppendLine($"    TimeSpaceTask.Create(TimeSpaceTaskType.{cboTaskType.SelectedItem}).WithTaskText(\"{txtTaskText?.Text}\")" +
+                 $"\n)");
             return sb.ToString();
         }
         private void BtnAddPortal_Click(object sender, EventArgs e)
@@ -417,27 +419,34 @@ namespace TimeSpace
             var mapMonsters = new Dictionary<string, List<string>>();
             MonsterEvents.Clear();
 
-            foreach (DataGridViewRow row in monsterDataGridView.Rows)
+            foreach (var tab in mapTabs)
             {
-                if (!row.IsNewRow)
-                {
-                    var monster = new Monster(MapName)
-                    {
-                        Vnum = row.Cells["Vnum"].Value.ToString(),
-                        X = int.Parse(row.Cells["X"].Value.ToString()),
-                        Y = int.Parse(row.Cells["Y"].Value.ToString()),
-                        AdditionalAttribute = row.Cells["AdditionalAttribute"].Value?.ToString(),
-                        AdditionalValue = row.Cells["AdditionalValue"].Value?.ToString(),
-                        AsTarget = Convert.ToBoolean(row.Cells["AsTarget"].Value)
-                    };
-                    var monsterScript = monster.GenerateMonsterScript(row);
+                var monsterDataGridView = tab.monsterDataGridView;
+                string mapName = tab.MapName;
 
-                    if (!mapMonsters.ContainsKey(MapName))
+                foreach (DataGridViewRow row in monsterDataGridView.Rows)
+                {
+                    if (!row.IsNewRow)
                     {
-                        mapMonsters[MapName] = new List<string>();
+                        var monster = new Monster(mapName)
+                        {
+                            Vnum = row.Cells["Vnum"].Value?.ToString(),
+                            X = int.Parse(row.Cells["X"].Value?.ToString()),
+                            Y = int.Parse(row.Cells["Y"].Value?.ToString()),
+                            AdditionalAttribute = row.Cells["AdditionalAttribute"].Value?.ToString(),
+                            AdditionalValue = row.Cells["AdditionalValue"].Value?.ToString(),
+                            AsTarget = Convert.ToBoolean(row.Cells["AsTarget"]?.Value)
+                        };
+
+                        var monsterScript = monster.GenerateMonsterScript(row);
+                        if (!mapMonsters.ContainsKey(mapName))
+                        {
+                            mapMonsters[mapName] = new List<string>();
+                        }
+
+                        mapMonsters[mapName].Add(monsterScript);
+                        MonsterEvents.Add(monster);
                     }
-                    mapMonsters[MapName].Add(monsterScript);
-                    MonsterEvents.Add(monster);
                 }
             }
 
@@ -448,7 +457,7 @@ namespace TimeSpace
                 finalScript.AppendLine(string.Join(", \n", mapMonsters[map]));
                 finalScript.AppendLine("})");
             }
-            foreach(var map in mapTabs)
+            foreach (var map in mapTabs)
             {
                 finalScript.AppendLine($"{map.MapName}.OnMapJoin({{");
                 finalScript.AppendLine($"    Event.TryStartTaskForMap({map.MapName}),");
@@ -477,6 +486,21 @@ namespace TimeSpace
                 objectivePanel.Controls.Remove(lastObject.Panel);
                 objectivePanel.Refresh();
             }
+        }
+        private void SaveObjective_Click(object sender, EventArgs e)
+        {
+            var localObjectiveScript = new StringBuilder();
+            Objects.Clear();
+
+            foreach (var mapTab in mapTabs)
+            {
+                foreach (var Objects in mapTab.Objects)
+                {
+
+                }
+            }
+
+            File.WriteAllText("localObjects.lua", localObjectiveScript.ToString());
         }
         public void SaveAllValues(object sender, EventArgs e)
         {

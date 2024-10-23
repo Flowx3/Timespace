@@ -16,7 +16,7 @@ namespace TimeSpace
         public int Y { get; set; }
         public string AdditionalAttribute { get; set; }
         public string AdditionalValue { get; set; }
-        public bool AsTarget { get; set; }
+        public bool? AsTarget { get; set; }
 
         public Monster(string mapName)
         {
