@@ -102,6 +102,30 @@ namespace TimeSpace
             Panel = panel; // Assign the panel to the portal  
             return panel;
         }
+        public void RefreshMapComboboxes()
+        {
+            if (cboMapFrom != null && cboMapTo != null)
+            {
+                // Store current selections
+                string currentMapFrom = cboMapFrom.SelectedItem?.ToString();
+                string currentMapTo = cboMapTo.SelectedItem?.ToString();
+
+                // Clear and refresh MapFrom combobox
+                cboMapFrom.Items.Clear();
+                cboMapFrom.Items.AddRange(getMapNames().ToArray());
+
+                // Clear and refresh MapTo combobox
+                cboMapTo.Items.Clear();
+                cboMapTo.Items.AddRange(getMapNames().Concat(new[] { "UNKNOWN" }).ToArray());
+
+                // Restore selections if they still exist
+                if (currentMapFrom != null && cboMapFrom.Items.Contains(currentMapFrom))
+                    cboMapFrom.SelectedItem = currentMapFrom;
+
+                if (currentMapTo != null && cboMapTo.Items.Contains(currentMapTo))
+                    cboMapTo.SelectedItem = currentMapTo;
+            }
+        }
 
         public string GenerateLocalPortalScript()
         {

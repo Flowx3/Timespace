@@ -9,6 +9,7 @@ namespace TimeSpace
 {
     public class MapObject
     {
+        public string MapName { get; set; }
         public string ObjectType { get; set; }
         public int X { get; private set; }
         public int Y { get; private set; }
@@ -21,8 +22,9 @@ namespace TimeSpace
         private ComboBox cboLeverPortal3;
         private List<string> allPortalsList;
 
-        public MapObject(string objectType, int x, int y, List<string> allPortalsList)
+        public MapObject(string mapName, string objectType, int x, int y, List<string> allPortalsList)
         {
+            MapName = mapName;
             ObjectType = objectType;
             X = x;
             Y = y;
@@ -61,13 +63,16 @@ namespace TimeSpace
             {
                 var lblLeverPortal1 = new Label { Text = "Portal 1:", Location = new System.Drawing.Point(0, 70), AutoSize = true };
                 cboLeverPortal1 = new ComboBox { Location = new System.Drawing.Point(50, 70), Width = 100 };
-                cboLeverPortal1.Items.AddRange(allPortalsList?.ToArray());
+                cboLeverPortal1.Click += LeverPortalCombobox_Click; // Add click handler
+
                 var lblLeverPortal2 = new Label { Text = "Portal 2:", Location = new System.Drawing.Point(160, 70), AutoSize = true };
                 cboLeverPortal2 = new ComboBox { Location = new System.Drawing.Point(210, 70), Width = 100 };
-                cboLeverPortal2.Items.AddRange(allPortalsList?.ToArray());
+                cboLeverPortal2.Click += LeverPortalCombobox_Click; // Add click handler
+
                 var lblLeverPortal3 = new Label { Text = "Portal 3:", Location = new System.Drawing.Point(320, 70), AutoSize = true };
                 cboLeverPortal3 = new ComboBox { Location = new System.Drawing.Point(370, 70), Width = 100 };
-                cboLeverPortal3.Items.AddRange(allPortalsList?.ToArray());
+                cboLeverPortal3.Click += LeverPortalCombobox_Click; // Add click handler
+
                 Panel.Controls.Add(lblLeverPortal1);
                 Panel.Controls.Add(cboLeverPortal1);
                 Panel.Controls.Add(lblLeverPortal2);
@@ -76,7 +81,66 @@ namespace TimeSpace
                 Panel.Controls.Add(cboLeverPortal3);
             }
         }
+        public void UpdatePortalComboboxes(List<string> newPortalsList)
+        {
+            allPortalsList = newPortalsList;
 
+            // Only update if the object is a lever and comboboxes exist
+            if (cboObjectiveType?.SelectedItem?.ToString() == "Lever")
+            {
+                // Store currently selected values
+                string selected1 = cboLeverPortal1?.SelectedItem?.ToString();
+                string selected2 = cboLeverPortal2?.SelectedItem?.ToString();
+                string selected3 = cboLeverPortal3?.SelectedItem?.ToString();
+
+                // Clear and refresh items
+                if (cboLeverPortal1 != null)
+                {
+                    cboLeverPortal1.Items.Clear();
+                    cboLeverPortal1.Items.AddRange(allPortalsList.ToArray());
+                    if (selected1 != null && allPortalsList.Contains(selected1))
+                        cboLeverPortal1.SelectedItem = selected1;
+                }
+
+                if (cboLeverPortal2 != null)
+                {
+                    cboLeverPortal2.Items.Clear();
+                    cboLeverPortal2.Items.AddRange(allPortalsList.ToArray());
+                    if (selected2 != null && allPortalsList.Contains(selected2))
+                        cboLeverPortal2.SelectedItem = selected2;
+                }
+
+                if (cboLeverPortal3 != null)
+                {
+                    cboLeverPortal3.Items.Clear();
+                    cboLeverPortal3.Items.AddRange(allPortalsList.ToArray());
+                    if (selected3 != null && allPortalsList.Contains(selected3))
+                        cboLeverPortal3.SelectedItem = selected3;
+                }
+            }
+        }
+        private void LeverPortalCombobox_Click(object sender, EventArgs e)
+        {
+            var comboBox = sender as ComboBox;
+            if (comboBox != null)
+            {
+                // Store the current selection
+                string currentSelection = comboBox.SelectedItem?.ToString();
+
+                // Clear and refresh the items
+                comboBox.Items.Clear();
+
+                // Regenerate the portal list from the current state
+                var currentPortals = allPortalsList?.ToArray() ?? Array.Empty<string>();
+                comboBox.Items.AddRange(currentPortals);
+
+                // Restore the previous selection if it still exists
+                if (currentSelection != null && comboBox.Items.Contains(currentSelection))
+                {
+                    comboBox.SelectedItem = currentSelection;
+                }
+            }
+        }
         private void RemoveLeverPortalControls(Panel panel)
         {
             var controlsToRemove = panel.Controls.OfType<ComboBox>().Where(c => c.Location.Y > 60).ToList();
@@ -113,23 +177,27 @@ namespace TimeSpace
         public string GenerateObjectiveScript()
         {
             var script = new StringBuilder();
+            // Here you would generate the script for each object  
+            // For now, we'll assume the current object is the only one  
             string objectiveType = cboObjectiveType.SelectedItem.ToString();
             if (string.IsNullOrEmpty(txtX.Text) || string.IsNullOrEmpty(txtY.Text) || string.IsNullOrEmpty(objectiveType))
             {
                 return string.Empty;
             }
-            script.Append($"MapObject.Create{objectiveType}().At({txtX.Text}, {txtY.Text})");
+            script.Append($"    MapObject.Create{objectiveType}().At({txtX.Text}, {txtY.Text})");
             if (objectiveType == "Lever")
             {
                 script.Append(".OnSwitch({ \n");
                 if (cboLeverPortal1.SelectedItem != null)
-                    script.AppendLine($"    Event.TogglePortal({cboLeverPortal1.SelectedItem}),");
+                    script.AppendLine($"        Event.TogglePortal({cboLeverPortal1.SelectedItem}),");
                 if (cboLeverPortal2.SelectedItem != null)
-                    script.AppendLine($"    Event.TogglePortal({cboLeverPortal2.SelectedItem}),");
+                    script.AppendLine($"        Event.TogglePortal({cboLeverPortal2.SelectedItem}),");
                 if (cboLeverPortal3.SelectedItem != null)
-                    script.AppendLine($"    Event.TogglePortal({cboLeverPortal3.SelectedItem}),");
-                script.Append("})");
+                    script.AppendLine($"        Event.TogglePortal({cboLeverPortal3.SelectedItem}),");
+                script.Append("    }),");
             }
+            script.AppendLine("})");
+
             return script.ToString();
         }
     }

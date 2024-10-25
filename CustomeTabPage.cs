@@ -244,7 +244,7 @@ namespace TimeSpace
             var btnRemoveEvent = new Button { Text = "Remove Last Monster Event", Location = new Point(150, 680) };
             btnRemoveEvent.Click += BtnRemoveEvent_Click;
             var btnSaveMonster = new Button { Text = "Save Monsters", Location = new Point(290, 680) };
-            btnSaveMonster.Click += BtnSaveMonster_Click;
+            btnSaveMonster.Click += BtnSaveMonsterAndObjective_Click;
 
             leftPanel.Controls.Add(lblMapVNUM);
             leftPanel.Controls.Add(txtMapVNUM);
@@ -285,7 +285,7 @@ namespace TimeSpace
             var btnRemoveObjective = new Button { Text = "Remove Last Objective", Location = new Point(100, 470) };
             btnRemoveObjective.Click += BtnRemoveObjective_Click;
             var btnSaveObjective = new Button { Text = "Save Objectives", Location = new Point(200, 470) };
-            //btnSaveObjective.Click += BtnSaveObjective_Click;
+            btnSaveObjective.Click += BtnSaveMonsterAndObjective_Click;
 
             rightPanel.Controls.Add(mapGridPanel);
             rightPanel.Controls.Add(objectivePanel);
@@ -345,6 +345,7 @@ namespace TimeSpace
             var portal = new Portal("DefaultFrom", "DefaultTo", "Type1", "North", 0, 0, 0, 0, getMapNames);
             Portals.Add(portal);
             this.portalPanel.Controls.Add(portal.CreatePortal());
+            RefreshLeverPortalComboboxes(sender,e);
         }
         private void BtnRemovePortal_Click(object sender, EventArgs e)
         {
@@ -355,23 +356,35 @@ namespace TimeSpace
                 portalPanel.Controls.Remove(lastPortal.Panel);
                 portalPanel.Refresh();
             }
+            RefreshLeverPortalComboboxes(sender,e);
         }
         public void BtnSavePortal_Click(Object sender, EventArgs e)
         {
             var localPortalScript = new StringBuilder();
             var addPortalScript = new StringBuilder();
             allPortalsList.Clear();
-
             foreach (var mapTab in mapTabs)
             {
                 foreach (var portal in mapTab.Portals)
                 {
+                    // Skip if any essential fields are empty or null
+                    if (portal.cboMapFrom.SelectedItem == null ||
+                        portal.cboMapTo.SelectedItem == null ||
+                        portal.cboPortalType.SelectedItem == null ||
+                        portal.cboMinimapOrientation.SelectedItem == null ||
+                        string.IsNullOrWhiteSpace(portal.txtFromX.Text) ||
+                        string.IsNullOrWhiteSpace(portal.txtFromY.Text))
+                    {
+                        continue;
+                    }
+
                     portal.MapFrom = portal.cboMapFrom.SelectedItem.ToString();
                     portal.MapTo = portal.cboMapTo.SelectedItem.ToString();
                     portal.PortalType = portal.cboPortalType.SelectedItem.ToString();
                     portal.MinimapOrientation = portal.cboMinimapOrientation.SelectedItem.ToString();
                     portal.FromX = int.Parse(portal.txtFromX.Text);
                     portal.FromY = int.Parse(portal.txtFromY.Text);
+
                     if (portal.MapTo == "UNKNOWN")
                     {
                         portal.ToX = 1;
@@ -379,16 +392,22 @@ namespace TimeSpace
                     }
                     else
                     {
-                        portal.ToX = int.Parse(portal.txtToX?.Text);
-                        portal.ToY = int.Parse(portal.txtToY?.Text);
+                        // Skip if destination coordinates are empty when MapTo is not UNKNOWN
+                        if (string.IsNullOrWhiteSpace(portal.txtToX?.Text) ||
+                            string.IsNullOrWhiteSpace(portal.txtToY?.Text))
+                        {
+                            continue;
+                        }
+                        portal.ToX = int.Parse(portal.txtToX.Text);
+                        portal.ToY = int.Parse(portal.txtToY.Text);
                     }
+
                     // Generate scripts and add to StringBuilder  
                     localPortalScript.AppendLine(portal.GenerateLocalPortalScript());
                     addPortalScript.AppendLine(portal.GenerateAddPortalScript());
                     allPortalsList.Add(portal.GeneratePortalIdentifier());
                 }
             }
-
             File.WriteAllText("localPortals.lua", localPortalScript.ToString());
             File.WriteAllText("addPortals.lua", addPortalScript.ToString());
         }
@@ -414,16 +433,22 @@ namespace TimeSpace
                 }
             }
         }
-        public void BtnSaveMonster_Click(object sender, EventArgs e)
+        public void BtnSaveMonsterAndObjective_Click(object sender, EventArgs e)
         {
-            var mapMonsters = new Dictionary<string, List<string>>();
+            var mapScripts = new Dictionary<string, StringBuilder>();
             MonsterEvents.Clear();
-
+            // Generate monster scripts  
             foreach (var tab in mapTabs)
             {
                 var monsterDataGridView = tab.monsterDataGridView;
                 string mapName = tab.MapName;
 
+                if (!mapScripts.ContainsKey(mapName))
+                {
+                    mapScripts[mapName] = new StringBuilder();
+                }
+
+                var monsters = new List<string>();
                 foreach (DataGridViewRow row in monsterDataGridView.Rows)
                 {
                     if (!row.IsNewRow)
@@ -437,35 +462,81 @@ namespace TimeSpace
                             AdditionalValue = row.Cells["AdditionalValue"].Value?.ToString(),
                             AsTarget = Convert.ToBoolean(row.Cells["AsTarget"]?.Value)
                         };
-
                         var monsterScript = monster.GenerateMonsterScript(row);
-                        if (!mapMonsters.ContainsKey(mapName))
-                        {
-                            mapMonsters[mapName] = new List<string>();
-                        }
-
-                        mapMonsters[mapName].Add(monsterScript);
+                        monsters.Add(monsterScript);
                         MonsterEvents.Add(monster);
                     }
                 }
+
+                if (monsters.Any())
+                {
+                    mapScripts[mapName].AppendLine($"{mapName}.AddMonsters({{");
+                    mapScripts[mapName].AppendLine(string.Join(", \n", monsters));
+                    mapScripts[mapName].AppendLine("})");
+                }
             }
 
+            // Generate object scripts  
+            foreach (var mapTab in mapTabs)
+            {
+                string mapName = mapTab.MapName;
+
+                if (!mapScripts.ContainsKey(mapName))
+                {
+                    mapScripts[mapName] = new StringBuilder();
+                }
+
+                var objects = new List<string>();
+                foreach (var mapObject in mapTab.Objects)
+                {
+                    // Skip if the object is not properly configured  
+                    if (string.IsNullOrEmpty(mapObject.ObjectType) ||
+                        mapObject.GetX() == 1500 ||
+                        mapObject.GetY() == 1500)
+                    {
+                        continue;
+                    }
+
+                    // Generate script for the object  
+                    string objectScript = mapObject.GenerateObjectiveScript();
+                    if (!string.IsNullOrEmpty(objectScript))
+                    {
+                        objects.Add(objectScript);
+                    }
+                }
+
+                if (objects.Any())
+                {
+                    mapScripts[mapName].AppendLine($"{mapName}.AddObjects({{");
+                    mapScripts[mapName].AppendLine(string.Join(", \n", objects));
+                    mapScripts[mapName].AppendLine("})");
+                }
+            }
+
+            // Generate OnMapJoin scripts  
+            foreach (var mapTab in mapTabs)
+            {
+                string mapName = mapTab.MapName;
+
+                if (!mapScripts.ContainsKey(mapName))
+                {
+                    mapScripts[mapName] = new StringBuilder();
+                }
+
+                mapScripts[mapName].AppendLine($"{mapName}.OnMapJoin({{");
+                mapScripts[mapName].AppendLine($"    Event.TryStartTaskForMap({mapName}),");
+                mapScripts[mapName].AppendLine("})");
+            }
+
+            // Save to file  
             var finalScript = new StringBuilder();
-            foreach (var map in mapMonsters.Keys)
+            foreach (var mapName in mapScripts.Keys)
             {
-                finalScript.AppendLine($"{map}.AddMonsters({{");
-                finalScript.AppendLine(string.Join(", \n", mapMonsters[map]));
-                finalScript.AppendLine("})");
+                finalScript.Append(mapScripts[mapName].ToString());
             }
-            foreach (var map in mapTabs)
-            {
-                finalScript.AppendLine($"{map.MapName}.OnMapJoin({{");
-                finalScript.AppendLine($"    Event.TryStartTaskForMap({map.MapName}),");
-                finalScript.AppendLine("})");
-            }
-            File.WriteAllText("MonsterEvents.lua", finalScript.ToString());
-        }
 
+            File.WriteAllText("CombinedEvents.lua", finalScript.ToString());
+        }
         private void BtnAddObjective_Click(object sender, EventArgs e)
         {
             if (Objects.Count >= 4)
@@ -473,7 +544,7 @@ namespace TimeSpace
                 MessageBox.Show("You dont need more than 4 Objects.");
                 return;
             }
-            var Object = new MapObject("Object", 0, 0, allPortalsList);
+            var Object = new MapObject(MapName, "Object", 0, 0, allPortalsList);
             Objects.Add(Object);
             this.objectivePanel.Controls.Add(Object.CreateObject());
         }
@@ -487,25 +558,43 @@ namespace TimeSpace
                 objectivePanel.Refresh();
             }
         }
-        private void SaveObjective_Click(object sender, EventArgs e)
+
+        public void SaveAllValues(object sender, EventArgs e)
         {
-            var localObjectiveScript = new StringBuilder();
-            Objects.Clear();
+            BtnSaveMonsterAndObjective_Click(sender, e);
+            BtnSavePortal_Click(sender, e);
+        }
+        public void RefreshLeverPortalComboboxes(object sender, EventArgs e)
+        {
+            SaveAllValues(sender, e);
+            // Clear and regenerate the allPortalsList
+            allPortalsList.Clear();
 
-            foreach (var mapTab in mapTabs)
+            // Get portals from ALL tabs, not just the current one
+            foreach (var tab in mapTabs)  // Make sure mapTabs is accessible here
             {
-                foreach (var Objects in mapTab.Objects)
+                foreach (var portal in tab.Portals)
                 {
-
+                    // Only add to portal list if the portal has valid selections
+                    if (portal.cboMapFrom?.SelectedItem != null &&
+                        portal.cboMapTo?.SelectedItem != null)
+                    {
+                        allPortalsList.Add(portal.GeneratePortalIdentifier());
+                    }
                 }
             }
 
-            File.WriteAllText("localObjects.lua", localObjectiveScript.ToString());
-        }
-        public void SaveAllValues(object sender, EventArgs e)
-        {
-            BtnSaveMonster_Click(sender, e);
-            BtnSavePortal_Click(sender, e);
+            // Update each MapObject's portal comboboxes in the current tab
+            foreach (var mapObject in Objects)
+            {
+                mapObject.UpdatePortalComboboxes(allPortalsList);
+            }
+
+            // Update each Portal's map comboboxes in the current tab
+            foreach (var portal in Portals)
+            {
+                portal.RefreshMapComboboxes();
+            }
         }
     }
 }
