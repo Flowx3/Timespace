@@ -11,12 +11,12 @@ namespace TimeSpace
     public class Monster
     {
         public string MapName { get; private set; }
-        public string Vnum { get; set; }
+        public int Vnum { get; set; }
         public int X { get; set; }
         public int Y { get; set; }
-        public string AdditionalAttribute { get; set; }
-        public string AdditionalValue { get; set; }
-        public bool? AsTarget { get; set; }
+        public int Wave { get; set; } = 1;
+        public bool AsTarget { get; set; }
+        public Dictionary<string, string> Attributes { get; set; } = new Dictionary<string, string>();
 
         public Monster(string mapName)
         {
@@ -27,10 +27,10 @@ namespace TimeSpace
         {
             var script = new StringBuilder();
             script.Append($"Monster.CreateWithVnum({row.Cells["Vnum"].Value}).At({row.Cells["X"].Value}, {row.Cells["Y"].Value}).Facing(2)");
-            string selectedAttribute = row.Cells["AdditionalAttribute"].Value?.ToString();
-            if (!string.IsNullOrEmpty(selectedAttribute) && selectedAttribute != "none")
+
+            foreach (var attr in Attributes)
             {
-                switch (selectedAttribute)
+                switch (attr.Key)
                 {
                     case "SpawnAfterMobsKilled":
                     case "WithCustomLevel":
@@ -38,14 +38,14 @@ namespace TimeSpace
                         {
                             script.Append(".AsTarget()");
                         }
-                        script.Append($".{selectedAttribute}({row.Cells["AdditionalValue"].Value})");
+                        script.Append($".{attr.Key}({attr.Value})");
                         break;
                     case "SpawnAfterTaskStart":
                         if (Convert.ToBoolean(row.Cells["AsTarget"].Value))
                         {
                             script.Append(".AsTarget()");
                         }
-                        script.Append($".{selectedAttribute}()");
+                        script.Append($".{attr.Key}()");
                         break;
                     case "OnThreeFourthsHP":
                     case "OnHalfHp":
@@ -54,7 +54,7 @@ namespace TimeSpace
                         {
                             script.Append(".AsTarget()");
                         }
-                        script.Append($".{selectedAttribute}()");
+                        script.Append($".{attr.Key}()");
                         break;
                     default:
                         if (Convert.ToBoolean(row.Cells["AsTarget"].Value))
@@ -64,6 +64,7 @@ namespace TimeSpace
                         break;
                 }
             }
+
             return script.ToString();
         }
     }

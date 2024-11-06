@@ -155,6 +155,14 @@ namespace TimeSpace
         private DataGridView monsterDataGridView;
         private FlowLayoutPanel eventPanel;
         private FlowLayoutPanel objectivePanel;
+        private static List<Point> sharedTakenPositions = new List<Point>();
+        private Point? currentPosition = null;
+        private static readonly object positionsLock = new object();
+        private bool isDisposed = false;
+        private Button btnAddAttribute;
+        private NumericUpDown waveCountInput;
+        private NumericUpDown waveDelayInput;
+        private CheckBox useWavesCheckbox;
         private void DisplayMapGrid(MapDataDTO mapData)
         {
             MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).First();
@@ -199,6 +207,14 @@ namespace TimeSpace
             };
             var lblMapCoordinates = new Label { Text = "Map Coordinates:", Location = new Point(10, 40) };
             txtMapCoordinates = new TextBox { Location = new Point(150, 40), Width = 200 };
+            var btnSelectCoordinates = new Button
+            {
+                Text = "...",
+                Location = new Point(txtMapCoordinates.Right + 10, 40),
+                Width = 30,
+                Height = txtMapCoordinates.Height
+            };
+            btnSelectCoordinates.Click += BtnSelectCoordinates_Click;
             var lblTaskType = new Label { Text = "Task Type:", Location = new Point(10, 70) };
             cboTaskType = new ComboBox
             {
@@ -263,6 +279,7 @@ namespace TimeSpace
             leftPanel.Controls.Add(btnAddEvent);
             leftPanel.Controls.Add(btnRemoveEvent);
             leftPanel.Controls.Add(btnSaveMonster);
+            leftPanel.Controls.Add(btnSelectCoordinates);
 
             // Create right panel for map grid and objectives  
             var rightPanel = new Panel { Dock = DockStyle.Fill };
@@ -300,32 +317,243 @@ namespace TimeSpace
         }
         private void InitializeDataGridView()
         {
+            // Monster grid  
             monsterDataGridView = new DataGridView
             {
+                Location = new Point(0, 0), // Adjust the location as needed  
                 Width = 800,
                 Height = 200,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize,
                 AllowUserToAddRows = false
             };
-
-            monsterDataGridView.Columns.Add(new DataGridViewTextBoxColumn { Name = "Vnum", HeaderText = "Vnum" });
-            monsterDataGridView.Columns.Add(new DataGridViewTextBoxColumn { Name = "X", HeaderText = "X" });
-            monsterDataGridView.Columns.Add(new DataGridViewTextBoxColumn { Name = "Y", HeaderText = "Y" });
-            monsterDataGridView.Columns.Add(new DataGridViewComboBoxColumn
+            monsterDataGridView.Columns.AddRange(new DataGridViewColumn[]
             {
-                Name = "AdditionalAttribute",
-                HeaderText = "Additional Attribute",
-                Items =
-                {
-                    "SpawnAfterMobsKilled", "WithCustomLevel", "SpawnAfterTaskStart",
-                    "OnThreeFourthsHP", "OnHalfHp", "OnQuarterHp", "none"
-                }
+        new DataGridViewTextBoxColumn { Name = "Vnum", HeaderText = "Vnum" },
+        new DataGridViewTextBoxColumn { Name = "X", HeaderText = "X" },
+        new DataGridViewTextBoxColumn { Name = "Y", HeaderText = "Y" },
+        new DataGridViewTextBoxColumn { Name = "Wave", HeaderText = "Wave" },
+        new DataGridViewCheckBoxColumn { Name = "AsTarget", HeaderText = "As Target" },
+        new DataGridViewTextBoxColumn
+        {
+            Name = "Attributes",
+            HeaderText = "Additional Attributes",
+            ReadOnly = true
+        }
             });
-            monsterDataGridView.Columns.Add(new DataGridViewTextBoxColumn { Name = "AdditionalValue", HeaderText = "Additional Value" });
-            monsterDataGridView.Columns.Add(new DataGridViewCheckBoxColumn { Name = "AsTarget", HeaderText = "As Target" });
+            monsterDataGridView.CellDoubleClick += MonsterDataGridView_CellDoubleClick;
+
+            btnAddAttribute = new Button
+            {
+                Text = "Manage Attributes",
+                Location = new Point(0, monsterDataGridView.Bottom + 10),
+                Width = 120,
+                Height = 30
+            };
+            btnAddAttribute.Click += BtnAddAttribute_Click;
 
             eventPanel.Controls.Add(monsterDataGridView);
+            eventPanel.Controls.Add(btnAddAttribute);
+
+            var wavePanel = new Panel
+            {
+                Location = new Point(0, monsterDataGridView.Bottom + btnAddAttribute.Height + 20),
+                Width = 800,
+                Height = 40
+            };
+            useWavesCheckbox = new CheckBox
+            {
+                Text = "Use Waves",
+                Location = new Point(10, 10),
+                AutoSize = true
+            };
+            useWavesCheckbox.CheckedChanged += UseWavesCheckbox_CheckedChanged;
+            var waveCountLabel = new Label
+            {
+                Text = "Number of Waves:",
+                Location = new Point(120, 12),
+                AutoSize = true
+            };
+            waveCountInput = new NumericUpDown
+            {
+                Location = new Point(230, 10),
+                Width = 60,
+                Minimum = 1,
+                Maximum = 10,
+                Enabled = false
+            };
+            var waveDelayLabel = new Label
+            {
+                Text = "Wave Delay (seconds):",
+                Location = new Point(300, 12),
+                AutoSize = true
+            };
+            waveDelayInput = new NumericUpDown
+            {
+                Location = new Point(430, 10),
+                Width = 60,
+                Minimum = 0,
+                Maximum = 300,
+                Value = 30,
+                Enabled = false
+            };
+            wavePanel.Controls.AddRange(new Control[] { useWavesCheckbox, waveCountLabel, waveCountInput, waveDelayLabel, waveDelayInput });
+            eventPanel.Controls.Add(wavePanel);
+        }
+
+        private void MonsterDataGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && monsterDataGridView.Columns[e.ColumnIndex].Name == "Attributes")
+            {
+                BtnAddAttribute_Click(sender, e);
+            }
+        }
+
+        private void BtnAddAttribute_Click(object sender, EventArgs e)
+        {
+            // Implement your logic to manage attributes here  
+            MessageBox.Show("Manage Attributes logic here.");
+        }
+        private void BtnSelectCoordinates_Click(object sender, EventArgs e)
+        {
+            lock (positionsLock)
+            {
+                // Create a temporary list without the current position
+                var tempTakenPositions = new List<Point>(sharedTakenPositions);
+                if (currentPosition.HasValue)
+                {
+                    tempTakenPositions.Remove(currentPosition.Value);
+                }
+
+                using (var gridSelector = new GridSelectorForm(tempTakenPositions))
+                {
+                    if (gridSelector.ShowDialog() == DialogResult.OK && gridSelector.SelectedCoordinates.HasValue)
+                    {
+                        // Remove old position if it exists
+                        if (currentPosition.HasValue)
+                        {
+                            sharedTakenPositions.Remove(currentPosition.Value);
+                        }
+
+                        // Update to new position
+                        Point selectedPos = gridSelector.SelectedCoordinates.Value;
+                        txtMapCoordinates.Text = $"{selectedPos.X}, {selectedPos.Y}";
+                        currentPosition = selectedPos;
+                        sharedTakenPositions.Add(selectedPos);
+                    }
+                }
+            }
+        }
+
+        public Point? GetCoordinates()
+        {
+            return currentPosition;
+        }
+
+        public void SetCoordinates(Point point)
+        {
+            lock (positionsLock)
+            {
+                // Remove old position if it exists
+                if (currentPosition.HasValue)
+                {
+                    sharedTakenPositions.Remove(currentPosition.Value);
+                }
+
+                txtMapCoordinates.Text = $"{point.X}, {point.Y}";
+                currentPosition = point;
+                sharedTakenPositions.Add(point);
+            }
+        }
+
+        public void ClearCoordinates()
+        {
+            lock (positionsLock)
+            {
+                if (currentPosition.HasValue)
+                {
+                    sharedTakenPositions.Remove(currentPosition.Value);
+                    currentPosition = null;
+                }
+                txtMapCoordinates.Text = string.Empty;
+            }
+        }
+
+        // Optional: Method to get all taken positions (might be useful for debugging)
+        public static List<Point> GetAllTakenPositions()
+        {
+            lock (positionsLock)
+            {
+                return new List<Point>(sharedTakenPositions);
+            }
+        }
+
+        // Optional: Method to clear all positions (might be useful when starting fresh)
+        public static void ClearAllPositions()
+        {
+            lock (positionsLock)
+            {
+                sharedTakenPositions.Clear();
+            }
+        }
+        protected override void Dispose(bool disposing)
+        {
+            if (!isDisposed)
+            {
+                if (disposing)
+                {
+                    CleanupCoordinates();
+                }
+                isDisposed = true;
+            }
+            base.Dispose(disposing);
+        }
+
+        public void CleanupCoordinates()
+        {
+            lock (positionsLock)
+            {
+                if (currentPosition.HasValue)
+                {
+                    sharedTakenPositions.Remove(currentPosition.Value);
+                    currentPosition = null;
+                    if (txtMapCoordinates != null)
+                    {
+                        txtMapCoordinates.Text = string.Empty;
+                    }
+                }
+            }
+        }
+        private void UseWavesCheckbox_CheckedChanged(object sender, EventArgs e)
+        {
+            waveCountInput.Enabled = useWavesCheckbox.Checked;
+            waveDelayInput.Enabled = useWavesCheckbox.Checked;
+            monsterDataGridView.Columns["Wave"].Visible = useWavesCheckbox.Checked;
+        }
+
+        private void BtnAddAttribute_Click(object sender, EventArgs e)
+        {
+            if (monsterDataGridView.CurrentRow == null) return;
+
+            var attributeForm = new MonsterAttributeForm();
+            if (attributeForm.ShowDialog() == DialogResult.OK)
+            {
+                int rowIndex = monsterDataGridView.CurrentRow.Index;
+                var monster = MonsterEvents[rowIndex];
+
+                foreach (var attr in attributeForm.SelectedAttributes)
+                {
+                    monster.Attributes[attr.Key] = attr.Value;
+                }
+                UpdateAttributeDisplay(rowIndex);
+            }
+        }
+
+        private void UpdateAttributeDisplay(int rowIndex)
+        {
+            var monster = MonsterEvents[rowIndex];
+            var attributeText = string.Join(", ", monster.Attributes.Select(a => $"{a.Key}={a.Value}"));
+            monsterDataGridView.Rows[rowIndex].Cells["Attributes"].Value = attributeText;
         }
         public string GenerateMapScript()
         {
@@ -437,6 +665,7 @@ namespace TimeSpace
         {
             var mapScripts = new Dictionary<string, StringBuilder>();
             MonsterEvents.Clear();
+
             // Generate monster scripts  
             foreach (var tab in mapTabs)
             {
@@ -455,13 +684,27 @@ namespace TimeSpace
                     {
                         var monster = new Monster(mapName)
                         {
-                            Vnum = row.Cells["Vnum"].Value?.ToString(),
+                            Vnum = int.Parse(row.Cells["Vnum"].Value?.ToString()),
                             X = int.Parse(row.Cells["X"].Value?.ToString()),
                             Y = int.Parse(row.Cells["Y"].Value?.ToString()),
-                            AdditionalAttribute = row.Cells["AdditionalAttribute"].Value?.ToString(),
-                            AdditionalValue = row.Cells["AdditionalValue"].Value?.ToString(),
                             AsTarget = Convert.ToBoolean(row.Cells["AsTarget"]?.Value)
                         };
+
+                        // Add attributes from DataGridView to monster  
+                        var attributesCell = row.Cells["Attributes"].Value?.ToString();
+                        if (!string.IsNullOrEmpty(attributesCell))
+                        {
+                            var attributes = attributesCell.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                            foreach (var attribute in attributes)
+                            {
+                                var parts = attribute.Split('=');
+                                if (parts.Length == 2)
+                                {
+                                    monster.Attributes[parts[0].Trim()] = parts[1].Trim();
+                                }
+                            }
+                        }
+
                         var monsterScript = monster.GenerateMonsterScript(row);
                         monsters.Add(monsterScript);
                         MonsterEvents.Add(monster);
@@ -534,7 +777,6 @@ namespace TimeSpace
             {
                 finalScript.Append(mapScripts[mapName].ToString());
             }
-
             File.WriteAllText("CombinedEvents.lua", finalScript.ToString());
         }
         private void BtnAddObjective_Click(object sender, EventArgs e)

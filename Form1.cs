@@ -183,16 +183,21 @@ namespace TimeSpace
             if (tabControl2.TabPages.Count < 1)
                 return;
 
-            var selectedTab = tabControl2.SelectedTab;
-
+            var selectedTab = tabControl2.SelectedTab as CustomeTabPage;
             if (selectedTab != null)
             {
-                tabControl2.TabPages.Remove(selectedTab);
+                // Clean up the coordinates
+                selectedTab.CleanupCoordinates();
 
-                if (mapTabs.Contains((CustomeTabPage)selectedTab))
+                // Remove from tab control and list
+                tabControl2.TabPages.Remove(selectedTab);
+                if (mapTabs.Contains(selectedTab))
                 {
-                    mapTabs.Remove((CustomeTabPage)selectedTab);
+                    mapTabs.Remove(selectedTab);
                 }
+
+                // Dispose the tab
+                selectedTab.Dispose();
             }
         }
 
