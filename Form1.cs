@@ -21,6 +21,7 @@ namespace TimeSpace
         private Config config;
         private Dictionary<string, string> timespacesData;
         private MapResourceFileLoader mapResourceFileLoader;
+        private System.Windows.Forms.Timer updateTimer;
 
         private CustomeTabPage _customeTabPage;
         public Form1()
@@ -174,7 +175,7 @@ namespace TimeSpace
             // Refresh all tabs
             foreach (var tab in mapTabs)
             {
-                tab.RefreshLeverPortalComboboxes(sender, e);
+                tab.RefreshLeverPortalComboboxes(sender, e, true);
             }
         }
 

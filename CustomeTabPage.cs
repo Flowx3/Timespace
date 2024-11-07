@@ -151,6 +151,9 @@ namespace TimeSpace
         private readonly TextBox txtMapCoordinates;
         private readonly TextBox txtTaskText;
         private readonly ComboBox cboTaskType;
+        private readonly ComboBox cboTaskFinishPortal1;
+        private readonly ComboBox cboTaskFinishPortal2;
+        private readonly ComboBox cboTaskFinishPortal3;
         private FlowLayoutPanel portalPanel;
         private DataGridView monsterDataGridView;
         private FlowLayoutPanel eventPanel;
@@ -223,6 +226,27 @@ namespace TimeSpace
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Items = { "None", "KillAllMonsters", "Survive" }
             };
+            var lblTaskFinishPortal1 = new Label { Text = "TaskfinishPortal1:", Location = new Point(350, 75) };
+            cboTaskFinishPortal1 = new ComboBox
+            {
+                Location = new Point(450, 70),
+                Width = 100,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            var lblTaskFinishPortal2 = new Label { Text = "TaskfinishPortal2:", Location = new Point(550, 75) };
+            cboTaskFinishPortal2 = new ComboBox
+            {
+                Location = new Point(650, 70),
+                Width = 100,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            var lblTaskFinishPortal3 = new Label { Text = "TaskfinishPortal3:", Location = new Point(750, 75) };
+            cboTaskFinishPortal3 = new ComboBox
+            {
+                Location = new Point(850, 70),
+                Width = 100,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
             var lblTaskText = new Label { Text = "Task Text:", Location = new Point(10, 100) };
             txtTaskText = new TextBox { Location = new Point(150, 100), Width = 200 };
 
@@ -255,11 +279,11 @@ namespace TimeSpace
                 WrapContents = false,
                 Padding = new Padding(0, 5, 0, 5)
             };
-            var btnAddEvent = new Button { Text = "Add Monster Event", Location = new Point(10, 680) };
+            var btnAddEvent = new Button { Text = "Add Monster Event", Location = new Point(10, 730) };
             btnAddEvent.Click += BtnAddEvent_Click;
-            var btnRemoveEvent = new Button { Text = "Remove Last Monster Event", Location = new Point(150, 680) };
+            var btnRemoveEvent = new Button { Text = "Remove Last Monster Event", Location = new Point(150, 730) };
             btnRemoveEvent.Click += BtnRemoveEvent_Click;
-            var btnSaveMonster = new Button { Text = "Save Monsters", Location = new Point(290, 680) };
+            var btnSaveMonster = new Button { Text = "Save Monsters", Location = new Point(290, 730) };
             btnSaveMonster.Click += BtnSaveMonsterAndObjective_Click;
 
             leftPanel.Controls.Add(lblMapVNUM);
@@ -280,6 +304,12 @@ namespace TimeSpace
             leftPanel.Controls.Add(btnRemoveEvent);
             leftPanel.Controls.Add(btnSaveMonster);
             leftPanel.Controls.Add(btnSelectCoordinates);
+            leftPanel.Controls.Add(cboTaskFinishPortal1);
+            leftPanel.Controls.Add(cboTaskFinishPortal2);
+            leftPanel.Controls.Add(cboTaskFinishPortal3);
+            leftPanel.Controls.Add(lblTaskFinishPortal1);
+            leftPanel.Controls.Add(lblTaskFinishPortal2);
+            leftPanel.Controls.Add(lblTaskFinishPortal3);
 
             // Create right panel for map grid and objectives  
             var rightPanel = new Panel { Dock = DockStyle.Fill };
@@ -317,16 +347,84 @@ namespace TimeSpace
         }
         private void InitializeDataGridView()
         {
-            // Monster grid  
+            // Initialize the useWavesCheckbox  
+            useWavesCheckbox = new CheckBox
+            {
+                Text = "Use Waves",
+                Location = new Point(10, 10),
+                AutoSize = true
+            };
+            useWavesCheckbox.CheckedChanged += UseWavesCheckbox_CheckedChanged;
+
+            // Initialize the waveCountLabel  
+            var waveCountLabel = new Label
+            {
+                Text = "Number of Waves:",
+                Location = new Point(120, 12),
+                AutoSize = true
+            };
+
+            // Initialize the waveCountInput  
+            waveCountInput = new NumericUpDown
+            {
+                Location = new Point(230, 10),
+                Width = 60,
+                Minimum = 1,
+                Maximum = 10,
+                Enabled = false
+            };
+
+            // Initialize the waveDelayLabel  
+            var waveDelayLabel = new Label
+            {
+                Text = "Wave Delay (seconds):",
+                Location = new Point(300, 12),
+                AutoSize = true
+            };
+
+            // Initialize the waveDelayInput  
+            waveDelayInput = new NumericUpDown
+            {
+                Location = new Point(430, 10),
+                Width = 60,
+                Minimum = 0,
+                Maximum = 300,
+                Value = 30,
+                Enabled = false
+            };
+
+            // Initialize the wavePanel  
+            var wavePanel = new Panel
+            {
+                Location = new Point(0, 0), // Top of the eventPanel  
+                Width = 800,
+                Height = 40
+            };
+
+            // Add controls to the wavePanel  
+            wavePanel.Controls.AddRange(new Control[] { useWavesCheckbox, waveCountLabel, waveCountInput, waveDelayLabel, waveDelayInput });
+
+            // Initialize the btnAddAttribute button  
+            btnAddAttribute = new Button
+            {
+                Text = "Manage Attributes",
+                Location = new Point(0, wavePanel.Bottom + 10),
+                Width = 120,
+                Height = 30
+            };
+            btnAddAttribute.Click += BtnAddAttribute_Click;
+
+            // Initialize the monsterDataGridView  
             monsterDataGridView = new DataGridView
             {
-                Location = new Point(0, 0), // Adjust the location as needed  
+                Location = new Point(0, btnAddAttribute.Bottom + 10),
                 Width = 800,
                 Height = 200,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize,
                 AllowUserToAddRows = false
             };
+
             monsterDataGridView.Columns.AddRange(new DataGridViewColumn[]
             {
         new DataGridViewTextBoxColumn { Name = "Vnum", HeaderText = "Vnum" },
@@ -341,64 +439,16 @@ namespace TimeSpace
             ReadOnly = true
         }
             });
+
             monsterDataGridView.CellDoubleClick += MonsterDataGridView_CellDoubleClick;
 
-            btnAddAttribute = new Button
-            {
-                Text = "Manage Attributes",
-                Location = new Point(0, monsterDataGridView.Bottom + 10),
-                Width = 120,
-                Height = 30
-            };
-            btnAddAttribute.Click += BtnAddAttribute_Click;
-
-            eventPanel.Controls.Add(monsterDataGridView);
-            eventPanel.Controls.Add(btnAddAttribute);
-
-            var wavePanel = new Panel
-            {
-                Location = new Point(0, monsterDataGridView.Bottom + btnAddAttribute.Height + 20),
-                Width = 800,
-                Height = 40
-            };
-            useWavesCheckbox = new CheckBox
-            {
-                Text = "Use Waves",
-                Location = new Point(10, 10),
-                AutoSize = true
-            };
-            useWavesCheckbox.CheckedChanged += UseWavesCheckbox_CheckedChanged;
-            var waveCountLabel = new Label
-            {
-                Text = "Number of Waves:",
-                Location = new Point(120, 12),
-                AutoSize = true
-            };
-            waveCountInput = new NumericUpDown
-            {
-                Location = new Point(230, 10),
-                Width = 60,
-                Minimum = 1,
-                Maximum = 10,
-                Enabled = false
-            };
-            var waveDelayLabel = new Label
-            {
-                Text = "Wave Delay (seconds):",
-                Location = new Point(300, 12),
-                AutoSize = true
-            };
-            waveDelayInput = new NumericUpDown
-            {
-                Location = new Point(430, 10),
-                Width = 60,
-                Minimum = 0,
-                Maximum = 300,
-                Value = 30,
-                Enabled = false
-            };
-            wavePanel.Controls.AddRange(new Control[] { useWavesCheckbox, waveCountLabel, waveCountInput, waveDelayLabel, waveDelayInput });
+            // Add controls to the eventPanel  
             eventPanel.Controls.Add(wavePanel);
+            eventPanel.Controls.Add(btnAddAttribute);
+            eventPanel.Controls.Add(monsterDataGridView);
+
+            // Ensure the eventPanel is tall enough to display all controls  
+            eventPanel.Height = monsterDataGridView.Bottom + 20;
         }
 
         private void MonsterDataGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
@@ -407,12 +457,6 @@ namespace TimeSpace
             {
                 BtnAddAttribute_Click(sender, e);
             }
-        }
-
-        private void BtnAddAttribute_Click(object sender, EventArgs e)
-        {
-            // Implement your logic to manage attributes here  
-            MessageBox.Show("Manage Attributes logic here.");
         }
         private void BtnSelectCoordinates_Click(object sender, EventArgs e)
         {
@@ -573,7 +617,7 @@ namespace TimeSpace
             var portal = new Portal("DefaultFrom", "DefaultTo", "Type1", "North", 0, 0, 0, 0, getMapNames);
             Portals.Add(portal);
             this.portalPanel.Controls.Add(portal.CreatePortal());
-            RefreshLeverPortalComboboxes(sender,e);
+            RefreshLeverPortalComboboxes(sender,e, true);
         }
         private void BtnRemovePortal_Click(object sender, EventArgs e)
         {
@@ -584,7 +628,7 @@ namespace TimeSpace
                 portalPanel.Controls.Remove(lastPortal.Panel);
                 portalPanel.Refresh();
             }
-            RefreshLeverPortalComboboxes(sender,e);
+            RefreshLeverPortalComboboxes(sender,e, true);
         }
         public void BtnSavePortal_Click(Object sender, EventArgs e)
         {
@@ -638,6 +682,7 @@ namespace TimeSpace
             }
             File.WriteAllText("localPortals.lua", localPortalScript.ToString());
             File.WriteAllText("addPortals.lua", addPortalScript.ToString());
+            RefreshLeverPortalComboboxes(sender, e, false);
         }
 
         private void BtnAddEvent_Click(object sender, EventArgs e)
@@ -769,6 +814,20 @@ namespace TimeSpace
                 mapScripts[mapName].AppendLine($"{mapName}.OnMapJoin({{");
                 mapScripts[mapName].AppendLine($"    Event.TryStartTaskForMap({mapName}),");
                 mapScripts[mapName].AppendLine("})");
+                mapScripts[mapName].AppendLine($"{mapName}.OnTaskFinish({{");
+                if (cboTaskFinishPortal1.SelectedItem != null && cboTaskFinishPortal1.SelectedItem != "")
+                {
+                    mapScripts[mapName].AppendLine($"    Event.OpenPortal({cboTaskFinishPortal1.SelectedItem.ToString()}),");
+                }
+                if (cboTaskFinishPortal2.SelectedItem != null && cboTaskFinishPortal2.SelectedItem != "")
+                {
+                    mapScripts[mapName].AppendLine($"    Event.OpenPortal({cboTaskFinishPortal2.SelectedItem.ToString()}),");
+                }
+                if (cboTaskFinishPortal3.SelectedItem != null && cboTaskFinishPortal3.SelectedItem != "")
+                {
+                    mapScripts[mapName].AppendLine($"    Event.OpenPortal({cboTaskFinishPortal3.SelectedItem.ToString()}),");
+                }
+                mapScripts[mapName].AppendLine("})");
             }
 
             // Save to file  
@@ -806,18 +865,19 @@ namespace TimeSpace
             BtnSaveMonsterAndObjective_Click(sender, e);
             BtnSavePortal_Click(sender, e);
         }
-        public void RefreshLeverPortalComboboxes(object sender, EventArgs e)
+        public void RefreshLeverPortalComboboxes(object sender, EventArgs e, bool shouldsave)
         {
-            SaveAllValues(sender, e);
-            // Clear and regenerate the allPortalsList
+            if (shouldsave == true)
+            {
+                SaveAllValues(sender, e);
+            }
             allPortalsList.Clear();
+            allPortalsList.Add("");
 
-            // Get portals from ALL tabs, not just the current one
-            foreach (var tab in mapTabs)  // Make sure mapTabs is accessible here
+            foreach (var tab in mapTabs)
             {
                 foreach (var portal in tab.Portals)
                 {
-                    // Only add to portal list if the portal has valid selections
                     if (portal.cboMapFrom?.SelectedItem != null &&
                         portal.cboMapTo?.SelectedItem != null)
                     {
@@ -826,16 +886,37 @@ namespace TimeSpace
                 }
             }
 
-            // Update each MapObject's portal comboboxes in the current tab
             foreach (var mapObject in Objects)
             {
                 mapObject.UpdatePortalComboboxes(allPortalsList);
             }
 
-            // Update each Portal's map comboboxes in the current tab
             foreach (var portal in Portals)
             {
                 portal.RefreshMapComboboxes();
+            }
+            
+            UpdateTaskFinishComboBox(cboTaskFinishPortal1);
+            UpdateTaskFinishComboBox(cboTaskFinishPortal2);
+            UpdateTaskFinishComboBox(cboTaskFinishPortal3);
+        }
+
+        private void UpdateTaskFinishComboBox(ComboBox comboBox)
+        {
+            if (comboBox != null)
+            {
+                // Store current selection  
+                string currentSelection = comboBox.SelectedItem?.ToString();
+
+                // Clear and refresh combo box  
+                comboBox.Items.Clear();
+                comboBox.Items.AddRange(allPortalsList.ToArray());
+
+                // Restore selection if it still exists  
+                if (currentSelection != null && comboBox.Items.Contains(currentSelection))
+                {
+                    comboBox.SelectedItem = currentSelection;
+                }
             }
         }
     }
