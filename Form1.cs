@@ -227,6 +227,14 @@ namespace TimeSpace
             luaScript.AppendLine("local TimeSpaceObjective = require('TimeSpaceObjective')");
             luaScript.AppendLine("local TimeSpaceTaskType = require('TimeSpaceTaskType')");
             luaScript.AppendLine("local TimeSpaceTask = require('TimeSpaceTask')");
+            foreach (var maptab in mapTabs)
+            {
+                if (maptab.useWavesCheckbox.Checked)
+                {
+                    luaScript.AppendLine("local MonsterWave = require('MonsterWave')");
+                    continue;
+                }
+            }
             luaScript.AppendLine();
 
             // Generate objective script  

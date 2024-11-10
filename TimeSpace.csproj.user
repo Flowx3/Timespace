@@ -4,6 +4,9 @@
     <Compile Update="CustomeTabPage.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Update="EventManager.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Form1.cs">
       <SubType>Form</SubType>
     </Compile>

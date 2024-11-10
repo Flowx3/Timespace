@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using YamlDotNet.Core;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 
 namespace TimeSpace
@@ -151,9 +152,13 @@ namespace TimeSpace
         private readonly TextBox txtMapCoordinates;
         private readonly TextBox txtTaskText;
         private readonly ComboBox cboTaskType;
-        private readonly ComboBox cboTaskFinishPortal1;
-        private readonly ComboBox cboTaskFinishPortal2;
-        private readonly ComboBox cboTaskFinishPortal3;
+        private ComboBox[] taskFinishPortals;
+        private ComboBox[] taskFailPortals;
+        private ComboBox eventTypeComboBox;
+        private readonly NumericUpDown addTimeEvent;
+        private readonly CheckBox despawnAllMobsInRoom;
+        private readonly NumericUpDown timeForTask;
+        private readonly NumericUpDown removeTimeEvent;
         private FlowLayoutPanel portalPanel;
         private DataGridView monsterDataGridView;
         private FlowLayoutPanel eventPanel;
@@ -161,11 +166,13 @@ namespace TimeSpace
         private static List<Point> sharedTakenPositions = new List<Point>();
         private Point? currentPosition = null;
         private static readonly object positionsLock = new object();
+        private Dictionary<string, List<string>> eventManagerScripts = new Dictionary<string, List<string>>();
         private bool isDisposed = false;
         private Button btnAddAttribute;
+        private Button applyButton;
         private NumericUpDown waveCountInput;
         private NumericUpDown waveDelayInput;
-        private CheckBox useWavesCheckbox;
+        public CheckBox useWavesCheckbox;
         private void DisplayMapGrid(MapDataDTO mapData)
         {
             MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).First();
@@ -226,29 +233,16 @@ namespace TimeSpace
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Items = { "None", "KillAllMonsters", "Survive" }
             };
-            var lblTaskFinishPortal1 = new Label { Text = "TaskfinishPortal1:", Location = new Point(350, 75) };
-            cboTaskFinishPortal1 = new ComboBox
-            {
-                Location = new Point(450, 70),
-                Width = 100,
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
-            var lblTaskFinishPortal2 = new Label { Text = "TaskfinishPortal2:", Location = new Point(550, 75) };
-            cboTaskFinishPortal2 = new ComboBox
-            {
-                Location = new Point(650, 70),
-                Width = 100,
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
-            var lblTaskFinishPortal3 = new Label { Text = "TaskfinishPortal3:", Location = new Point(750, 75) };
-            cboTaskFinishPortal3 = new ComboBox
-            {
-                Location = new Point(850, 70),
-                Width = 100,
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
             var lblTaskText = new Label { Text = "Task Text:", Location = new Point(10, 100) };
             txtTaskText = new TextBox { Location = new Point(150, 100), Width = 200 };
+            var lblTimeforTask = new Label { Text = "Time for Task:", Location = new Point(360, 105), Width = 80 };
+            timeForTask = new NumericUpDown
+            {
+                Width = 50,
+                Location = new Point(440, 100),
+                Maximum = new decimal(600),
+                Increment = new decimal(10)
+            };
 
             // Initialize portal panel  
             portalPanel = new FlowLayoutPanel
@@ -304,12 +298,8 @@ namespace TimeSpace
             leftPanel.Controls.Add(btnRemoveEvent);
             leftPanel.Controls.Add(btnSaveMonster);
             leftPanel.Controls.Add(btnSelectCoordinates);
-            leftPanel.Controls.Add(cboTaskFinishPortal1);
-            leftPanel.Controls.Add(cboTaskFinishPortal2);
-            leftPanel.Controls.Add(cboTaskFinishPortal3);
-            leftPanel.Controls.Add(lblTaskFinishPortal1);
-            leftPanel.Controls.Add(lblTaskFinishPortal2);
-            leftPanel.Controls.Add(lblTaskFinishPortal3);
+            leftPanel.Controls.Add(lblTimeforTask);
+            leftPanel.Controls.Add(timeForTask);
 
             // Create right panel for map grid and objectives  
             var rightPanel = new Panel { Dock = DockStyle.Fill };
@@ -344,6 +334,29 @@ namespace TimeSpace
             containerPanel.Controls.Add(leftPanel);
             this.Controls.Add(containerPanel);
             InitializeDataGridView();
+            var btnManageEvents = new Button
+            {
+                Text = "Manage Events",
+                Location = new Point(360, 70),
+                Width = 100
+            };
+            btnManageEvents.Click += (s, e) =>
+            {
+                var eventManager = new TaskEventManagerForm(MapName, allPortalsList);
+                if (eventManager.ShowDialog() == DialogResult.OK)
+                {
+                    string generatedScript = eventManager.Tag as string;
+                    if (!string.IsNullOrEmpty(generatedScript))
+                    {
+                        if (!eventManagerScripts.ContainsKey(MapName))
+                        {
+                            eventManagerScripts[MapName] = new List<string>();
+                        }
+                        eventManagerScripts[MapName].Add(generatedScript);
+                    }
+                }
+            };
+            leftPanel.Controls.Add(btnManageEvents);
         }
         private void InitializeDataGridView()
         {
@@ -458,6 +471,7 @@ namespace TimeSpace
                 BtnAddAttribute_Click(sender, e);
             }
         }
+
         private void BtnSelectCoordinates_Click(object sender, EventArgs e)
         {
             lock (positionsLock)
@@ -579,12 +593,14 @@ namespace TimeSpace
         {
             if (monsterDataGridView.CurrentRow == null) return;
 
-            var attributeForm = new MonsterAttributeForm();
+            int rowIndex = monsterDataGridView.CurrentRow.Index;
+            var monster = MonsterEvents[rowIndex];
+
+            var attributeForm = new MonsterAttributeForm(monster.Attributes);
+
             if (attributeForm.ShowDialog() == DialogResult.OK)
             {
-                int rowIndex = monsterDataGridView.CurrentRow.Index;
-                var monster = MonsterEvents[rowIndex];
-
+                monster.Attributes.Clear();
                 foreach (var attr in attributeForm.SelectedAttributes)
                 {
                     monster.Attributes[attr.Key] = attr.Value;
@@ -599,12 +615,13 @@ namespace TimeSpace
             var attributeText = string.Join(", ", monster.Attributes.Select(a => $"{a.Key}={a.Value}"));
             monsterDataGridView.Rows[rowIndex].Cells["Attributes"].Value = attributeText;
         }
+
         public string GenerateMapScript()
         {
             var sb = new StringBuilder();
             sb.AppendLine($"local {MapName} = Map.Create().WithMapId({txtMapVNUM.Text}).SetMapCoordinates({txtMapCoordinates.Text}).WithTask(");
-            sb.AppendLine($"    TimeSpaceTask.Create(TimeSpaceTaskType.{cboTaskType.SelectedItem}).WithTaskText(\"{txtTaskText?.Text}\")" +
-                 $"\n)");
+            sb.AppendLine($"    TimeSpaceTask.Create(TimeSpaceTaskType.{cboTaskType.SelectedItem}, {timeForTask.Value}).WithTaskText(\"{txtTaskText?.Text}\")" +
+                          $"\n)");
             return sb.ToString();
         }
         private void BtnAddPortal_Click(object sender, EventArgs e)
@@ -711,7 +728,6 @@ namespace TimeSpace
             var mapScripts = new Dictionary<string, StringBuilder>();
             MonsterEvents.Clear();
 
-            // Generate monster scripts  
             foreach (var tab in mapTabs)
             {
                 var monsterDataGridView = tab.monsterDataGridView;
@@ -722,11 +738,12 @@ namespace TimeSpace
                     mapScripts[mapName] = new StringBuilder();
                 }
 
-                var monsters = new List<string>();
+                var waves = new Dictionary<int, List<string>>();
                 foreach (DataGridViewRow row in monsterDataGridView.Rows)
                 {
                     if (!row.IsNewRow)
                     {
+                        var wave = int.Parse(row.Cells["Wave"].Value?.ToString());
                         var monster = new Monster(mapName)
                         {
                             Vnum = int.Parse(row.Cells["Vnum"].Value?.ToString()),
@@ -734,8 +751,6 @@ namespace TimeSpace
                             Y = int.Parse(row.Cells["Y"].Value?.ToString()),
                             AsTarget = Convert.ToBoolean(row.Cells["AsTarget"]?.Value)
                         };
-
-                        // Add attributes from DataGridView to monster  
                         var attributesCell = row.Cells["Attributes"].Value?.ToString();
                         if (!string.IsNullOrEmpty(attributesCell))
                         {
@@ -749,50 +764,51 @@ namespace TimeSpace
                                 }
                             }
                         }
-
                         var monsterScript = monster.GenerateMonsterScript(row);
-                        monsters.Add(monsterScript);
+                        if (!waves.ContainsKey(wave))
+                        {
+                            waves[wave] = new List<string>();
+                        }
+                        waves[wave].Add(monsterScript);
                         MonsterEvents.Add(monster);
                     }
                 }
 
-                if (monsters.Any())
+                if (waves.Any())
                 {
-                    mapScripts[mapName].AppendLine($"{mapName}.AddMonsters({{");
-                    mapScripts[mapName].AppendLine(string.Join(", \n", monsters));
+                    mapScripts[mapName].AppendLine($"{mapName}.AddMonsterWaves({{");
+                    foreach (var wave in waves.OrderBy(w => w.Key))
+                    {
+                        var delay = wave.Key * (int)waveDelayInput.Value;
+                        mapScripts[mapName].AppendLine($"    -- wave {wave.Key}");
+                        mapScripts[mapName].AppendLine($"    MonsterWave.CreateWithDelay({delay}).WithMonsters({{");
+                        mapScripts[mapName].AppendLine(string.Join(", \n", wave.Value.Select(m => $"        {m}")));
+                        mapScripts[mapName].AppendLine("    }),");
+                    }
                     mapScripts[mapName].AppendLine("})");
                 }
             }
 
-            // Generate object scripts  
             foreach (var mapTab in mapTabs)
             {
                 string mapName = mapTab.MapName;
-
                 if (!mapScripts.ContainsKey(mapName))
                 {
                     mapScripts[mapName] = new StringBuilder();
                 }
-
                 var objects = new List<string>();
                 foreach (var mapObject in mapTab.Objects)
                 {
-                    // Skip if the object is not properly configured  
-                    if (string.IsNullOrEmpty(mapObject.ObjectType) ||
-                        mapObject.GetX() == 1500 ||
-                        mapObject.GetY() == 1500)
+                    if (string.IsNullOrEmpty(mapObject.ObjectType) || mapObject.GetX() == 1500 || mapObject.GetY() == 1500)
                     {
                         continue;
                     }
-
-                    // Generate script for the object  
                     string objectScript = mapObject.GenerateObjectiveScript();
                     if (!string.IsNullOrEmpty(objectScript))
                     {
                         objects.Add(objectScript);
                     }
                 }
-
                 if (objects.Any())
                 {
                     mapScripts[mapName].AppendLine($"{mapName}.AddObjects({{");
@@ -801,36 +817,26 @@ namespace TimeSpace
                 }
             }
 
-            // Generate OnMapJoin scripts  
             foreach (var mapTab in mapTabs)
             {
                 string mapName = mapTab.MapName;
-
                 if (!mapScripts.ContainsKey(mapName))
                 {
                     mapScripts[mapName] = new StringBuilder();
                 }
-
                 mapScripts[mapName].AppendLine($"{mapName}.OnMapJoin({{");
                 mapScripts[mapName].AppendLine($"    Event.TryStartTaskForMap({mapName}),");
-                mapScripts[mapName].AppendLine("})");
-                mapScripts[mapName].AppendLine($"{mapName}.OnTaskFinish({{");
-                if (cboTaskFinishPortal1.SelectedItem != null && cboTaskFinishPortal1.SelectedItem != "")
+                // Append event manager scripts here  
+                if (eventManagerScripts.ContainsKey(mapName))
                 {
-                    mapScripts[mapName].AppendLine($"    Event.OpenPortal({cboTaskFinishPortal1.SelectedItem.ToString()}),");
-                }
-                if (cboTaskFinishPortal2.SelectedItem != null && cboTaskFinishPortal2.SelectedItem != "")
-                {
-                    mapScripts[mapName].AppendLine($"    Event.OpenPortal({cboTaskFinishPortal2.SelectedItem.ToString()}),");
-                }
-                if (cboTaskFinishPortal3.SelectedItem != null && cboTaskFinishPortal3.SelectedItem != "")
-                {
-                    mapScripts[mapName].AppendLine($"    Event.OpenPortal({cboTaskFinishPortal3.SelectedItem.ToString()}),");
+                    foreach (var script in eventManagerScripts[mapName])
+                    {
+                        mapScripts[mapName].AppendLine(script);
+                    }
                 }
                 mapScripts[mapName].AppendLine("})");
             }
 
-            // Save to file  
             var finalScript = new StringBuilder();
             foreach (var mapName in mapScripts.Keys)
             {
@@ -838,7 +844,7 @@ namespace TimeSpace
             }
             File.WriteAllText("CombinedEvents.lua", finalScript.ToString());
         }
-        private void BtnAddObjective_Click(object sender, EventArgs e)
+    private void BtnAddObjective_Click(object sender, EventArgs e)
         {
             if (Objects.Count >= 4)
             {
@@ -895,29 +901,7 @@ namespace TimeSpace
             {
                 portal.RefreshMapComboboxes();
             }
-            
-            UpdateTaskFinishComboBox(cboTaskFinishPortal1);
-            UpdateTaskFinishComboBox(cboTaskFinishPortal2);
-            UpdateTaskFinishComboBox(cboTaskFinishPortal3);
-        }
-
-        private void UpdateTaskFinishComboBox(ComboBox comboBox)
-        {
-            if (comboBox != null)
-            {
-                // Store current selection  
-                string currentSelection = comboBox.SelectedItem?.ToString();
-
-                // Clear and refresh combo box  
-                comboBox.Items.Clear();
-                comboBox.Items.AddRange(allPortalsList.ToArray());
-
-                // Restore selection if it still exists  
-                if (currentSelection != null && comboBox.Items.Contains(currentSelection))
-                {
-                    comboBox.SelectedItem = currentSelection;
-                }
-            }
+       
         }
     }
 }

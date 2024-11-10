@@ -20,9 +20,18 @@
 
     public Dictionary<string, string> SelectedAttributes => selectedAttributes;
 
-    public MonsterAttributeForm()
+    public MonsterAttributeForm(Dictionary<string, string> existingAttributes = null)
     {
         InitializeComponent();
+        if (existingAttributes != null)
+        {
+            foreach (var attr in existingAttributes)
+            {
+                selectedAttributes[attr.Key] = attr.Value;
+            }
+            // Update the ListView to show existing attributes
+            UpdateListView();
+        }
     }
 
     private void InitializeComponent()
