@@ -14,7 +14,7 @@ namespace TimeSpace
     }
     public partial class Form1 : Form
     {
-        public static List<CustomeTabPage> mapTabs = new List<CustomeTabPage>();
+        public static List<CustomTabPage> mapTabs = new List<CustomTabPage>();
         public Func<List<string>> getMapNames;
         private int mapCount = 0;
         public List<MapDataDTO> loadedMaps = [];
@@ -23,13 +23,13 @@ namespace TimeSpace
         private MapResourceFileLoader mapResourceFileLoader;
         private System.Windows.Forms.Timer updateTimer;
 
-        private CustomeTabPage _customeTabPage;
+        private CustomTabPage _CustomTabPage;
         public Form1()
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             InitializeComponent();
             AdjustLayout();
-            _customeTabPage = new CustomeTabPage($"spaceholder l0l", this,getMapNames);
+            _CustomTabPage = new CustomTabPage($"spaceholder l0l", this,getMapNames);
             mapCount++;
             if (!File.Exists("./config.json"))
             {
@@ -167,7 +167,7 @@ namespace TimeSpace
         }
         private void button5_Click(object sender, EventArgs e)
         {
-            var newTab = new CustomeTabPage($"map_3_{mapCount}", this, GetMapNames);
+            var newTab = new CustomTabPage($"map_3_{mapCount}", this, GetMapNames);
             tabControl2.TabPages.Add(newTab);
             mapTabs.Add(newTab);
             mapCount++;
@@ -184,7 +184,7 @@ namespace TimeSpace
             if (tabControl2.TabPages.Count < 1)
                 return;
 
-            var selectedTab = tabControl2.SelectedTab as CustomeTabPage;
+            var selectedTab = tabControl2.SelectedTab as CustomTabPage;
             if (selectedTab != null)
             {
                 // Clean up the coordinates
@@ -209,7 +209,7 @@ namespace TimeSpace
 
         private void button6_Click(object sender, EventArgs e)
         {
-            _customeTabPage.SaveAllValues(sender, e);
+            _CustomTabPage.SaveAllValues(sender, e);
             var luaScript = new StringBuilder();
 
             // Add the initial required imports  

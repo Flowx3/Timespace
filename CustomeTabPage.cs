@@ -137,16 +137,19 @@ namespace TimeSpace
             CellY = cellY;
         }
     }
-    public class CustomeTabPage : TabPage
+    public class CustomTabPage : TabPage
     {
+        private TaskEventManagerForm taskEventManagerForm;
         public string MapName { get; private set; }
         public Func<List<string>> getMapNames;
+        public Dictionary<string, Panel> MapPortalPanels { get; set; }
         public List<Portal> Portals { get; private set; } = new List<Portal>();
         public List<MapObject> Objects { get; private set; } = new List<MapObject>();
         private List<string> allPortalsList = new List<string>();
+        private List<string> lockedPortalsList = new List<string>();
         public List<Monster> MonsterEvents { get; private set; } = new List<Monster>();
         private List<DataGridView> monsterDataGrids;
-        private List<CustomeTabPage> mapTabs = Form1.mapTabs;
+        private List<CustomTabPage> mapTabs = Form1.mapTabs;
         private Task _gridCreationTask;
         private readonly TextBox txtMapVNUM;
         private readonly TextBox txtMapCoordinates;
@@ -185,8 +188,9 @@ namespace TimeSpace
             // Handle the cell click event
             MessageBox.Show($"Cell clicked at ({e.CellX}, {e.CellY})");
         }
-        public CustomeTabPage(string MapName,Form1 form, Func<List<string>> getMapNames)
+        public CustomTabPage(string MapName,Form1 form, Func<List<string>> getMapNames)
         {
+            MapPortalPanels = new Dictionary<string, Panel>();
             MonsterEvents = new List<Monster>();
             Text = MapName;
             this.getMapNames = getMapNames;
@@ -342,7 +346,7 @@ namespace TimeSpace
             };
             btnManageEvents.Click += (s, e) =>
             {
-                var eventManager = new TaskEventManagerForm(MapName, allPortalsList);
+                var eventManager = new TaskEventManagerForm(MapName, lockedPortalsList);
                 if (eventManager.ShowDialog() == DialogResult.OK)
                 {
                     string generatedScript = eventManager.Tag as string;
@@ -495,7 +499,9 @@ namespace TimeSpace
 
                         // Update to new position
                         Point selectedPos = gridSelector.SelectedCoordinates.Value;
-                        txtMapCoordinates.Text = $"{selectedPos.X}, {selectedPos.Y}";
+                        txtMapCoordinates.Text = $"{selectedPos.X}_{selectedPos.Y}";
+                        Text = $"map_{selectedPos.X}_{selectedPos.Y}";
+                        MapName = $"map_{selectedPos.X}_{selectedPos.Y}";
                         currentPosition = selectedPos;
                         sharedTakenPositions.Add(selectedPos);
                     }
@@ -624,17 +630,42 @@ namespace TimeSpace
                           $"\n)");
             return sb.ToString();
         }
+        public void AddPortalToMap(string mapName, Portal portal)
+        {
+            if (MapPortalPanels.ContainsKey(mapName))
+            {
+                Panel portalPanel = MapPortalPanels[mapName];
+                portalPanel.Controls.Add(portal.CreatePortal());
+            }
+            else
+            {
+                MessageBox.Show($"Map '{mapName}' does not exist.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
         private void BtnAddPortal_Click(object sender, EventArgs e)
         {
             if (Portals.Count >= 4)
             {
-                MessageBox.Show("You dont need more than 4 Portals.");
+                MessageBox.Show("You don't need more than 4 Portals.");
                 return;
             }
-            var portal = new Portal("DefaultFrom", "DefaultTo", "Type1", "North", 0, 0, 0, 0, getMapNames);
+
+            var portal = new Portal(
+                this.MapName,
+                "DefaultTo",
+                "Type1",
+                "North",
+                0,
+                0,
+                0,
+                0,
+                getMapNames,
+                this  
+            );
+
             Portals.Add(portal);
             this.portalPanel.Controls.Add(portal.CreatePortal());
-            RefreshLeverPortalComboboxes(sender,e, true);
+            RefreshLeverPortalComboboxes(sender, e, true);
         }
         private void BtnRemovePortal_Click(object sender, EventArgs e)
         {
@@ -652,6 +683,7 @@ namespace TimeSpace
             var localPortalScript = new StringBuilder();
             var addPortalScript = new StringBuilder();
             allPortalsList.Clear();
+            lockedPortalsList.Clear();
             foreach (var mapTab in mapTabs)
             {
                 foreach (var portal in mapTab.Portals)
@@ -695,6 +727,10 @@ namespace TimeSpace
                     localPortalScript.AppendLine(portal.GenerateLocalPortalScript());
                     addPortalScript.AppendLine(portal.GenerateAddPortalScript());
                     allPortalsList.Add(portal.GeneratePortalIdentifier());
+                    if (portal.PortalType == "Locked")
+                    {
+                        lockedPortalsList.Add(portal.GeneratePortalIdentifier());
+                    }
                 }
             }
             File.WriteAllText("localPortals.lua", localPortalScript.ToString());
@@ -743,34 +779,63 @@ namespace TimeSpace
                 {
                     if (!row.IsNewRow)
                     {
-                        var wave = int.Parse(row.Cells["Wave"].Value?.ToString());
-                        var monster = new Monster(mapName)
+                        int wave;
+                        int.TryParse(row.Cells["Wave"].Value?.ToString(), out wave);
+                        Monster monster = null;
+                        try
                         {
-                            Vnum = int.Parse(row.Cells["Vnum"].Value?.ToString()),
-                            X = int.Parse(row.Cells["X"].Value?.ToString()),
-                            Y = int.Parse(row.Cells["Y"].Value?.ToString()),
-                            AsTarget = Convert.ToBoolean(row.Cells["AsTarget"]?.Value)
-                        };
-                        var attributesCell = row.Cells["Attributes"].Value?.ToString();
-                        if (!string.IsNullOrEmpty(attributesCell))
-                        {
-                            var attributes = attributesCell.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                            foreach (var attribute in attributes)
+                            string vnumStr = row.Cells["Vnum"].Value?.ToString();
+                            string xStr = row.Cells["X"].Value?.ToString();
+                            string yStr = row.Cells["Y"].Value?.ToString();
+                            string asTargetStr = row.Cells["AsTarget"].Value?.ToString();
+
+                            if (string.IsNullOrEmpty(vnumStr))
+                                throw new ArgumentNullException("Vnum");
+                            if (string.IsNullOrEmpty(xStr))
+                                throw new ArgumentNullException("X");
+                            if (string.IsNullOrEmpty(yStr))
+                                throw new ArgumentNullException("Y");
+
+                            monster = new Monster(mapName)
                             {
-                                var parts = attribute.Split('=');
-                                if (parts.Length == 2)
+                                Vnum = int.Parse(vnumStr),
+                                X = int.Parse(xStr),
+                                Y = int.Parse(yStr),
+                                AsTarget = Convert.ToBoolean(row.Cells["AsTarget"]?.Value)
+                            };
+                        }
+                        catch (ArgumentNullException ex)
+                        {
+                            string missingValue = ex.ParamName; 
+                            MessageBox.Show($"Error: Missing value for '{missingValue}' in map '{mapName}'.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                        catch (FormatException ex)
+                        {
+                            MessageBox.Show($"Error: Invalid value format in map '{mapName}'. Details: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        } 
+                        if (monster != null)
+                        {
+                            var attributesCell = row.Cells["Attributes"].Value?.ToString();
+                            if (!string.IsNullOrEmpty(attributesCell))
+                            {
+                                var attributes = attributesCell.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                                foreach (var attribute in attributes)
                                 {
-                                    monster.Attributes[parts[0].Trim()] = parts[1].Trim();
+                                    var parts = attribute.Split('=');
+                                    if (parts.Length == 2)
+                                    {
+                                        monster.Attributes[parts[0].Trim()] = parts[1].Trim();
+                                    }
                                 }
                             }
+                            var monsterScript = monster.GenerateMonsterScript(row);
+                            if (!waves.ContainsKey(wave))
+                            {
+                                waves[wave] = new List<string>();
+                            }
+                            waves[wave].Add(monsterScript);
+                            MonsterEvents.Add(monster);
                         }
-                        var monsterScript = monster.GenerateMonsterScript(row);
-                        if (!waves.ContainsKey(wave))
-                        {
-                            waves[wave] = new List<string>();
-                        }
-                        waves[wave].Add(monsterScript);
-                        MonsterEvents.Add(monster);
                     }
                 }
 
@@ -877,31 +942,32 @@ namespace TimeSpace
             {
                 SaveAllValues(sender, e);
             }
-            allPortalsList.Clear();
-            allPortalsList.Add("");
-
+            lockedPortalsList.Clear();
+            lockedPortalsList.Add("");
             foreach (var tab in mapTabs)
             {
                 foreach (var portal in tab.Portals)
                 {
                     if (portal.cboMapFrom?.SelectedItem != null &&
-                        portal.cboMapTo?.SelectedItem != null)
+                        portal.cboMapTo?.SelectedItem != null && portal.PortalType == "Locked")
                     {
-                        allPortalsList.Add(portal.GeneratePortalIdentifier());
+                        lockedPortalsList.Add(portal.GeneratePortalIdentifier());
                     }
                 }
             }
-
             foreach (var mapObject in Objects)
             {
-                mapObject.UpdatePortalComboboxes(allPortalsList);
+                mapObject.UpdatePortalComboboxes(lockedPortalsList);
             }
-
             foreach (var portal in Portals)
             {
                 portal.RefreshMapComboboxes();
             }
-       
+
+            if (taskEventManagerForm != null)
+            {
+                taskEventManagerForm.UpdatePortalComboboxes(lockedPortalsList);
+            }
         }
     }
 }

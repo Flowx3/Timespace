@@ -20,15 +20,15 @@ namespace TimeSpace
         private ComboBox cboLeverPortal1;
         private ComboBox cboLeverPortal2;
         private ComboBox cboLeverPortal3;
-        private List<string> allPortalsList;
+        private List<string> lockedPortalsList;
 
-        public MapObject(string mapName, string objectType, int x, int y, List<string> allPortalsList)
+        public MapObject(string mapName, string objectType, int x, int y, List<string> lockedPortalsList)
         {
             MapName = mapName;
             ObjectType = objectType;
             X = x;
             Y = y;
-            this.allPortalsList = allPortalsList;
+            this.lockedPortalsList = lockedPortalsList;
         }
 
         public Panel CreateObject()
@@ -83,7 +83,7 @@ namespace TimeSpace
         }
         public void UpdatePortalComboboxes(List<string> newPortalsList)
         {
-            allPortalsList = newPortalsList;
+            lockedPortalsList = newPortalsList;
 
             // Only update if the object is a lever and comboboxes exist
             if (cboObjectiveType?.SelectedItem?.ToString() == "Lever")
@@ -97,24 +97,24 @@ namespace TimeSpace
                 if (cboLeverPortal1 != null)
                 {
                     cboLeverPortal1.Items.Clear();
-                    cboLeverPortal1.Items.AddRange(allPortalsList.ToArray());
-                    if (selected1 != null && allPortalsList.Contains(selected1))
+                    cboLeverPortal1.Items.AddRange(lockedPortalsList.ToArray());
+                    if (selected1 != null && lockedPortalsList.Contains(selected1))
                         cboLeverPortal1.SelectedItem = selected1;
                 }
 
                 if (cboLeverPortal2 != null)
                 {
                     cboLeverPortal2.Items.Clear();
-                    cboLeverPortal2.Items.AddRange(allPortalsList.ToArray());
-                    if (selected2 != null && allPortalsList.Contains(selected2))
+                    cboLeverPortal2.Items.AddRange(lockedPortalsList.ToArray());
+                    if (selected2 != null && lockedPortalsList.Contains(selected2))
                         cboLeverPortal2.SelectedItem = selected2;
                 }
 
                 if (cboLeverPortal3 != null)
                 {
                     cboLeverPortal3.Items.Clear();
-                    cboLeverPortal3.Items.AddRange(allPortalsList.ToArray());
-                    if (selected3 != null && allPortalsList.Contains(selected3))
+                    cboLeverPortal3.Items.AddRange(lockedPortalsList.ToArray());
+                    if (selected3 != null && lockedPortalsList.Contains(selected3))
                         cboLeverPortal3.SelectedItem = selected3;
                 }
             }
@@ -131,7 +131,7 @@ namespace TimeSpace
                 comboBox.Items.Clear();
 
                 // Regenerate the portal list from the current state
-                var currentPortals = allPortalsList?.ToArray() ?? Array.Empty<string>();
+                var currentPortals = lockedPortalsList?.ToArray() ?? Array.Empty<string>();
                 comboBox.Items.AddRange(currentPortals);
 
                 // Restore the previous selection if it still exists

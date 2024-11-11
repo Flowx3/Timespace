@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing;
 
@@ -28,8 +26,9 @@ namespace TimeSpace
         public TextBox txtToX;
         public TextBox txtToY;
         public Func<List<string>> getMapNames;
+        private CustomTabPage customTabPage;
 
-        public Portal(string mapFrom, string mapTo, string portalType, string minimapOrientation, int fromX, int fromY, int toX, int toY, Func<List<string>> GetMapNames)
+        public Portal(string mapFrom, string mapTo, string portalType, string minimapOrientation, int fromX, int fromY, int toX, int toY, Func<List<string>> GetMapNames, CustomTabPage customTabPage)
         {
             MapFrom = mapFrom;
             MapTo = mapTo;
@@ -40,11 +39,12 @@ namespace TimeSpace
             ToX = toX;
             ToY = toY;
             getMapNames = GetMapNames;
+            this.customTabPage = customTabPage;
         }
 
         public Panel CreatePortal()
         {
-            var panel = new Panel { Width = 780, Height = 50, Margin = new Padding(0, 5, 0, 5) };
+            var panel = new Panel { Width = 880, Height = 50, Margin = new Padding(0, 5, 0, 5) };
 
             var lblMapFrom = new Label { Text = "Map From:", Location = new Point(0, 5), AutoSize = true };
             cboMapFrom = new ComboBox { Location = new Point(80, 0), Width = 150 };
@@ -80,7 +80,10 @@ namespace TimeSpace
 
             var lblToY = new Label { Text = "To Y:", Location = new Point(360, 35), AutoSize = true };
             txtToY = new TextBox { Location = new Point(420, 30), Width = 50 };
-            txtToX.Text = ToX.ToString();
+            txtToY.Text = ToY.ToString();
+
+            var btnMirrorPortal = new Button { Text = "Mirror Portal", Location = new Point(480, 30), Width = 100 };
+            btnMirrorPortal.Click += (sender, e) => MirrorPortal();
 
             panel.Controls.Add(lblMapFrom);
             panel.Controls.Add(cboMapFrom);
@@ -98,30 +101,84 @@ namespace TimeSpace
             panel.Controls.Add(lblToY);
             panel.Controls.Add(txtToX);
             panel.Controls.Add(txtToY);
+            panel.Controls.Add(btnMirrorPortal);
 
             Panel = panel; // Assign the panel to the portal  
+
             return panel;
         }
+
+        private void MirrorPortal()
+        {
+            string tempMapFrom = cboMapFrom.SelectedItem?.ToString();
+            string tempMapTo = cboMapTo.SelectedItem?.ToString();
+            int tempFromX = int.Parse(txtFromX.Text);
+            int tempFromY = int.Parse(txtFromY.Text);
+            int tempToX = int.Parse(txtToX.Text);
+            int tempToY = int.Parse(txtToY.Text);
+
+            cboMapFrom.SelectedItem = tempMapTo;
+            cboMapTo.SelectedItem = tempMapFrom;
+            cboPortalType.SelectedItem = "TsNormal";
+
+            switch (cboMinimapOrientation.SelectedItem.ToString())
+            {
+                case "North":
+                    cboMinimapOrientation.SelectedItem = "South";
+                    break;
+                case "South":
+                    cboMinimapOrientation.SelectedItem = "North";
+                    break;
+                case "East":
+                    cboMinimapOrientation.SelectedItem = "West";
+                    break;
+                case "West":
+                    cboMinimapOrientation.SelectedItem = "East";
+                    break;
+            }
+
+            txtFromX.Text = tempToX.ToString();
+            txtFromY.Text = tempToY.ToString();
+            txtToX.Text = tempFromX.ToString();
+            txtToY.Text = tempFromY.ToString();
+
+            // Create a new mirrored portal  
+            var mirroredPortal = new Portal(
+                cboMapFrom.SelectedItem.ToString(),
+                cboMapTo.SelectedItem.ToString(),
+                cboPortalType.SelectedItem.ToString(),
+                cboMinimapOrientation.SelectedItem.ToString(),
+                int.Parse(txtFromX.Text),
+                int.Parse(txtFromY.Text),
+                int.Parse(txtToX.Text),
+                int.Parse(txtToY.Text),
+                getMapNames,
+                customTabPage // Pass the CustomTabPage instance  
+            );
+
+            // Add the mirrored portal to the appropriate map  
+            customTabPage.AddPortalToMap(mirroredPortal.MapTo, mirroredPortal);
+        }
+
         public void RefreshMapComboboxes()
         {
             if (cboMapFrom != null && cboMapTo != null)
             {
-                // Store current selections
+                // Store current selections  
                 string currentMapFrom = cboMapFrom.SelectedItem?.ToString();
                 string currentMapTo = cboMapTo.SelectedItem?.ToString();
 
-                // Clear and refresh MapFrom combobox
+                // Clear and refresh MapFrom combobox  
                 cboMapFrom.Items.Clear();
                 cboMapFrom.Items.AddRange(getMapNames().ToArray());
 
-                // Clear and refresh MapTo combobox
+                // Clear and refresh MapTo combobox  
                 cboMapTo.Items.Clear();
                 cboMapTo.Items.AddRange(getMapNames().Concat(new[] { "UNKNOWN" }).ToArray());
 
-                // Restore selections if they still exist
+                // Restore selections if they still exist  
                 if (currentMapFrom != null && cboMapFrom.Items.Contains(currentMapFrom))
                     cboMapFrom.SelectedItem = currentMapFrom;
-
                 if (currentMapTo != null && cboMapTo.Items.Contains(currentMapTo))
                     cboMapTo.SelectedItem = currentMapTo;
             }

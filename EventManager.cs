@@ -16,13 +16,13 @@ public class TaskEventManagerForm : Form
     private string currentMapName;
     private Button applyButton;
 
-    public TaskEventManagerForm(string mapName, List<string> allPortalsList)
+    public TaskEventManagerForm(string mapName, List<string> lockedPortalsList)
     {
         currentMapName = mapName;
-        InitializeComponents(allPortalsList);
+        InitializeComponents(lockedPortalsList);
     }
 
-    private void InitializeComponents(List<string> allPortalsList)
+    private void InitializeComponents(List<string> lockedPortalsList)
     {
         // Form settings  
         Text = "Task Event Manager";
@@ -65,8 +65,7 @@ public class TaskEventManagerForm : Form
                 Width = 200,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-            taskFinishPortals[i].Items.Add(""); // Add empty option  
-            taskFinishPortals[i].Items.AddRange(allPortalsList.ToArray());
+            taskFinishPortals[i].Items.AddRange(lockedPortalsList.ToArray());
             taskFinishPortals[i].SelectedIndex = 0;
 
             taskFailPortals[i] = new ComboBox
@@ -75,9 +74,8 @@ public class TaskEventManagerForm : Form
                 Width = 200,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Visible = false
-            };
-            taskFailPortals[i].Items.Add(""); // Add empty option  
-            taskFailPortals[i].Items.AddRange(allPortalsList.ToArray());
+            }; 
+            taskFailPortals[i].Items.AddRange(lockedPortalsList.ToArray());
             taskFailPortals[i].SelectedIndex = 0;
 
             Controls.Add(lblPortal);
@@ -139,7 +137,44 @@ public class TaskEventManagerForm : Form
             applyButton
         });
     }
+    public void UpdatePortalComboboxes(List<string> newPortalsList)
+    {
+        foreach (var comboBox in taskFinishPortals)
+        {
+            if (comboBox != null)
+            {
+                string selectedValue = comboBox.SelectedItem?.ToString();
+                comboBox.Items.Clear();
+                comboBox.Items.AddRange(newPortalsList.ToArray());
+                if (selectedValue != null && newPortalsList.Contains(selectedValue))
+                {
+                    comboBox.SelectedItem = selectedValue;
+                }
+                else
+                {
+                    comboBox.SelectedIndex = 0;
+                }
+            }
+        }
 
+        foreach (var comboBox in taskFailPortals)
+        {
+            if (comboBox != null)
+            {
+                string selectedValue = comboBox.SelectedItem?.ToString();
+                comboBox.Items.Clear();
+                comboBox.Items.AddRange(newPortalsList.ToArray());
+                if (selectedValue != null && newPortalsList.Contains(selectedValue))
+                {
+                    comboBox.SelectedItem = selectedValue;
+                }
+                else
+                {
+                    comboBox.SelectedIndex = 0;
+                }
+            }
+        }
+    }
     private void EventType_Changed(object sender, EventArgs e)
     {
         // Ensure eventTypeComboBox.SelectedItem is not null  
