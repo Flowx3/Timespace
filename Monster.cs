@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using System.Drawing;
+﻿using System.Text;
 
 namespace TimeSpace
 {
@@ -23,6 +17,63 @@ namespace TimeSpace
             MapName = mapName;
         }
 
+        public static Monster CreateFromGridRow(DataGridViewRow row, string mapName)
+        {
+            Monster monster = null;
+            try
+            {
+                string vnumStr = row.Cells["Vnum"].Value?.ToString();
+                string xStr = row.Cells["X"].Value?.ToString();
+                string yStr = row.Cells["Y"].Value?.ToString();
+
+                if (string.IsNullOrEmpty(vnumStr))
+                    throw new ArgumentNullException("Vnum");
+                if (string.IsNullOrEmpty(xStr))
+                    throw new ArgumentNullException("X");
+                if (string.IsNullOrEmpty(yStr))
+                    throw new ArgumentNullException("Y");
+
+                monster = new Monster(mapName)
+                {
+                    Vnum = int.Parse(vnumStr),
+                    X = int.Parse(xStr),
+                    Y = int.Parse(yStr),
+                    AsTarget = Convert.ToBoolean(row.Cells["AsTarget"]?.Value)
+                };
+
+                // Parse attributes
+                var attributesCell = row.Cells["Attributes"].Value?.ToString();
+                if (!string.IsNullOrEmpty(attributesCell))
+                {
+                    monster.ParseAttributes(attributesCell);
+                }
+            }
+            catch (ArgumentNullException ex)
+            {
+                MessageBox.Show($"Error: Missing value for '{ex.ParamName}' in map '{mapName}'.",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (FormatException ex)
+            {
+                MessageBox.Show($"Error: Invalid value format in map '{mapName}'. Details: {ex.Message}",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            return monster;
+        }
+
+        private void ParseAttributes(string attributesCell)
+        {
+            var attributes = attributesCell.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var attribute in attributes)
+            {
+                var parts = attribute.Split('=');
+                if (parts.Length == 2)
+                {
+                    Attributes[parts[0].Trim()] = parts[1].Trim();
+                }
+            }
+        }
+
         public string GenerateMonsterScript(DataGridViewRow row)
         {
             var script = new StringBuilder();
@@ -30,42 +81,35 @@ namespace TimeSpace
 
             foreach (var attr in Attributes)
             {
-                switch (attr.Key)
-                {
-                    case "SpawnAfterMobsKilled":
-                    case "WithCustomLevel":
-                        if (Convert.ToBoolean(row.Cells["AsTarget"].Value))
-                        {
-                            script.Append(".AsTarget()");
-                        }
-                        script.Append($".{attr.Key}({attr.Value})");
-                        break;
-                    case "SpawnAfterTaskStart":
-                        if (Convert.ToBoolean(row.Cells["AsTarget"].Value))
-                        {
-                            script.Append(".AsTarget()");
-                        }
-                        script.Append($".{attr.Key}()");
-                        break;
-                    case "OnThreeFourthsHP":
-                    case "OnHalfHp":
-                    case "OnQuarterHp":
-                        if (Convert.ToBoolean(row.Cells["AsTarget"].Value))
-                        {
-                            script.Append(".AsTarget()");
-                        }
-                        script.Append($".{attr.Key}()");
-                        break;
-                    default:
-                        if (Convert.ToBoolean(row.Cells["AsTarget"].Value))
-                        {
-                            script.Append(".AsTarget()");
-                        }
-                        break;
-                }
+                AppendAttributeToScript(script, attr, row);
             }
 
             return script.ToString();
+        }
+
+        private void AppendAttributeToScript(StringBuilder script, KeyValuePair<string, string> attr, DataGridViewRow row)
+        {
+            // Add AsTarget before any other attribute if needed
+            bool shouldAddAsTarget = Convert.ToBoolean(row.Cells["AsTarget"].Value);
+
+            switch (attr.Key)
+            {
+                case "SpawnAfterMobsKilled":
+                case "WithCustomLevel":
+                    if (shouldAddAsTarget) script.Append(".AsTarget()");
+                    script.Append($".{attr.Key}({attr.Value})");
+                    break;
+                case "SpawnAfterTaskStart":
+                case "OnThreeFourthsHP":
+                case "OnHalfHp":
+                case "OnQuarterHp":
+                    if (shouldAddAsTarget) script.Append(".AsTarget()");
+                    script.Append($".{attr.Key}()");
+                    break;
+                default:
+                    if (shouldAddAsTarget) script.Append(".AsTarget()");
+                    break;
+            }
         }
     }
 }

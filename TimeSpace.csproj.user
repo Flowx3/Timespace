@@ -13,7 +13,7 @@
     <Compile Update="Gridselector.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="MonsterForm.cs">
+    <Compile Update="MonsterAttributeForm.cs">
       <SubType>Form</SubType>
     </Compile>
   </ItemGroup>

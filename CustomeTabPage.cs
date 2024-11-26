@@ -140,6 +140,7 @@ namespace TimeSpace
     public class CustomTabPage : TabPage
     {
         private TaskEventManagerForm taskEventManagerForm;
+        private MonsterManager monsterManager;
         public string MapName { get; private set; }
         public Func<List<string>> getMapNames;
         public Dictionary<string, Panel> MapPortalPanels { get; set; }
@@ -183,6 +184,7 @@ namespace TimeSpace
         {
             MapPortalPanels = new Dictionary<string, Panel>();
             MonsterEvents = new List<Monster>();
+            monsterManager = new MonsterManager(waveDelayInput);
             Text = mapName;
             this.getMapNames = getMapNames;
             this.MapName = mapName;
@@ -760,100 +762,24 @@ namespace TimeSpace
         }
         public void BtnSaveMonsterAndObjective_Click(object sender, EventArgs e)
         {
-            var mapScripts = new Dictionary<string, StringBuilder>();
-            MonsterEvents.Clear();
+            var mapScripts = monsterManager.ProcessMonsterData(Parent.Controls.OfType<TabPage>().ToList());
 
-            foreach (var tab in mapTabs)
+            // Process objectives (kept in CustomTabPage as it's separate from monster logic)
+            ProcessObjectives(mapScripts);
+
+            // Process map join events
+            ProcessMapJoinEvents(mapScripts);
+
+            // Save final script
+            var finalScript = new StringBuilder();
+            foreach (var mapName in mapScripts.Keys)
             {
-                var monsterDataGridView = tab.monsterDataGridView;
-                    continue;
-                string mapName = tab.MapName;
-
-                if (!mapScripts.ContainsKey(mapName))
-                {
-                    mapScripts[mapName] = new StringBuilder();
-                }
-
-                var waves = new Dictionary<int, List<string>>();
-                foreach (DataGridViewRow row in monsterDataGridView.Rows)
-                {
-                    if (!row.IsNewRow)
-                    {
-                        int wave;
-                        int.TryParse(row.Cells["Wave"].Value?.ToString(), out wave);
-                        Monster monster = null;
-                        try
-                        {
-                            string vnumStr = row.Cells["Vnum"].Value?.ToString();
-                            string xStr = row.Cells["X"].Value?.ToString();
-                            string yStr = row.Cells["Y"].Value?.ToString();
-                            string asTargetStr = row.Cells["AsTarget"].Value?.ToString();
-
-                            if (string.IsNullOrEmpty(vnumStr))
-                                throw new ArgumentNullException("Vnum");
-                            if (string.IsNullOrEmpty(xStr))
-                                throw new ArgumentNullException("X");
-                            if (string.IsNullOrEmpty(yStr))
-                                throw new ArgumentNullException("Y");
-
-                            monster = new Monster(mapName)
-                            {
-                                Vnum = int.Parse(vnumStr),
-                                X = int.Parse(xStr),
-                                Y = int.Parse(yStr),
-                                AsTarget = Convert.ToBoolean(row.Cells["AsTarget"]?.Value)
-                            };
-                        }
-                        catch (ArgumentNullException ex)
-                        {
-                            string missingValue = ex.ParamName; 
-                            MessageBox.Show($"Error: Missing value for '{missingValue}' in map '{mapName}'.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                        catch (FormatException ex)
-                        {
-                            MessageBox.Show($"Error: Invalid value format in map '{mapName}'. Details: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        } 
-                        if (monster != null)
-                        {
-                            var attributesCell = row.Cells["Attributes"].Value?.ToString();
-                            if (!string.IsNullOrEmpty(attributesCell))
-                            {
-                                var attributes = attributesCell.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                                foreach (var attribute in attributes)
-                                {
-                                    var parts = attribute.Split('=');
-                                    if (parts.Length == 2)
-                                    {
-                                        monster.Attributes[parts[0].Trim()] = parts[1].Trim();
-                                    }
-                                }
-                            }
-                            var monsterScript = monster.GenerateMonsterScript(row);
-                            if (!waves.ContainsKey(wave))
-                            {
-                                waves[wave] = new List<string>();
-                            }
-                            waves[wave].Add(monsterScript);
-                            MonsterEvents.Add(monster);
-                        }
-                    }
-                }
-
-                if (waves.Any())
-                {
-                    mapScripts[mapName].AppendLine($"{mapName}.AddMonsterWaves({{");
-                    foreach (var wave in waves.OrderBy(w => w.Key))
-                    {
-                        var delay = wave.Key * (int)waveDelayInput.Value;
-                        mapScripts[mapName].AppendLine($"    -- wave {wave.Key}");
-                        mapScripts[mapName].AppendLine($"    MonsterWave.CreateWithDelay({delay}).WithMonsters({{");
-                        mapScripts[mapName].AppendLine(string.Join(", \n", wave.Value.Select(m => $"        {m}")));
-                        mapScripts[mapName].AppendLine("    }),");
-                    }
-                    mapScripts[mapName].AppendLine("})");
-                }
+                finalScript.Append(mapScripts[mapName].ToString());
             }
-
+            File.WriteAllText("CombinedEvents.lua", finalScript.ToString());
+        }
+        private void ProcessObjectives(Dictionary<string, StringBuilder> mapScripts)
+        {
             foreach (var mapTab in mapTabs)
             {
                 string mapName = mapTab.MapName;
@@ -881,33 +807,6 @@ namespace TimeSpace
                     mapScripts[mapName].AppendLine("})");
                 }
             }
-
-            foreach (var mapTab in mapTabs)
-            {
-                string mapName = mapTab.MapName;
-                if (!mapScripts.ContainsKey(mapName))
-                {
-                    mapScripts[mapName] = new StringBuilder();
-                }
-                mapScripts[mapName].AppendLine($"{mapName}.OnMapJoin({{");
-                mapScripts[mapName].AppendLine($"    Event.TryStartTaskForMap({mapName}),");
-                // Append event manager scripts here  
-                if (eventManagerScripts.ContainsKey(mapName))
-                {
-                    foreach (var script in eventManagerScripts[mapName])
-                    {
-                        mapScripts[mapName].AppendLine(script);
-                    }
-                }
-                mapScripts[mapName].AppendLine("})");
-            }
-
-            var finalScript = new StringBuilder();
-            foreach (var mapName in mapScripts.Keys)
-            {
-                finalScript.Append(mapScripts[mapName].ToString());
-            }
-            File.WriteAllText("CombinedEvents.lua", finalScript.ToString());
         }
     private void BtnAddObjective_Click(object sender, EventArgs e)
         {
