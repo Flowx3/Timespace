@@ -145,91 +145,68 @@ namespace TimeSpace
         public Dictionary<string, Panel> MapPortalPanels { get; set; }
         public List<Portal> Portals { get; private set; } = new List<Portal>();
         public List<MapObject> Objects { get; private set; } = new List<MapObject>();
+        public List<Monster> MonsterEvents { get; private set; } = new List<Monster>();
+
         private List<string> allPortalsList = new List<string>();
         private List<string> lockedPortalsList = new List<string>();
-        public List<Monster> MonsterEvents { get; private set; } = new List<Monster>();
         private List<DataGridView> monsterDataGrids;
         private List<CustomTabPage> mapTabs = Form1.mapTabs;
         private Task _gridCreationTask;
-        private readonly TextBox txtMapVNUM;
-        private readonly TextBox txtMapCoordinates;
-        private readonly TextBox txtTaskText;
-        private readonly ComboBox cboTaskType;
+        private static List<Point> sharedTakenPositions = new List<Point>();
+        private static readonly object positionsLock = new object();
+        private Dictionary<string, List<string>> eventManagerScripts = new Dictionary<string, List<string>>();
+        private bool isDisposed = false;
+
+        private TextBox txtMapVNUM;
+        private TextBox txtMapCoordinates;
+        private TextBox txtTaskText;
+        private ComboBox cboTaskType;
         private ComboBox[] taskFinishPortals;
         private ComboBox[] taskFailPortals;
         private ComboBox eventTypeComboBox;
-        private readonly NumericUpDown addTimeEvent;
-        private readonly CheckBox despawnAllMobsInRoom;
-        private readonly NumericUpDown timeForTask;
-        private readonly NumericUpDown removeTimeEvent;
+        private NumericUpDown addTimeEvent;
+        private CheckBox despawnAllMobsInRoom;
+        private NumericUpDown timeForTask;
+        private NumericUpDown removeTimeEvent;
         private FlowLayoutPanel portalPanel;
         private DataGridView monsterDataGridView;
         private FlowLayoutPanel eventPanel;
         private FlowLayoutPanel objectivePanel;
-        private static List<Point> sharedTakenPositions = new List<Point>();
         private Point? currentPosition = null;
-        private static readonly object positionsLock = new object();
-        private Dictionary<string, List<string>> eventManagerScripts = new Dictionary<string, List<string>>();
-        private bool isDisposed = false;
         private Button btnAddAttribute;
         private Button applyButton;
         private NumericUpDown waveCountInput;
         private NumericUpDown waveDelayInput;
         public CheckBox useWavesCheckbox;
-        private void DisplayMapGrid(MapDataDTO mapData)
-        {
-            MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).First();
-            // Populate cellColors array with your grid data
-            mapGridPanel.SetGrid(mapData.Width, mapData.Height, mapData.Grid);
-        }
 
-        private void MapGridPanel_CellClicked(object sender, CellClickedEventArgs e)
-        {
-            // Handle the cell click event
-            MessageBox.Show($"Cell clicked at ({e.CellX}, {e.CellY})");
-        }
-        public CustomTabPage(string MapName,Form1 form, Func<List<string>> getMapNames)
+        public CustomTabPage(string mapName, Form1 form, Func<List<string>> getMapNames)
         {
             MapPortalPanels = new Dictionary<string, Panel>();
             MonsterEvents = new List<Monster>();
-            Text = MapName;
+            Text = mapName;
             this.getMapNames = getMapNames;
-            this.MapName = MapName;
+            this.MapName = mapName;
+
+            InitializeComponents(form);
+        }
+
+        private void InitializeComponents(Form1 form)
+        {
             var containerPanel = new Panel { Dock = DockStyle.Fill };
+            var leftPanel = CreateLeftPanel(form);
+            var rightPanel = CreateRightPanel();
+
+            containerPanel.Controls.Add(rightPanel);
+            containerPanel.Controls.Add(leftPanel);
+            this.Controls.Add(containerPanel);
+        }
+
+        private Panel CreateLeftPanel(Form1 form)
+        {
             var leftPanel = new Panel { Width = 1000, Dock = DockStyle.Left };
-            var lblMapVNUM = new Label { Text = "Map Vnum:", Location = new Point(10, 10) };
+
             txtMapVNUM = new TextBox { Name = "txtMapVNUM", Location = new Point(150, 10), Width = 200 };
-            var btnLoadMap = new Button { Text = "Load Map", Location = new Point(360, 10) };
-            btnLoadMap.Click += (sender, e) =>
-            {
-                if (int.TryParse(this.Controls.Find("txtMapVNUM",true).First().Text, out int mapVnum))
-                {
-                    var mapData = form.loadedMaps.FirstOrDefault(m => m.Id == mapVnum);
-                    if (mapData != null)
-                    {
-                        DisplayMapGrid(mapData);
-                    }
-                    else
-                    {
-                        MessageBox.Show("Map not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-                else
-                {
-                    MessageBox.Show("Invalid map number.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            };
-            var lblMapCoordinates = new Label { Text = "Map Coordinates:", Location = new Point(10, 40) };
             txtMapCoordinates = new TextBox { Location = new Point(150, 40), Width = 200 };
-            var btnSelectCoordinates = new Button
-            {
-                Text = "...",
-                Location = new Point(txtMapCoordinates.Right + 10, 40),
-                Width = 30,
-                Height = txtMapCoordinates.Height
-            };
-            btnSelectCoordinates.Click += BtnSelectCoordinates_Click;
-            var lblTaskType = new Label { Text = "Task Type:", Location = new Point(10, 70) };
             cboTaskType = new ComboBox
             {
                 Location = new Point(150, 70),
@@ -237,18 +214,15 @@ namespace TimeSpace
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Items = { "None", "KillAllMonsters", "Survive" }
             };
-            var lblTaskText = new Label { Text = "Task Text:", Location = new Point(10, 100) };
             txtTaskText = new TextBox { Location = new Point(150, 100), Width = 200 };
-            var lblTimeforTask = new Label { Text = "Time for Task:", Location = new Point(360, 105), Width = 80 };
             timeForTask = new NumericUpDown
             {
                 Width = 50,
                 Location = new Point(440, 100),
-                Maximum = new decimal(600),
-                Increment = new decimal(10)
+                Maximum = 600,
+                Increment = 10
             };
 
-            // Initialize portal panel  
             portalPanel = new FlowLayoutPanel
             {
                 Location = new Point(10, 130),
@@ -259,14 +233,7 @@ namespace TimeSpace
                 WrapContents = false,
                 Padding = new Padding(0, 5, 0, 5)
             };
-            var btnAddPortal = new Button { Text = "Add Portal", Location = new Point(10, 390) };
-            btnAddPortal.Click += BtnAddPortal_Click;
-            var btnRemovePortal = new Button { Text = "Remove Last Portal", Location = new Point(150, 390) };
-            btnRemovePortal.Click += BtnRemovePortal_Click;
-            var btnSavePortal = new Button { Text = "Save Portals", Location = new Point(290, 390) };
-            btnSavePortal.Click += BtnSavePortal_Click;
 
-            // Initialize event panel  
             eventPanel = new FlowLayoutPanel
             {
                 Location = new Point(10, 420),
@@ -277,40 +244,47 @@ namespace TimeSpace
                 WrapContents = false,
                 Padding = new Padding(0, 5, 0, 5)
             };
-            var btnAddEvent = new Button { Text = "Add Monster Event", Location = new Point(10, 730) };
-            btnAddEvent.Click += BtnAddEvent_Click;
-            var btnRemoveEvent = new Button { Text = "Remove Last Monster Event", Location = new Point(150, 730) };
-            btnRemoveEvent.Click += BtnRemoveEvent_Click;
-            var btnSaveMonster = new Button { Text = "Save Monsters", Location = new Point(290, 730) };
-            btnSaveMonster.Click += BtnSaveMonsterAndObjective_Click;
 
-            leftPanel.Controls.Add(lblMapVNUM);
-            leftPanel.Controls.Add(txtMapVNUM);
-            leftPanel.Controls.Add(btnLoadMap);
-            leftPanel.Controls.Add(lblMapCoordinates);
-            leftPanel.Controls.Add(txtMapCoordinates);
-            leftPanel.Controls.Add(lblTaskType);
-            leftPanel.Controls.Add(cboTaskType);
-            leftPanel.Controls.Add(lblTaskText);
-            leftPanel.Controls.Add(txtTaskText);
-            leftPanel.Controls.Add(portalPanel);
-            leftPanel.Controls.Add(btnAddPortal);
-            leftPanel.Controls.Add(btnRemovePortal);
-            leftPanel.Controls.Add(btnSavePortal);
-            leftPanel.Controls.Add(eventPanel);
-            leftPanel.Controls.Add(btnAddEvent);
-            leftPanel.Controls.Add(btnRemoveEvent);
-            leftPanel.Controls.Add(btnSaveMonster);
-            leftPanel.Controls.Add(btnSelectCoordinates);
-            leftPanel.Controls.Add(lblTimeforTask);
-            leftPanel.Controls.Add(timeForTask);
+            AddControlsToLeftPanel(leftPanel, form);
+            InitializeDataGridView();
 
-            // Create right panel for map grid and objectives  
+            return leftPanel;
+        }
+
+        private void AddControlsToLeftPanel(Panel leftPanel, Form1 form)
+        {
+            leftPanel.Controls.AddRange(new Control[]
+            {
+            new Label { Text = "Map Vnum:", Location = new Point(10, 10) },
+            txtMapVNUM,
+            CreateButton("Load Map", new Point(360, 10), (sender, e) => LoadMap(form)),
+            new Label { Text = "Map Coordinates:", Location = new Point(10, 40) },
+            txtMapCoordinates,
+            CreateButton("...", new Point(txtMapCoordinates.Right + 10, 40), BtnSelectCoordinates_Click, 30, txtMapCoordinates.Height),
+            new Label { Text = "Task Type:", Location = new Point(10, 70) },
+            cboTaskType,
+            new Label { Text = "Task Text:", Location = new Point(10, 100) },
+            txtTaskText,
+            new Label { Text = "Time for Task:", Location = new Point(360, 105), Width = 80 },
+            timeForTask,
+            portalPanel,
+            CreateButton("Add Portal", new Point(10, 390), BtnAddPortal_Click),
+            CreateButton("Remove Last Portal", new Point(150, 390), BtnRemovePortal_Click),
+            CreateButton("Save Portals", new Point(290, 390), BtnSavePortal_Click),
+            eventPanel,
+            CreateButton("Add Monster Event", new Point(10, 730), BtnAddEvent_Click),
+            CreateButton("Remove Last Monster Event", new Point(150, 730), BtnRemoveEvent_Click),
+            CreateButton("Save Monsters", new Point(290, 730), BtnSaveMonsterAndObjective_Click),
+            CreateButton("Manage Events", new Point(360, 70), (s, e) => ManageEvents())
+            });
+        }
+
+        private Panel CreateRightPanel()
+        {
             var rightPanel = new Panel { Dock = DockStyle.Fill };
             var mapGridPanel = new MapGridPanel();
-
             mapGridPanel.CellClicked += MapGridPanel_CellClicked;
-            var lblHoverPosition = new Label { Dock = DockStyle.Top, AutoSize = true, Text = "Hover Position: " };
+
             objectivePanel = new FlowLayoutPanel
             {
                 Location = new Point(10, 500),
@@ -321,50 +295,50 @@ namespace TimeSpace
                 WrapContents = false,
                 Padding = new Padding(0, 5, 0, 5)
             };
-            var btnAddObjective = new Button { Text = "Add Objective", Location = new Point(10, 470) };
-            btnAddObjective.Click += BtnAddObjective_Click;
-            var btnRemoveObjective = new Button { Text = "Remove Last Objective", Location = new Point(100, 470) };
-            btnRemoveObjective.Click += BtnRemoveObjective_Click;
-            var btnSaveObjective = new Button { Text = "Save Objectives", Location = new Point(200, 470) };
-            btnSaveObjective.Click += BtnSaveMonsterAndObjective_Click;
 
-            rightPanel.Controls.Add(mapGridPanel);
-            rightPanel.Controls.Add(objectivePanel);
-            rightPanel.Controls.Add(btnAddObjective);
-            rightPanel.Controls.Add(btnRemoveObjective);
-            rightPanel.Controls.Add(btnSaveObjective);
-            rightPanel.Controls.Add(lblHoverPosition);
-            containerPanel.Controls.Add(rightPanel);
-            containerPanel.Controls.Add(leftPanel);
-            this.Controls.Add(containerPanel);
-            InitializeDataGridView();
-            var btnManageEvents = new Button
+            rightPanel.Controls.AddRange(new Control[]
             {
-                Text = "Manage Events",
-                Location = new Point(360, 70),
-                Width = 100
-            };
-            btnManageEvents.Click += (s, e) =>
-            {
-                var eventManager = new TaskEventManagerForm(MapName, lockedPortalsList);
-                if (eventManager.ShowDialog() == DialogResult.OK)
-                {
-                    string generatedScript = eventManager.Tag as string;
-                    if (!string.IsNullOrEmpty(generatedScript))
-                    {
-                        if (!eventManagerScripts.ContainsKey(MapName))
-                        {
-                            eventManagerScripts[MapName] = new List<string>();
-                        }
-                        eventManagerScripts[MapName].Add(generatedScript);
-                    }
-                }
-            };
-            leftPanel.Controls.Add(btnManageEvents);
+            mapGridPanel,
+            objectivePanel,
+            CreateButton("Add Objective", new Point(10, 470), BtnAddObjective_Click, width: 150, height: 30),
+            CreateButton("Remove Last Objective", new Point(170, 470), BtnRemoveObjective_Click, width: 150, height: 30),
+            CreateButton("Save Objectives", new Point(330, 470), BtnSaveMonsterAndObjective_Click, width: 150, height: 30),
+            new Label { Dock = DockStyle.Top, AutoSize = true, Text = "Hover Position: " }
+            });
+            return rightPanel;
         }
+
+        private Button CreateButton(string text, Point location, EventHandler clickHandler, int width = 120, int height = 30)
+        {
+            var button = new Button
+            {
+                Text = text,
+                Location = location,
+                Width = width,
+                Height = height
+            };
+            button.Click += clickHandler;
+            return button;
+        }
+        private void ManageEvents()
+        {
+            var eventManager = new TaskEventManagerForm(MapName, lockedPortalsList);
+            if (eventManager.ShowDialog() == DialogResult.OK)
+            {
+                string generatedScript = eventManager.Tag as string;
+                if (!string.IsNullOrEmpty(generatedScript))
+                {
+                    if (!eventManagerScripts.ContainsKey(MapName))
+                    {
+                        eventManagerScripts[MapName] = new List<string>();
+                    }
+                    eventManagerScripts[MapName].Add(generatedScript);
+                }
+            }
+        }
+
         private void InitializeDataGridView()
         {
-            // Initialize the useWavesCheckbox  
             useWavesCheckbox = new CheckBox
             {
                 Text = "Use Waves",
@@ -373,15 +347,6 @@ namespace TimeSpace
             };
             useWavesCheckbox.CheckedChanged += UseWavesCheckbox_CheckedChanged;
 
-            // Initialize the waveCountLabel  
-            var waveCountLabel = new Label
-            {
-                Text = "Number of Waves:",
-                Location = new Point(120, 12),
-                AutoSize = true
-            };
-
-            // Initialize the waveCountInput  
             waveCountInput = new NumericUpDown
             {
                 Location = new Point(230, 10),
@@ -391,15 +356,6 @@ namespace TimeSpace
                 Enabled = false
             };
 
-            // Initialize the waveDelayLabel  
-            var waveDelayLabel = new Label
-            {
-                Text = "Wave Delay (seconds):",
-                Location = new Point(300, 12),
-                AutoSize = true
-            };
-
-            // Initialize the waveDelayInput  
             waveDelayInput = new NumericUpDown
             {
                 Location = new Point(430, 10),
@@ -410,18 +366,21 @@ namespace TimeSpace
                 Enabled = false
             };
 
-            // Initialize the wavePanel  
             var wavePanel = new Panel
             {
-                Location = new Point(0, 0), // Top of the eventPanel  
+                Location = new Point(0, 0),
                 Width = 800,
                 Height = 40
             };
+            wavePanel.Controls.AddRange(new Control[]
+            {
+        useWavesCheckbox,
+        new Label { Text = "Number of Waves:", Location = new Point(120, 12), AutoSize = true },
+        waveCountInput,
+        new Label { Text = "Wave Delay (seconds):", Location = new Point(300, 12), AutoSize = true },
+        waveDelayInput
+            });
 
-            // Add controls to the wavePanel  
-            wavePanel.Controls.AddRange(new Control[] { useWavesCheckbox, waveCountLabel, waveCountInput, waveDelayLabel, waveDelayInput });
-
-            // Initialize the btnAddAttribute button  
             btnAddAttribute = new Button
             {
                 Text = "Manage Attributes",
@@ -431,7 +390,6 @@ namespace TimeSpace
             };
             btnAddAttribute.Click += BtnAddAttribute_Click;
 
-            // Initialize the monsterDataGridView  
             monsterDataGridView = new DataGridView
             {
                 Location = new Point(0, btnAddAttribute.Bottom + 10),
@@ -441,13 +399,11 @@ namespace TimeSpace
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize,
                 AllowUserToAddRows = false
             };
-
             monsterDataGridView.Columns.AddRange(new DataGridViewColumn[]
             {
         new DataGridViewTextBoxColumn { Name = "Vnum", HeaderText = "Vnum" },
         new DataGridViewTextBoxColumn { Name = "X", HeaderText = "X" },
         new DataGridViewTextBoxColumn { Name = "Y", HeaderText = "Y" },
-        new DataGridViewTextBoxColumn { Name = "Wave", HeaderText = "Wave" },
         new DataGridViewCheckBoxColumn { Name = "AsTarget", HeaderText = "As Target" },
         new DataGridViewTextBoxColumn
         {
@@ -456,16 +412,45 @@ namespace TimeSpace
             ReadOnly = true
         }
             });
-
             monsterDataGridView.CellDoubleClick += MonsterDataGridView_CellDoubleClick;
 
-            // Add controls to the eventPanel  
-            eventPanel.Controls.Add(wavePanel);
-            eventPanel.Controls.Add(btnAddAttribute);
-            eventPanel.Controls.Add(monsterDataGridView);
-
-            // Ensure the eventPanel is tall enough to display all controls  
+            eventPanel.Controls.AddRange(new Control[]
+            {
+        wavePanel,
+        btnAddAttribute,
+        monsterDataGridView
+            });
             eventPanel.Height = monsterDataGridView.Bottom + 20;
+        }
+        private void LoadMap(Form1 form)
+        {
+            if (int.TryParse(txtMapVNUM.Text, out int mapVnum))
+            {
+                var mapData = form.loadedMaps.FirstOrDefault(m => m.Id == mapVnum);
+                if (mapData != null)
+                {
+                    DisplayMapGrid(mapData);
+                }
+                else
+                {
+                    MessageBox.Show("Map not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Invalid map number.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void DisplayMapGrid(MapDataDTO mapData)
+        {
+            MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).First();
+            mapGridPanel.SetGrid(mapData.Width, mapData.Height, mapData.Grid);
+        }
+
+        private void MapGridPanel_CellClicked(object sender, CellClickedEventArgs e)
+        {
+            MessageBox.Show($"Cell clicked at ({e.CellX}, {e.CellY})");
         }
 
         private void MonsterDataGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
@@ -592,7 +577,21 @@ namespace TimeSpace
         {
             waveCountInput.Enabled = useWavesCheckbox.Checked;
             waveDelayInput.Enabled = useWavesCheckbox.Checked;
-            monsterDataGridView.Columns["Wave"].Visible = useWavesCheckbox.Checked;
+
+            if (useWavesCheckbox.Checked)
+            {
+                if (!monsterDataGridView.Columns.Contains("Wave"))
+                {
+                    monsterDataGridView.Columns.Insert(3, new DataGridViewTextBoxColumn { Name = "Wave", HeaderText = "Wave" });
+                }
+            }
+            else
+            {
+                if (monsterDataGridView.Columns.Contains("Wave"))
+                {
+                    monsterDataGridView.Columns.Remove("Wave");
+                }
+            }
         }
 
         private void BtnAddAttribute_Click(object sender, EventArgs e)
@@ -767,6 +766,7 @@ namespace TimeSpace
             foreach (var tab in mapTabs)
             {
                 var monsterDataGridView = tab.monsterDataGridView;
+                    continue;
                 string mapName = tab.MapName;
 
                 if (!mapScripts.ContainsKey(mapName))
