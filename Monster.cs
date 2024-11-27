@@ -78,36 +78,29 @@ namespace TimeSpace
         {
             var script = new StringBuilder();
             script.Append($"Monster.CreateWithVnum({row.Cells["Vnum"].Value}).At({row.Cells["X"].Value}, {row.Cells["Y"].Value}).Facing(2)");
-
+            bool shouldAddAsTarget = Convert.ToBoolean(row.Cells["AsTarget"].Value);
+            if (shouldAddAsTarget) script.Append($".AsTarget()");
             foreach (var attr in Attributes)
             {
                 AppendAttributeToScript(script, attr, row);
             }
-
+            
             return script.ToString();
         }
 
         private void AppendAttributeToScript(StringBuilder script, KeyValuePair<string, string> attr, DataGridViewRow row)
-        {
-            // Add AsTarget before any other attribute if needed
-            bool shouldAddAsTarget = Convert.ToBoolean(row.Cells["AsTarget"].Value);
-
+        {  
             switch (attr.Key)
             {
                 case "SpawnAfterMobsKilled":
                 case "WithCustomLevel":
-                    if (shouldAddAsTarget) script.Append(".AsTarget()");
                     script.Append($".{attr.Key}({attr.Value})");
                     break;
                 case "SpawnAfterTaskStart":
                 case "OnThreeFourthsHP":
                 case "OnHalfHp":
                 case "OnQuarterHp":
-                    if (shouldAddAsTarget) script.Append(".AsTarget()");
                     script.Append($".{attr.Key}()");
-                    break;
-                default:
-                    if (shouldAddAsTarget) script.Append(".AsTarget()");
                     break;
             }
         }

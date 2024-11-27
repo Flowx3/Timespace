@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using System.Drawing;
+using YamlDotNet.Core;
 
 namespace TimeSpace
 {
@@ -110,54 +111,41 @@ namespace TimeSpace
 
         private void MirrorPortal()
         {
-            string tempMapFrom = cboMapFrom.SelectedItem?.ToString();
-            string tempMapTo = cboMapTo.SelectedItem?.ToString();
-            int tempFromX = int.Parse(txtFromX.Text);
-            int tempFromY = int.Parse(txtFromY.Text);
-            int tempToX = int.Parse(txtToX.Text);
-            int tempToY = int.Parse(txtToY.Text);
+            // Store original values
+            string originalMapFrom = cboMapFrom.SelectedItem?.ToString();
+            string originalMapTo = cboMapTo.SelectedItem?.ToString();
+            int originalFromX = int.Parse(txtFromX.Text);
+            int originalFromY = int.Parse(txtFromY.Text);
+            int originalToX = int.Parse(txtToX.Text);
+            int originalToY = int.Parse(txtToY.Text);
+            string originalOrientation = cboMinimapOrientation.SelectedItem.ToString();
 
-            cboMapFrom.SelectedItem = tempMapTo;
-            cboMapTo.SelectedItem = tempMapFrom;
-            cboPortalType.SelectedItem = "TsNormal";
-
-            switch (cboMinimapOrientation.SelectedItem.ToString())
+            // Determine mirrored orientation
+            string mirroredOrientation = originalOrientation switch
             {
-                case "North":
-                    cboMinimapOrientation.SelectedItem = "South";
-                    break;
-                case "South":
-                    cboMinimapOrientation.SelectedItem = "North";
-                    break;
-                case "East":
-                    cboMinimapOrientation.SelectedItem = "West";
-                    break;
-                case "West":
-                    cboMinimapOrientation.SelectedItem = "East";
-                    break;
-            }
+                "North" => "South",
+                "South" => "North",
+                "East" => "West",
+                "West" => "East",
+                _ => originalOrientation
+            };
 
-            txtFromX.Text = tempToX.ToString();
-            txtFromY.Text = tempToY.ToString();
-            txtToX.Text = tempFromX.ToString();
-            txtToY.Text = tempFromY.ToString();
-
-            // Create a new mirrored portal  
+            // Create a new mirrored portal without modifying the current one
             var mirroredPortal = new Portal(
-                cboMapFrom.SelectedItem.ToString(),
-                cboMapTo.SelectedItem.ToString(),
+                originalMapTo,  // Swap MapFrom and MapTo
+                originalMapFrom,
                 cboPortalType.SelectedItem.ToString(),
-                cboMinimapOrientation.SelectedItem.ToString(),
-                int.Parse(txtFromX.Text),
-                int.Parse(txtFromY.Text),
-                int.Parse(txtToX.Text),
-                int.Parse(txtToY.Text),
+                mirroredOrientation,
+                originalToX,    // Swap FromX/Y with ToX/Y
+                originalToY,
+                originalFromX,
+                originalFromY,
                 getMapNames,
-                customTabPage // Pass the CustomTabPage instance  
+                customTabPage
             );
 
-            // Add the mirrored portal to the appropriate map  
-            customTabPage.AddPortalToMap(mirroredPortal.MapTo, mirroredPortal);
+            // Add the mirrored portal to the destination map
+            customTabPage.AddPortalToMap(originalMapTo, mirroredPortal);
         }
 
         public void RefreshMapComboboxes()

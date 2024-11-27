@@ -60,7 +60,65 @@ namespace TimeSpace
             this.Height = Math.Max(FixedPanelHeight, totalHeight);
             Invalidate(); // Trigger a repaint
         }
+        public bool IsWalkable(int x, int y)
+        {
+            string errorMessage;
+            return !IsBlockingZone(x, y, out errorMessage);
+        }
+        public (int x, int y) GenerateWalkablePosition()
+        {
+            // If grid is empty or null, return default position
+            if (_grid == null || _grid.Length == 0)
+            {
+                return (0, 0);
+            }
 
+            Random random = new Random();
+            int maxAttempts = _width * _height; // Maximum attempts to find a walkable position
+            int attempts = 0;
+
+            while (attempts < maxAttempts)
+            {
+                int x = random.Next(0, _width);
+                int y = random.Next(0, _height);
+
+                string errorMessage;
+                if (!IsBlockingZone(x, y, out errorMessage))
+                {
+                    return (x, y);
+                }
+
+                attempts++;
+            }
+
+            // If no walkable position found after max attempts, throw exception
+            throw new InvalidOperationException("Could not find a walkable position in the grid after maximum attempts.");
+        }
+        public bool IsBlockingZone(int x, int y, out string errorMessage)
+        {
+            errorMessage = string.Empty;
+
+            // Check if position is within bounds
+            if (x < 0 || x >= _width || y < 0 || y >= _height)
+            {
+                errorMessage = $"Position ({x}, {y}) is out of bounds. Grid size is {_width}x{_height}.";
+                return true;
+            }
+
+            // Get the grid value at the position
+            int index = y * _width + x;
+            byte value = _grid[index];
+
+            // Check if the position has any flags (not white)
+            Color positionColor = GetColor(value);
+            if (positionColor != Color.White)
+            {
+                errorMessage = $"Position ({x}, {y}) is invalid. It contains a blocking flag (Color: {positionColor}).";
+                return true;
+            }
+
+            return false;
+        }
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
@@ -93,7 +151,7 @@ namespace TimeSpace
         { 0x4, Color.Blue }, // UnknownYet
         { 0x8, Color.Green }, // IsMonsterAggroDisabled
         { 0x10, Color.Purple }, // IsPvpDisabled
-        {0xB,Color.FromArgb(255, 152, 100, 100) },
+        { 0xB, Color.Brown },
         { 0x20, Color.Orange } // MateDoll
     };
         private Color GetColor(byte value)
@@ -140,7 +198,8 @@ namespace TimeSpace
     public class CustomTabPage : TabPage
     {
         private TaskEventManagerForm taskEventManagerForm;
-        private MonsterManager monsterManager;
+        private readonly MapEventGenerator eventGenerator;
+        public DataGridView MonsterDataGridView => monsterDataGridView;
         public string MapName { get; private set; }
         public Func<List<string>> getMapNames;
         public Dictionary<string, Panel> MapPortalPanels { get; set; }
@@ -182,13 +241,12 @@ namespace TimeSpace
 
         public CustomTabPage(string mapName, Form1 form, Func<List<string>> getMapNames)
         {
-            MapPortalPanels = new Dictionary<string, Panel>();
             MonsterEvents = new List<Monster>();
-            monsterManager = new MonsterManager(waveDelayInput);
             Text = mapName;
             this.getMapNames = getMapNames;
             this.MapName = mapName;
-
+            eventGenerator = new MapEventGenerator(waveDelayInput, eventManagerScripts);
+            MapPortalPanels = new Dictionary<string, Panel>();
             InitializeComponents(form);
         }
 
@@ -595,27 +653,48 @@ namespace TimeSpace
                 }
             }
         }
-
         private void BtnAddAttribute_Click(object sender, EventArgs e)
         {
-            if (monsterDataGridView.CurrentRow == null) return;
+            Dictionary<string, string> currentAttributes = new Dictionary<string, string>();
 
-            int rowIndex = monsterDataGridView.CurrentRow.Index;
-            var monster = MonsterEvents[rowIndex];
+            if (monsterDataGridView.CurrentRow != null &&
+                MonsterEvents != null &&
+                MonsterEvents.Count > monsterDataGridView.CurrentRow.Index)
+            {
+                currentAttributes = MonsterEvents[monsterDataGridView.CurrentRow.Index].Attributes;
+            }
 
-            var attributeForm = new MonsterAttributeForm(monster.Attributes);
+            var attributeForm = new MonsterAttributeForm(currentAttributes);
 
             if (attributeForm.ShowDialog() == DialogResult.OK)
             {
-                monster.Attributes.Clear();
-                foreach (var attr in attributeForm.SelectedAttributes)
+                if (monsterDataGridView.CurrentRow != null &&
+                    MonsterEvents != null &&
+                    MonsterEvents.Count > monsterDataGridView.CurrentRow.Index)
                 {
-                    monster.Attributes[attr.Key] = attr.Value;
+                    var monster = MonsterEvents[monsterDataGridView.CurrentRow.Index];
+                    monster.Attributes.Clear();
+                    foreach (var attr in attributeForm.SelectedAttributes)
+                    {
+                        monster.Attributes[attr.Key] = attr.Value;
+                    }
+                    UpdateAttributeDisplay(monsterDataGridView.CurrentRow.Index);
                 }
-                UpdateAttributeDisplay(rowIndex);
+                else
+                {
+                    MonsterEvents = MonsterEvents ?? new List<Monster>();
+                    var monster = new Monster(MapName);
+                    foreach (var attr in attributeForm.SelectedAttributes)
+                    {
+                        monster.Attributes[attr.Key] = attr.Value;
+                    }
+                    MonsterEvents.Add(monster);
+                    monsterDataGridView.Refresh();
+                    UpdateAttributeDisplay(MonsterEvents.Count - 1);
+                }
+                monsterDataGridView.Refresh();
             }
         }
-
         private void UpdateAttributeDisplay(int rowIndex)
         {
             var monster = MonsterEvents[rowIndex];
@@ -633,10 +712,10 @@ namespace TimeSpace
         }
         public void AddPortalToMap(string mapName, Portal portal)
         {
-            if (MapPortalPanels.ContainsKey(mapName))
+            var test = mapTabs.FirstOrDefault(x => x.MapName == mapName);
+            if (test != null)
             {
-                Panel portalPanel = MapPortalPanels[mapName];
-                portalPanel.Controls.Add(portal.CreatePortal());
+                test.portalPanel.Controls.Add(portal.CreatePortal());
             }
             else
             {
@@ -742,73 +821,141 @@ namespace TimeSpace
         private void BtnAddEvent_Click(object sender, EventArgs e)
         {
             var monster = new Monster(MapName);
-            MonsterEvents.Add(monster);
-
-            // Add a new row to the existing DataGridView  
             monsterDataGridView.Rows.Add();
         }
         private void BtnRemoveEvent_Click(object sender, EventArgs e)
         {
             if (monsterDataGridView.Rows.Count > 0)
             {
-                int lastRowIndex = monsterDataGridView.Rows.Count - 1;
-                monsterDataGridView.Rows.RemoveAt(lastRowIndex);
-                int lastMonsterIndex = MonsterEvents.Count - 1;
-                if (lastMonsterIndex >= 0)
-                {
-                    MonsterEvents.RemoveAt(lastMonsterIndex);
-                }
+                monsterDataGridView.Rows.RemoveAt(monsterDataGridView.Rows.Count - 1);
             }
         }
         public void BtnSaveMonsterAndObjective_Click(object sender, EventArgs e)
         {
-            var mapScripts = monsterManager.ProcessMonsterData(Parent.Controls.OfType<TabPage>().ToList());
-
-            // Process objectives (kept in CustomTabPage as it's separate from monster logic)
-            ProcessObjectives(mapScripts);
-
-            // Process map join events
-            ProcessMapJoinEvents(mapScripts);
-
-            // Save final script
-            var finalScript = new StringBuilder();
-            foreach (var mapName in mapScripts.Keys)
+            if (ValidateAndUpdateMonsterPositions())
             {
-                finalScript.Append(mapScripts[mapName].ToString());
+                var mapTabs = Parent.Controls.OfType<CustomTabPage>().ToList();
+                eventGenerator.GenerateEvents(mapTabs);
             }
-            File.WriteAllText("CombinedEvents.lua", finalScript.ToString());
         }
-        private void ProcessObjectives(Dictionary<string, StringBuilder> mapScripts)
+        private bool ValidateAndUpdateMonsterPositions()
         {
-            foreach (var mapTab in mapTabs)
+            MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).First();
+            bool hasErrors = false;
+            List<string> errorMessages = new List<string>();
+
+            // Process each row in the DataGridView
+            foreach (DataGridViewRow row in monsterDataGridView.Rows)
             {
-                string mapName = mapTab.MapName;
-                if (!mapScripts.ContainsKey(mapName))
+                if (row.IsNewRow) continue;
+
+                try
                 {
-                    mapScripts[mapName] = new StringBuilder();
-                }
-                var objects = new List<string>();
-                foreach (var mapObject in mapTab.Objects)
-                {
-                    if (string.IsNullOrEmpty(mapObject.ObjectType) || mapObject.GetX() == 1500 || mapObject.GetY() == 1500)
-                    {
+                    // Get values from the row
+                    var vnum = row.Cells["vnum"].Value?.ToString() ?? "";
+                    var xValue = row.Cells["X"].Value;
+                    var yValue = row.Cells["Y"].Value;
+
+                    // Skip if vnum is empty
+                    if (string.IsNullOrWhiteSpace(vnum))
                         continue;
-                    }
-                    string objectScript = mapObject.GenerateObjectiveScript();
-                    if (!string.IsNullOrEmpty(objectScript))
+
+                    int x = -1;
+                    int y = -1;
+
+                    // Check if X and Y are empty or invalid
+                    bool needsPosition = !int.TryParse(xValue?.ToString(), out x) ||
+                                       !int.TryParse(yValue?.ToString(), out y);
+
+                    if (needsPosition)
                     {
-                        objects.Add(objectScript);
+                        // Generate new walkable position
+                        try
+                        {
+                            (x, y) = mapGridPanel.GenerateWalkablePosition();
+                            row.Cells["X"].Value = x;
+                            row.Cells["Y"].Value = y;
+                        }
+                        catch (InvalidOperationException ex)
+                        {
+                            errorMessages.Add($"Could not find walkable position for monster VNUM {vnum}: {ex.Message}");
+                            hasErrors = true;
+                            continue;
+                        }
+                    }
+
+                    // Validate the position
+                    string validationError;
+                    if (mapGridPanel.IsBlockingZone(x, y, out validationError))
+                    {
+                        errorMessages.Add($"Invalid position for monster VNUM {vnum}: {validationError}");
+                        hasErrors = true;
                     }
                 }
-                if (objects.Any())
+                catch (Exception ex)
                 {
-                    mapScripts[mapName].AppendLine($"{mapName}.AddObjects({{");
-                    mapScripts[mapName].AppendLine(string.Join(", \n", objects));
-                    mapScripts[mapName].AppendLine("})");
+                    errorMessages.Add($"Error processing row {row.Index + 1}: {ex.Message}");
+                    hasErrors = true;
                 }
             }
+
+            // If there were any errors, show them to the user
+            if (hasErrors)
+            {
+                string errorMessage = "The following errors were found:\n\n" +
+                                    string.Join("\n", errorMessages);
+                MessageBox.Show(errorMessage, "Position Validation Errors",
+                              MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+
+            return !hasErrors;
         }
-    private void BtnAddObjective_Click(object sender, EventArgs e)
+
+        // Helper method to highlight invalid rows (optional)
+        private void HighlightInvalidRow(DataGridViewRow row, bool isInvalid)
+        {
+            if (isInvalid)
+            {
+                row.DefaultCellStyle.BackColor = Color.LightPink;
+                row.DefaultCellStyle.SelectionBackColor = Color.Pink;
+            }
+            else
+            {
+                row.DefaultCellStyle.BackColor = Color.White;
+                row.DefaultCellStyle.SelectionBackColor = SystemColors.Highlight;
+            }
+        }
+        //private void ProcessObjectives(Dictionary<string, StringBuilder> mapScripts)
+        //{
+        //    foreach (var mapTab in mapTabs)
+        //    {
+        //        string mapName = mapTab.MapName;
+        //        if (!mapScripts.ContainsKey(mapName))
+        //        {
+        //            mapScripts[mapName] = new StringBuilder();
+        //        }
+        //        var objects = new List<string>();
+        //        foreach (var mapObject in mapTab.Objects)
+        //        {
+        //            if (string.IsNullOrEmpty(mapObject.ObjectType) || mapObject.GetX() == 1500 || mapObject.GetY() == 1500)
+        //            {
+        //                continue;
+        //            }
+        //            string objectScript = mapObject.GenerateObjectiveScript();
+        //            if (!string.IsNullOrEmpty(objectScript))
+        //            {
+        //                objects.Add(objectScript);
+        //            }
+        //        }
+        //        if (objects.Any())
+        //        {
+        //            mapScripts[mapName].AppendLine($"{mapName}.AddObjects({{");
+        //            mapScripts[mapName].AppendLine(string.Join(", \n", objects));
+        //            mapScripts[mapName].AppendLine("})");
+        //        }
+        //    }
+        //}
+        private void BtnAddObjective_Click(object sender, EventArgs e)
         {
             if (Objects.Count >= 4)
             {
@@ -829,7 +976,6 @@ namespace TimeSpace
                 objectivePanel.Refresh();
             }
         }
-
         public void SaveAllValues(object sender, EventArgs e)
         {
             BtnSaveMonsterAndObjective_Click(sender, e);
