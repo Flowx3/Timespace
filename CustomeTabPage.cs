@@ -332,8 +332,8 @@ namespace TimeSpace
             CreateButton("Remove Last Portal", new Point(150, 390), BtnRemovePortal_Click),
             CreateButton("Save Portals", new Point(290, 390), BtnSavePortal_Click),
             eventPanel,
-            CreateButton("Add Monster Event", new Point(10, 730), BtnAddEvent_Click),
-            CreateButton("Remove Last Monster Event", new Point(150, 730), BtnRemoveEvent_Click),
+            CreateButton("Add Monster", new Point(10, 730), BtnAddEvent_Click),
+            CreateButton("Remove Last Monster", new Point(150, 730), BtnRemoveEvent_Click),
             CreateButton("Save Monsters", new Point(290, 730), BtnSaveMonsterAndObjective_Click),
             CreateButton("Manage Events", new Point(360, 70), (s, e) => ManageEvents())
             });
@@ -832,47 +832,45 @@ namespace TimeSpace
         }
         public void BtnSaveMonsterAndObjective_Click(object sender, EventArgs e)
         {
+            if (mapTabs == null)
+                return;
             if (ValidateAndUpdateMonsterPositions())
             {
-                var mapTabs = Parent.Controls.OfType<CustomTabPage>().ToList();
                 eventGenerator.GenerateEvents(mapTabs);
             }
         }
         private bool ValidateAndUpdateMonsterPositions()
         {
-            MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).First();
             bool hasErrors = false;
             List<string> errorMessages = new List<string>();
-
-            // Process each row in the DataGridView
+            List<(DataGridViewRow Row, int Vnum, int X, int Y)> invalidPositions = new List<(DataGridViewRow, int, int, int)>();
+            MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).First();
             foreach (DataGridViewRow row in monsterDataGridView.Rows)
             {
                 if (row.IsNewRow) continue;
 
                 try
                 {
-                    // Get values from the row
                     var vnum = row.Cells["vnum"].Value?.ToString() ?? "";
-                    var xValue = row.Cells["X"].Value;
-                    var yValue = row.Cells["Y"].Value;
-
-                    // Skip if vnum is empty
-                    if (string.IsNullOrWhiteSpace(vnum))
-                        continue;
 
                     int x = -1;
                     int y = -1;
 
-                    // Check if X and Y are empty or invalid
-                    bool needsPosition = !int.TryParse(xValue?.ToString(), out x) ||
-                                       !int.TryParse(yValue?.ToString(), out y);
+                    if (string.IsNullOrWhiteSpace(vnum))
+                        continue;
+
+                    // Parse X and Y values
+                    bool needsPosition = !int.TryParse(row.Cells["X"].Value?.ToString(), out x) ||
+                                       !int.TryParse(row.Cells["Y"].Value?.ToString(), out y);
 
                     if (needsPosition)
                     {
                         // Generate new walkable position
                         try
                         {
-                            (x, y) = mapGridPanel.GenerateWalkablePosition();
+                            var position = mapGridPanel.GenerateWalkablePosition();
+                            x = position.x;
+                            y = position.y;
                             row.Cells["X"].Value = x;
                             row.Cells["Y"].Value = y;
                         }
@@ -883,35 +881,72 @@ namespace TimeSpace
                             continue;
                         }
                     }
-
-                    // Validate the position
-                    string validationError;
-                    if (mapGridPanel.IsBlockingZone(x, y, out validationError))
-                    {
-                        errorMessages.Add($"Invalid position for monster VNUM {vnum}: {validationError}");
-                        hasErrors = true;
-                    }
+                        string validationError;
+                        if (mapGridPanel.IsBlockingZone(x, y, out validationError))
+                        {
+                            errorMessages.Add($"Invalid position for monster VNUM {vnum}: {validationError}");
+                            hasErrors = true;
+                            HighlightInvalidRow(row, true);
+                            invalidPositions.Add((row, int.Parse(vnum), x, y));
+                        }
+                        else
+                        {
+                            HighlightInvalidRow(row, false);
+                        }
                 }
                 catch (Exception ex)
                 {
                     errorMessages.Add($"Error processing row {row.Index + 1}: {ex.Message}");
                     hasErrors = true;
+                    HighlightInvalidRow(row, true);
                 }
             }
-
-            // If there were any errors, show them to the user
-            if (hasErrors)
+            if (invalidPositions.Any())
             {
-                string errorMessage = "The following errors were found:\n\n" +
-                                    string.Join("\n", errorMessages);
-                MessageBox.Show(errorMessage, "Position Validation Errors",
-                              MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                string message = "Invalid positions were found for some monsters.\n\n" +
+                               string.Join("\n", errorMessages) +
+                               "\n\nDo you want to automatically replace these with random walkable positions?";
+
+                var result = MessageBox.Show(message, "Invalid Positions Detected",
+                                           MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes)
+                {
+                    foreach (var invalidPos in invalidPositions)
+                    {
+                        try
+                        {
+                            var (row, vnum, _, _) = invalidPos;
+                            var newPosition = mapGridPanel.GenerateWalkablePosition();
+
+                            row.Cells["X"].Value = newPosition.x;
+                            row.Cells["Y"].Value = newPosition.y;
+                            HighlightInvalidRow(row, false);
+
+                            errorMessages.Add($"VNUM {vnum}: Position updated to ({newPosition.x}, {newPosition.y})");
+                        }
+                        catch (InvalidOperationException ex)
+                        {
+                            errorMessages.Add($"Could not find walkable position for VNUM {invalidPos.Vnum}: {ex.Message}");
+                            hasErrors = true;
+                        }
+                    }
+                    string statusMessage = "Position updates completed:\n\n" + string.Join("\n", errorMessages);
+                    MessageBox.Show(statusMessage, "Position Update Status",
+                                  MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return true;
+                }
+                else
+                {
+                    MessageBox.Show("Save operation cancelled. Please adjust the positions manually.",
+                                  "Operation Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return false;
+                }
             }
 
             return !hasErrors;
         }
 
-        // Helper method to highlight invalid rows (optional)
         private void HighlightInvalidRow(DataGridViewRow row, bool isInvalid)
         {
             if (isInvalid)
@@ -1012,6 +1047,53 @@ namespace TimeSpace
             if (taskEventManagerForm != null)
             {
                 taskEventManagerForm.UpdatePortalComboboxes(lockedPortalsList);
+            }
+        }
+        public void SetMapVnum(int vnum)
+        {
+            this.txtMapVNUM.Text = vnum.ToString();
+        }
+        public void SetMapCoordinates(string coords)
+        {
+            this.txtMapCoordinates.Text = coords;
+        }
+        public void SetTaskType(string taskType)
+        {
+            this.cboTaskType.SelectedItem = taskType;
+        }
+        public void AddMonster(int vnum, int x, int y, bool asTarget, Dictionary<string, string> attributes)
+        {
+            var monster = new Monster(MapName)
+            {
+                Vnum = vnum,
+                X = x,
+                Y = y,
+                AsTarget = asTarget,
+                Attributes = attributes
+            };
+
+            int rowIndex = monsterDataGridView.Rows.Add();
+            DataGridViewRow row = monsterDataGridView.Rows[rowIndex];
+            row.Cells["Vnum"].Value = monster.Vnum;
+            row.Cells["X"].Value = monster.X;
+            row.Cells["Y"].Value = monster.Y;
+            row.Cells["AsTarget"].Value = monster.AsTarget;
+            row.Cells["Attributes"].Value = string.Join(", ", attributes.Select(a => $"{a.Key}={a.Value}"));
+
+            MonsterEvents = MonsterEvents ?? new List<Monster>();
+            MonsterEvents.Add(monster);
+        }
+        public void AddMapObject(string objectType, int x, int y, List<string> linkedPortals = null)
+        {
+            var mapObject = new MapObject(MapName, objectType, x, y, linkedPortals ?? new List<string>());
+
+            Objects.Add(mapObject);
+
+            this.objectivePanel.Controls.Add(mapObject.CreateObject());
+ 
+            if (objectType == "Lever")
+            {
+               taskEventManagerForm.UpdatePortalComboboxes(lockedPortalsList);
             }
         }
     }

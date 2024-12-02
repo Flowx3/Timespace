@@ -29,7 +29,7 @@ namespace TimeSpace
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             InitializeComponent();
             AdjustLayout();
-            _CustomTabPage = new CustomTabPage($"spaceholder l0l", this,getMapNames);
+            _CustomTabPage = new CustomTabPage($"spaceholder l0l", this, getMapNames);
             mapCount++;
             if (!File.Exists("./config.json"))
             {
@@ -108,7 +108,7 @@ namespace TimeSpace
                 }
                 else
                 {
-                    if(config.TimespacesFilePath != null)
+                    if (config.TimespacesFilePath != null)
                         timespaceTranslation = config.TimespacesFilePath;
                     else
                         throw new InvalidOperationException("A required path was not provided.");
@@ -201,14 +201,36 @@ namespace TimeSpace
                 selectedTab.Dispose();
             }
         }
+        private void button9_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.Filter = "Lua files (*.lua)|*.lua|All files (*.*)|*.*";
+                openFileDialog.FilterIndex = 1;
 
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    LoadTimeSpaceScript(openFileDialog.FileName);
+                }
+            }
+        }
+        private void LoadTimeSpaceScript(string filePath)
+        {
+            var parser = new TimeSpaceParser(this, filePath, GetMapNames);
+            parser.PopulateFromFile();
+        }
         private void Form1_Load(object sender, EventArgs e)
-        { 
+        {
             loadedMaps = mapResourceFileLoader.LoadAsync().GetAwaiter().GetResult().ToList();
         }
 
         private void button6_Click(object sender, EventArgs e)
         {
+            if (mapTabs.Count <= 0)
+            {
+                MessageBox.Show("You need atleast 1 Map to create a TimeSpace.", "Can't generate Script.", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             _CustomTabPage.SaveAllValues(sender, e);
             var luaScript = new StringBuilder();
 
@@ -322,7 +344,7 @@ namespace TimeSpace
             config.GameMapsPath = mapsPath;
             textBox11.Text = config.GameMapsPath;
         }
-        private void Form1_Resize(object sender, EventArgs e)  
+        private void Form1_Resize(object sender, EventArgs e)
         {
             AdjustLayout();
         }
@@ -366,7 +388,7 @@ namespace TimeSpace
                 else
                 {
                     if (config.GameMapsPath != null)
-                    DatPath = config.GameDataPath;
+                        DatPath = config.GameDataPath;
                     else
                         throw new InvalidOperationException("A required path was not provided.");
                 }
