@@ -146,14 +146,70 @@ namespace TimeSpace
         }
         private readonly Dictionary<int, Color> _flagColors = new Dictionary<int, Color>
     {
-        { 0x1, Color.Gray }, // IsWalkingDisabled
-        { 0x2, Color.Red },  // IsAttackDisabledThrough
-        { 0x4, Color.Blue }, // UnknownYet
-        { 0x8, Color.Green }, // IsMonsterAggroDisabled
-        { 0x10, Color.Purple }, // IsPvpDisabled
-        { 0xB, Color.Brown },
-        { 0x20, Color.Orange } // MateDoll
+        { 0x1, Color.Gray },     // IsWalkingDisabled
+        { 0x2, Color.Red },      // IsAttackDisabledThrough
+        { 0x4, Color.Blue },     // UnknownYet
+        { 0x8, Color.Green },    // IsMonsterAggroDisabled
+        { 0x10, Color.Purple },  // IsPvpDisabled
+        { 0x20, Color.Orange },  // MateDoll
+        { 0x40, Color.LightBlue }, // Portal
+        { 0x80, Color.Red },     // Monster
+        { 0x100, Color.Purple }, // Target Monster
+        { 0x200, Color.Gold }    // Objective
     };
+
+        // Add methods to update grid with new element types
+        public void MarkPortal(int x, int y)
+        {
+            if (IsValidPosition(x, y))
+            {
+                _grid[y * _width + x] = 0x40; // Portal flag
+                Invalidate();
+            }
+        }
+
+        public void MarkMonster(int x, int y, bool isTarget = false)
+        {
+            if (IsValidPosition(x, y))
+            {
+                _grid[y * _width + x] = (byte)(isTarget ? 0x100 : 0x80); // Target or regular monster flag
+                Invalidate();
+            }
+        }
+
+        public void MarkObjective(int x, int y)
+        {
+            if (IsValidPosition(x, y))
+            {
+                _grid[y * _width + x] = 0x200; // Objective flag
+                Invalidate();
+            }
+        }
+
+        private bool IsValidPosition(int x, int y)
+        {
+            return x >= 0 && x < _width && y >= 0 && y < _height && _grid != null;
+        }
+
+        // Method to clear specific type of marking
+        public void ClearMarking(int x, int y)
+        {
+            if (IsValidPosition(x, y))
+            {
+                _grid[y * _width + x] = 0; // Reset to default (white)
+                Invalidate();
+            }
+        }
+
+        // Helper method to get existing marking at position
+        public byte GetMarking(int x, int y)
+        {
+            if (IsValidPosition(x, y))
+            {
+                return _grid[y * _width + x];
+            }
+            return 0;
+        }
         private Color GetColor(byte value)
         {
             // Customize this method based on your grid values
