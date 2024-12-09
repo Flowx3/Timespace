@@ -209,32 +209,23 @@ namespace TimeSpace
 
         private List<string> allPortalsList = new List<string>();
         private List<string> lockedPortalsList = new List<string>();
-        private List<DataGridView> monsterDataGrids;
         private List<CustomTabPage> mapTabs = Form1.mapTabs;
-        private Task _gridCreationTask;
         private static List<Point> sharedTakenPositions = new List<Point>();
         private static readonly object positionsLock = new object();
-        private Dictionary<string, List<string>> eventManagerScripts = new Dictionary<string, List<string>>();
+        public Dictionary<string, List<string>> eventManagerScripts = new Dictionary<string, List<string>>();
         private bool isDisposed = false;
 
         private TextBox txtMapVNUM;
         private TextBox txtMapCoordinates;
         private TextBox txtTaskText;
         private ComboBox cboTaskType;
-        private ComboBox[] taskFinishPortals;
-        private ComboBox[] taskFailPortals;
-        private ComboBox eventTypeComboBox;
-        private NumericUpDown addTimeEvent;
-        private CheckBox despawnAllMobsInRoom;
         private NumericUpDown timeForTask;
-        private NumericUpDown removeTimeEvent;
         private FlowLayoutPanel portalPanel;
         private DataGridView monsterDataGridView;
         private FlowLayoutPanel eventPanel;
         private FlowLayoutPanel objectivePanel;
         private Point? currentPosition = null;
         private Button btnAddAttribute;
-        private Button applyButton;
         private NumericUpDown waveCountInput;
         private NumericUpDown waveDelayInput;
         public CheckBox useWavesCheckbox;
@@ -330,7 +321,7 @@ namespace TimeSpace
             portalPanel,
             CreateButton("Add Portal", new Point(10, 390), BtnAddPortal_Click),
             CreateButton("Remove Last Portal", new Point(150, 390), BtnRemovePortal_Click),
-            CreateButton("Save Portals", new Point(290, 390), BtnSavePortal_Click),
+            CreateButton("Save Portals", new Point(290, 390), SaveAllValues),
             eventPanel,
             CreateButton("Add Monster", new Point(10, 730), BtnAddEvent_Click),
             CreateButton("Remove Last Monster", new Point(150, 730), BtnRemoveEvent_Click),
@@ -382,7 +373,13 @@ namespace TimeSpace
         }
         private void ManageEvents()
         {
-            var eventManager = new TaskEventManagerForm(MapName, lockedPortalsList);
+            List<string> existingEvents = null;
+            if (eventManagerScripts.ContainsKey(MapName))
+            {
+                existingEvents = eventManagerScripts[MapName];
+            }
+
+            var eventManager = new TaskEventManagerForm(MapName, lockedPortalsList, existingEvents);
             if (eventManager.ShowDialog() == DialogResult.OK)
             {
                 string generatedScript = eventManager.Tag as string;
@@ -392,7 +389,8 @@ namespace TimeSpace
                     {
                         eventManagerScripts[MapName] = new List<string>();
                     }
-                    eventManagerScripts[MapName].Add(generatedScript);
+                    eventManagerScripts[MapName].Clear(); // Clear existing events
+                    eventManagerScripts[MapName].Add(generatedScript); // Add the new event
                 }
             }
         }
@@ -482,7 +480,7 @@ namespace TimeSpace
             });
             eventPanel.Height = monsterDataGridView.Bottom + 20;
         }
-        private void LoadMap(Form1 form)
+        public void LoadMap(Form1 form)
         {
             if (int.TryParse(txtMapVNUM.Text, out int mapVnum))
             {
@@ -745,7 +743,7 @@ namespace TimeSpace
 
             Portals.Add(portal);
             this.portalPanel.Controls.Add(portal.CreatePortal());
-            RefreshLeverPortalComboboxes(sender, e, true);
+            SaveAndRefreshPortals(sender, e, false);
         }
         private void BtnRemovePortal_Click(object sender, EventArgs e)
         {
@@ -756,66 +754,120 @@ namespace TimeSpace
                 portalPanel.Controls.Remove(lastPortal.Panel);
                 portalPanel.Refresh();
             }
-            RefreshLeverPortalComboboxes(sender,e, true);
+            SaveAndRefreshPortals(sender,e, false);
         }
-        public void BtnSavePortal_Click(Object sender, EventArgs e)
+        public void SaveAndRefreshPortals(object sender, EventArgs e, bool generateScripts)
         {
-            var localPortalScript = new StringBuilder();
-            var addPortalScript = new StringBuilder();
-            allPortalsList.Clear();
-            lockedPortalsList.Clear();
-            foreach (var mapTab in mapTabs)
+            if (generateScripts)
             {
-                foreach (var portal in mapTab.Portals)
+                var localPortalScript = new StringBuilder();
+                var addPortalScript = new StringBuilder();
+                allPortalsList.Clear();
+                lockedPortalsList.Clear();
+
+                foreach (var mapTab in mapTabs)
                 {
-                    // Skip if any essential fields are empty or null
-                    if (portal.cboMapFrom.SelectedItem == null ||
-                        portal.cboMapTo.SelectedItem == null ||
-                        portal.cboPortalType.SelectedItem == null ||
-                        portal.cboMinimapOrientation.SelectedItem == null ||
-                        string.IsNullOrWhiteSpace(portal.txtFromX.Text) ||
-                        string.IsNullOrWhiteSpace(portal.txtFromY.Text))
+                    foreach (var portal in mapTab.Portals)
                     {
-                        continue;
-                    }
-
-                    portal.MapFrom = portal.cboMapFrom.SelectedItem.ToString();
-                    portal.MapTo = portal.cboMapTo.SelectedItem.ToString();
-                    portal.PortalType = portal.cboPortalType.SelectedItem.ToString();
-                    portal.MinimapOrientation = portal.cboMinimapOrientation.SelectedItem.ToString();
-                    portal.FromX = int.Parse(portal.txtFromX.Text);
-                    portal.FromY = int.Parse(portal.txtFromY.Text);
-
-                    if (portal.MapTo == "UNKNOWN")
-                    {
-                        portal.ToX = 1;
-                        portal.ToY = 1;
-                    }
-                    else
-                    {
-                        // Skip if destination coordinates are empty when MapTo is not UNKNOWN
-                        if (string.IsNullOrWhiteSpace(portal.txtToX?.Text) ||
-                            string.IsNullOrWhiteSpace(portal.txtToY?.Text))
+                        if (!IsValidPortal(portal))
                         {
                             continue;
                         }
-                        portal.ToX = int.Parse(portal.txtToX.Text);
-                        portal.ToY = int.Parse(portal.txtToY.Text);
-                    }
 
-                    // Generate scripts and add to StringBuilder  
-                    localPortalScript.AppendLine(portal.GenerateLocalPortalScript());
-                    addPortalScript.AppendLine(portal.GenerateAddPortalScript());
-                    allPortalsList.Add(portal.GeneratePortalIdentifier());
-                    if (portal.PortalType == "Locked")
+                        UpdatePortalProperties(portal);
+
+                        if (!IsValidDestination(portal))
+                        {
+                            continue;
+                        }
+
+                        localPortalScript.AppendLine(portal.GenerateLocalPortalScript());
+                        addPortalScript.AppendLine(portal.GenerateAddPortalScript());
+                        allPortalsList.Add(portal.GeneratePortalIdentifier());
+
+                        if (portal.PortalType == "Locked")
+                        {
+                            lockedPortalsList.Add(portal.GeneratePortalIdentifier());
+                        }
+                    }
+                }
+
+                File.WriteAllText("localPortals.lua", localPortalScript.ToString());
+                File.WriteAllText("addPortals.lua", addPortalScript.ToString());
+            }
+            else
+            {
+                lockedPortalsList.Clear();
+                lockedPortalsList.Add("");
+
+                foreach (var tab in mapTabs)
+                {
+                    foreach (var portal in tab.Portals)
                     {
-                        lockedPortalsList.Add(portal.GeneratePortalIdentifier());
+                        if (portal.cboMapFrom?.SelectedItem != null &&
+                            portal.cboMapTo?.SelectedItem != null &&
+                            portal.PortalType == "Locked")
+                        {
+                            lockedPortalsList.Add(portal.GeneratePortalIdentifier());
+                        }
                     }
                 }
             }
-            File.WriteAllText("localPortals.lua", localPortalScript.ToString());
-            File.WriteAllText("addPortals.lua", addPortalScript.ToString());
-            RefreshLeverPortalComboboxes(sender, e, false);
+
+            // Update UI components
+            foreach (var mapObject in Objects)
+            {
+                mapObject.UpdatePortalComboboxes(lockedPortalsList);
+            }
+
+            foreach (var portal in Portals)
+            {
+                portal.RefreshMapComboboxes();
+            }
+
+            if (taskEventManagerForm != null)
+            {
+                taskEventManagerForm.UpdatePortalComboboxes(lockedPortalsList);
+            }
+        }
+
+        private bool IsValidPortal(Portal portal)
+        {
+            return portal.cboMapFrom?.SelectedItem != null &&
+                   portal.cboMapTo?.SelectedItem != null &&
+                   portal.cboPortalType?.SelectedItem != null &&
+                   portal.cboMinimapOrientation?.SelectedItem != null &&
+                   !string.IsNullOrWhiteSpace(portal.txtFromX?.Text) &&
+                   !string.IsNullOrWhiteSpace(portal.txtFromY?.Text);
+        }
+
+        private bool IsValidDestination(Portal portal)
+        {
+            if (portal.MapTo == "UNKNOWN")
+            {
+                portal.ToX = 1;
+                portal.ToY = 1;
+                return true;
+            }
+
+            return !string.IsNullOrWhiteSpace(portal.txtToX?.Text) &&
+                   !string.IsNullOrWhiteSpace(portal.txtToY?.Text);
+        }
+
+        private void UpdatePortalProperties(Portal portal)
+        {
+            portal.MapFrom = portal.cboMapFrom.SelectedItem.ToString();
+            portal.MapTo = portal.cboMapTo.SelectedItem.ToString();
+            portal.PortalType = portal.cboPortalType.SelectedItem.ToString();
+            portal.MinimapOrientation = portal.cboMinimapOrientation.SelectedItem.ToString();
+            portal.FromX = int.Parse(portal.txtFromX.Text);
+            portal.FromY = int.Parse(portal.txtFromY.Text);
+
+            if (portal.MapTo != "UNKNOWN")
+            {
+                portal.ToX = int.Parse(portal.txtToX.Text);
+                portal.ToY = int.Parse(portal.txtToY.Text);
+            }
         }
 
         private void BtnAddEvent_Click(object sender, EventArgs e)
@@ -1014,40 +1066,7 @@ namespace TimeSpace
         public void SaveAllValues(object sender, EventArgs e)
         {
             BtnSaveMonsterAndObjective_Click(sender, e);
-            BtnSavePortal_Click(sender, e);
-        }
-        public void RefreshLeverPortalComboboxes(object sender, EventArgs e, bool shouldsave)
-        {
-            if (shouldsave == true)
-            {
-                SaveAllValues(sender, e);
-            }
-            lockedPortalsList.Clear();
-            lockedPortalsList.Add("");
-            foreach (var tab in mapTabs)
-            {
-                foreach (var portal in tab.Portals)
-                {
-                    if (portal.cboMapFrom?.SelectedItem != null &&
-                        portal.cboMapTo?.SelectedItem != null && portal.PortalType == "Locked")
-                    {
-                        lockedPortalsList.Add(portal.GeneratePortalIdentifier());
-                    }
-                }
-            }
-            foreach (var mapObject in Objects)
-            {
-                mapObject.UpdatePortalComboboxes(lockedPortalsList);
-            }
-            foreach (var portal in Portals)
-            {
-                portal.RefreshMapComboboxes();
-            }
-
-            if (taskEventManagerForm != null)
-            {
-                taskEventManagerForm.UpdatePortalComboboxes(lockedPortalsList);
-            }
+            SaveAndRefreshPortals(sender, e, true);
         }
         public void SetMapVnum(int vnum)
         {
@@ -1093,7 +1112,14 @@ namespace TimeSpace
  
             if (objectType == "Lever")
             {
-               taskEventManagerForm.UpdatePortalComboboxes(lockedPortalsList);
+                if (taskEventManagerForm != null)
+                {
+                    taskEventManagerForm.UpdatePortalComboboxes(lockedPortalsList);
+                }
+                else
+                {
+                    // Handle the null case appropriately
+                }
             }
         }
     }

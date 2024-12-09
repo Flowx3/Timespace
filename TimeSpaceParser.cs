@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Text;
+using System.Text.RegularExpressions;
 using TimeSpace;
 
 public class TimeSpaceParser
@@ -7,6 +8,8 @@ public class TimeSpaceParser
     private readonly string _filePath;
     private readonly Dictionary<string, CustomTabPage> _mapPages;
     private readonly Func<List<string>> _getMapNames;
+    private List<CustomTabPage> mapTabs = Form1.mapTabs;
+    private readonly Dictionary<string, List<string>> _eventScripts;
 
     public TimeSpaceParser(Form1 mainForm, string filePath, Func<List<string>> getMapNames)
     {
@@ -14,44 +17,84 @@ public class TimeSpaceParser
         _filePath = filePath;
         _mapPages = new Dictionary<string, CustomTabPage>();
         _getMapNames = getMapNames;
+        _eventScripts = new Dictionary<string, List<string>>();
     }
 
-    public void PopulateFromFile()
+    public async void PopulateFromFile()
     {
         string[] lines = File.ReadAllLines(_filePath);
         string currentMapName = "";
         CustomTabPage currentPage = null;
+        StringBuilder eventBuilder = null;
 
         foreach (string line in lines)
         {
             string trimmedLine = line.Trim();
 
-            // Parse Map definitions
+            // Handle existing parsing logic
             if (trimmedLine.StartsWith("local map_"))
             {
                 ParseMapDefinition(trimmedLine);
             }
-            // Parse Portals
             else if (trimmedLine.StartsWith("local portal_"))
             {
                 ParsePortalDefinition(trimmedLine);
             }
-            // Parse Map section starts
             else if (trimmedLine.StartsWith("--- Map"))
             {
                 currentMapName = ParseMapSectionStart(trimmedLine);
                 currentPage = _mapPages.GetValueOrDefault(currentMapName);
             }
-            // Parse Monsters
             else if (currentPage != null && trimmedLine.Contains("Monster.CreateWithVnum"))
             {
                 ParseMonsterDefinition(trimmedLine, currentPage);
             }
-            // Parse MapObjects
             else if (currentPage != null && trimmedLine.Contains("MapObject.Create"))
             {
                 ParseMapObjectDefinition(trimmedLine, currentPage);
             }
+            // New event parsing logic
+            else if (currentMapName != "" && (trimmedLine.Contains(".OnTaskFinish({") || trimmedLine.Contains(".OnTaskFail({")))
+            {
+                eventBuilder = new StringBuilder();
+                eventBuilder.AppendLine(trimmedLine);
+            }
+            else if (eventBuilder != null)
+            {
+                eventBuilder.AppendLine(trimmedLine);
+                if (trimmedLine.Contains("})"))
+                {
+                    // Store the complete event script
+                    if (!_eventScripts.ContainsKey(currentMapName))
+                    {
+                        _eventScripts[currentMapName] = new List<string>();
+                    }
+                    string completeEventScript = eventBuilder.ToString();
+                    _eventScripts[currentMapName].Add(completeEventScript);
+
+                    // Parse the event and add it to the current page
+                    if (currentPage != null)
+                    {
+                        ParseTaskEvent(completeEventScript, currentPage);
+                    }
+
+                    eventBuilder = null;
+                }
+            }
+            }
+        foreach (var mapPage in _mapPages.Values)
+        {
+            if (_eventScripts.TryGetValue(mapPage.MapName, out var scripts))
+            {
+                foreach (var script in scripts)
+                {
+                    mapPage.eventManagerScripts[mapPage.MapName] = scripts;
+                }
+            }
+        }
+        foreach(var tab in mapTabs)
+        {
+            tab.SaveAllValues(null, EventArgs.Empty);
         }
     }
 
@@ -67,9 +110,13 @@ public class TimeSpaceParser
             int coordY = int.Parse(match.Groups[4].Value);
 
             var tabPage = new CustomTabPage(mapName, _mainForm, _getMapNames);
+            _mainForm.tabControl2.TabPages.Add(tabPage);
+            mapTabs.Add(tabPage);
             tabPage.SetMapVnum(mapVnum);
+            tabPage.LoadMap(_mainForm);
             tabPage.SetMapCoordinates($"{coordX}, {coordY}");
-
+            var Coords = new Point(coordX, coordY);
+            tabPage.SetCoordinates(Coords);
             // Parse task type if present
             if (line.Contains("TimeSpaceTaskType."))
             {
@@ -83,11 +130,64 @@ public class TimeSpaceParser
             _mapPages[mapName] = tabPage;
         }
     }
+    private void ParseTaskEvent(string eventScript, CustomTabPage page)
+    {
+        // Extract event type
+        bool isTaskFinish = eventScript.Contains(".OnTaskFinish");
 
+        // Extract portal references
+        var portalMatches = Regex.Matches(eventScript, @"Event\.OpenPortal\((portal_[^)]+)\)");
+        List<string> portals = new List<string>();
+        foreach (Match match in portalMatches)
+        {
+            portals.Add(match.Groups[1].Value);
+        }
+
+        // Extract time modifications
+        var addTimeMatch = Regex.Match(eventScript, @"Event\.AddTime\((\d+)\)");
+        var removeTimeMatch = Regex.Match(eventScript, @"Event\.RemoveTime\((\d+)\)");
+
+        int addTime = addTimeMatch.Success ? int.Parse(addTimeMatch.Groups[1].Value) : 0;
+        int removeTime = removeTimeMatch.Success ? int.Parse(removeTimeMatch.Groups[1].Value) : 0;
+
+        // Check for despawn all mobs
+        bool despawnMobs = eventScript.Contains("Event.DespawnAllMobsInRoom");
+
+        // Generate and store the event script
+        StringBuilder newScript = new StringBuilder();
+        newScript.AppendLine($"{page.MapName}.On{(isTaskFinish ? "TaskFinish" : "TaskFail")}({{");
+
+        foreach (var portal in portals)
+        {
+            newScript.AppendLine($"    Event.OpenPortal({portal}),");
+        }
+
+        if (addTime > 0)
+        {
+            newScript.AppendLine($"    Event.AddTime({addTime}),");
+        }
+        if (removeTime > 0)
+        {
+            newScript.AppendLine($"    Event.RemoveTime({removeTime}),");
+        }
+        if (despawnMobs)
+        {
+            newScript.AppendLine($"    Event.DespawnAllMobsInRoom({page.MapName}),");
+        }
+
+        newScript.AppendLine("})");
+
+        if (!page.eventManagerScripts.ContainsKey(page.MapName))
+        {
+            page.eventManagerScripts[page.MapName] = new List<string>();
+        }
+        page.eventManagerScripts[page.MapName].Add(newScript.ToString());
+    }
     private void ParsePortalDefinition(string line)
     {
-        // Example: local portal_3_11_to_3_10 = Portal.Create(PortalType.TsNormal).From(map_3_11, 14, 1).To(map_3_10, 14, 28)
-        var match = Regex.Match(line, @"portal_(\d+_\d+)_to_(\d+_\d+).*From\(map_(\d+_\d+),\s*(\d+),\s*(\d+)\)\.To\(map_(\d+_\d+),\s*(\d+),\s*(\d+)\)");
+        // Example: local portal_3_11_to_3_10 = Portal.Create(PortalType.TsNormal).From(map_3_11, 14, 1).To(map_3_10, 14, 28).MinimapOrientation(PortalMinimapOrientation.South)
+        var match = Regex.Match(line, @"portal_(\d+_\d+)_to_(\d+_\d+).*From\(map_(\d+_\d+),\s*(\d+),\s*(\d+)\)\.To\(map_(\d+_\d+),\s*(\d+),\s*(\d+)\).*MinimapOrientation\(PortalMinimapOrientation\.(\w+)\)");
+
         if (match.Success)
         {
             string sourceMapName = $"map_{match.Groups[3].Value}";
@@ -96,13 +196,16 @@ public class TimeSpaceParser
             int fromY = int.Parse(match.Groups[5].Value);
             int toX = int.Parse(match.Groups[7].Value);
             int toY = int.Parse(match.Groups[8].Value);
+            string orientation = match.Groups[9].Value; 
+
+            var portalTypeMatch = Regex.Match(line, @"PortalType\.(\w+)");
+            string portalType = portalTypeMatch.Success ? portalTypeMatch.Groups[1].Value : "TsNormal"; // Default to TsNormal if not found
 
             if (_mapPages.TryGetValue(sourceMapName, out var sourcePage))
             {
-                var portalType = line.Contains("PortalType.TsNormal") ? "Type1" : "Type2";
-                var orientation = line.Contains("North") ? "North" : "South";
                 Portal portal = new Portal(sourceMapName, targetMapName, portalType, orientation, fromX, fromY, toX, toY, _getMapNames, sourcePage);
                 sourcePage.AddPortalToMap(sourcePage.MapName, portal);
+                sourcePage.Portals.Add(portal);
             }
         }
     }
@@ -210,14 +313,16 @@ public class TimeSpaceParser
     }
     private List<string> GetPortalTriggerLines(string objectLine)
     {
-        // This is a simplified version - you might need to enhance this based on your actual file structure
         var portalLines = new List<string>();
         var triggerStart = objectLine.IndexOf("OnTrigger({");
         if (triggerStart != -1)
         {
             var triggerEnd = objectLine.IndexOf("})", triggerStart);
-            var triggerContent = objectLine.Substring(triggerStart, triggerEnd - triggerStart);
-            portalLines.AddRange(triggerContent.Split(',').Where(l => l.Contains("Portal")));
+            if (triggerEnd != -1)
+            {
+                var triggerContent = objectLine.Substring(triggerStart, triggerEnd - triggerStart);
+                portalLines.AddRange(triggerContent.Split(',').Where(l => l.Contains("Portal")));
+            }
         }
         return portalLines;
     }

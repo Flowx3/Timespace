@@ -175,7 +175,7 @@ namespace TimeSpace
             // Refresh all tabs
             foreach (var tab in mapTabs)
             {
-                tab.RefreshLeverPortalComboboxes(sender, e, true);
+                tab.SaveAndRefreshPortals(sender, e, false);
             }
         }
 

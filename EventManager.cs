@@ -1,9 +1,4 @@
-﻿using System;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
-using System.Collections.Generic;
+﻿using System.Text;
 
 public class TaskEventManagerForm : Form
 {
@@ -15,12 +10,55 @@ public class TaskEventManagerForm : Form
     private ComboBox eventTypeComboBox;
     private string currentMapName;
     private Button applyButton;
+    private List<string> existingEvents;
 
-    public TaskEventManagerForm(string mapName, List<string> lockedPortalsList)
+    public TaskEventManagerForm(string mapName, List<string> lockedPortalsList, List<string> existingEventScripts = null)
     {
         currentMapName = mapName;
+        existingEvents = existingEventScripts ?? new List<string>();
         InitializeComponents(lockedPortalsList);
+        LoadExistingEvents();
     }
+
+    private void LoadExistingEvents()
+    {
+        if (existingEvents.Count == 0) return;
+
+        // Load the first event by default
+        string eventScript = existingEvents[0];
+
+        // Determine event type
+        bool isTaskFinish = eventScript.Contains(".OnTaskFinish");
+        eventTypeComboBox.SelectedItem = isTaskFinish ? "TaskFinish" : "TaskFail";
+
+        // Extract portals
+        var portalMatches = System.Text.RegularExpressions.Regex.Matches(eventScript, @"Event\.OpenPortal\((portal_[^)]+)\)");
+        ComboBox[] activePortals = isTaskFinish ? taskFinishPortals : taskFailPortals;
+
+        for (int i = 0; i < Math.Min(portalMatches.Count, activePortals.Length); i++)
+        {
+            string portalName = portalMatches[i].Groups[1].Value;
+            if (activePortals[i].SelectedItem != portalName)
+                activePortals[i].SelectedItem = portalName;
+        }
+
+        // Extract time modifications
+        var addTimeMatch = System.Text.RegularExpressions.Regex.Match(eventScript, @"Event\.AddTime\((\d+)\)");
+        if (addTimeMatch.Success && isTaskFinish)
+        {
+            addTimeEvent.Value = int.Parse(addTimeMatch.Groups[1].Value);
+        }
+
+        var removeTimeMatch = System.Text.RegularExpressions.Regex.Match(eventScript, @"Event\.RemoveTime\((\d+)\)");
+        if (removeTimeMatch.Success && !isTaskFinish)
+        {
+            removeTimeEvent.Value = int.Parse(removeTimeMatch.Groups[1].Value);
+        }
+
+        // Check for despawn mobs
+        despawnAllMobsInRoom.Checked = eventScript.Contains("Event.DespawnAllMobsInRoom");
+    }
+
 
     private void InitializeComponents(List<string> lockedPortalsList)
     {
@@ -51,6 +89,14 @@ public class TaskEventManagerForm : Form
         // Initialize portal ComboBoxes  
         taskFinishPortals = new ComboBox[4];
         taskFailPortals = new ComboBox[4];
+
+        // Add empty option to portal list
+        var portalsList = new List<string> { "" };  // Add empty option
+        if (lockedPortalsList != null && lockedPortalsList.Any())
+        {
+            portalsList.AddRange(lockedPortalsList);
+        }
+
         for (int i = 0; i < 4; i++)
         {
             var lblPortal = new Label
@@ -59,14 +105,15 @@ public class TaskEventManagerForm : Form
                 Location = new Point(20, 60 + (i * 40)),
                 Width = 80
             };
+
             taskFinishPortals[i] = new ComboBox
             {
                 Location = new Point(100, 60 + (i * 40)),
                 Width = 200,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-            taskFinishPortals[i].Items.AddRange(lockedPortalsList.ToArray());
-            taskFinishPortals[i].SelectedIndex = 0;
+            taskFinishPortals[i].Items.AddRange(portalsList.ToArray());
+            taskFinishPortals[i].SelectedIndex = 0;  // Will select the empty option
 
             taskFailPortals[i] = new ComboBox
             {
@@ -74,9 +121,9 @@ public class TaskEventManagerForm : Form
                 Width = 200,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Visible = false
-            }; 
-            taskFailPortals[i].Items.AddRange(lockedPortalsList.ToArray());
-            taskFailPortals[i].SelectedIndex = 0;
+            };
+            taskFailPortals[i].Items.AddRange(portalsList.ToArray());
+            taskFailPortals[i].SelectedIndex = 0;  // Will select the empty option
 
             Controls.Add(lblPortal);
             Controls.Add(taskFinishPortals[i]);
@@ -130,47 +177,37 @@ public class TaskEventManagerForm : Form
 
         // Add controls to form  
         Controls.AddRange(new Control[] {
-            lblEventType, eventTypeComboBox,
-            lblAddTime, addTimeEvent,
-            lblRemoveTime, removeTimeEvent,
-            despawnAllMobsInRoom,
-            applyButton
-        });
+        lblEventType, eventTypeComboBox,
+        lblAddTime, addTimeEvent,
+        lblRemoveTime, removeTimeEvent,
+        despawnAllMobsInRoom,
+        applyButton
+    });
     }
     public void UpdatePortalComboboxes(List<string> newPortalsList)
     {
-        foreach (var comboBox in taskFinishPortals)
+        // Add empty option to portal list
+        var portalsList = new List<string> { "" };  // Add empty option
+        if (newPortalsList != null && newPortalsList.Any())
         {
-            if (comboBox != null)
-            {
-                string selectedValue = comboBox.SelectedItem?.ToString();
-                comboBox.Items.Clear();
-                comboBox.Items.AddRange(newPortalsList.ToArray());
-                if (selectedValue != null && newPortalsList.Contains(selectedValue))
-                {
-                    comboBox.SelectedItem = selectedValue;
-                }
-                else
-                {
-                    comboBox.SelectedIndex = 0;
-                }
-            }
+            portalsList.AddRange(newPortalsList);
         }
 
-        foreach (var comboBox in taskFailPortals)
+        foreach (var comboBox in taskFinishPortals.Concat(taskFailPortals))
         {
             if (comboBox != null)
             {
                 string selectedValue = comboBox.SelectedItem?.ToString();
                 comboBox.Items.Clear();
-                comboBox.Items.AddRange(newPortalsList.ToArray());
-                if (selectedValue != null && newPortalsList.Contains(selectedValue))
+                comboBox.Items.AddRange(portalsList.ToArray());
+
+                if (selectedValue != null && portalsList.Contains(selectedValue))
                 {
                     comboBox.SelectedItem = selectedValue;
                 }
                 else
                 {
-                    comboBox.SelectedIndex = 0;
+                    comboBox.SelectedIndex = 0;  // Select empty option
                 }
             }
         }
@@ -214,18 +251,18 @@ public class TaskEventManagerForm : Form
         bool isTaskFinish = eventTypeComboBox.SelectedItem?.ToString() == "TaskFinish";
         ComboBox[] activePortals = isTaskFinish ? taskFinishPortals : taskFailPortals;
 
-        // Check if any attributes are set  
+        // Check if any attributes are set
         bool hasAttributes = activePortals.Any(p => p.SelectedItem?.ToString() != "") ||
-                             (isTaskFinish && addTimeEvent.Value != 0) ||
-                             (!isTaskFinish && removeTimeEvent.Value != 0) ||
-                             despawnAllMobsInRoom.Checked;
+                           (isTaskFinish && addTimeEvent.Value != 0) ||
+                           (!isTaskFinish && removeTimeEvent.Value != 0) ||
+                           despawnAllMobsInRoom.Checked;
 
         if (!hasAttributes) return;
 
-        // Start building the script  
+        // Start building the script
         script.AppendLine($"{currentMapName}.On{(isTaskFinish ? "TaskFinish" : "TaskFail")}({{");
 
-        // Add portal events  
+        // Add portal events
         foreach (var portal in activePortals)
         {
             if (portal.SelectedItem != null && portal.SelectedItem.ToString() != "")
@@ -234,7 +271,7 @@ public class TaskEventManagerForm : Form
             }
         }
 
-        // Add time modification  
+        // Add time modification
         if (isTaskFinish && addTimeEvent.Value != 0)
         {
             script.AppendLine($"    Event.AddTime({addTimeEvent.Value}),");
@@ -243,10 +280,17 @@ public class TaskEventManagerForm : Form
         {
             script.AppendLine($"    Event.RemoveTime({removeTimeEvent.Value}),");
         }
-        // Add despawn mobs  
+
+        // Add despawn mobs
         if (despawnAllMobsInRoom.Checked)
         {
             script.AppendLine($"    Event.DespawnAllMobsInRoom({currentMapName}),");
+        }
+
+        // Handle finish timespace event for TaskFail
+        if (!isTaskFinish)
+        {
+            script.AppendLine($"    Event.FinishTimeSpace(TimeSpaceFinishType.TIME_IS_UP),");
         }
 
         script.AppendLine("})");

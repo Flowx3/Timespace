@@ -500,7 +500,7 @@
         #endregion
         private OpenFileDialog openFileDialog1;
         private TabPage tabPage3;
-        private TabControl tabControl2;
+        public TabControl tabControl2;
         private Button button6;
         private Button button5;
         private Button button4;
