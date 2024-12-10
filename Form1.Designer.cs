@@ -1,4 +1,6 @@
-﻿namespace TimeSpace
+﻿using System.Windows.Forms;
+
+namespace TimeSpace
 {
     partial class Form1
     {
@@ -101,6 +103,7 @@
             tabControl2.SelectedIndex = 0;
             tabControl2.Size = new Size(1811, 1000);
             tabControl2.TabIndex = 4;
+            tabControl2.SelectedIndexChanged += TabControl_SelectedIndexChanged;
             // 
             // button6
             // 

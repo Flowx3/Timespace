@@ -178,7 +178,21 @@ namespace TimeSpace
                 tab.SaveAndRefreshPortals(sender, e, false);
             }
         }
-
+        private void TabControl_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (sender is TabControl tabControl && tabControl.SelectedTab is CustomTabPage currentMapTab)
+            {
+                currentMapTab.RefreshGridMarkings();
+            }
+        }
+        private void InitializeMapTab(CustomTabPage mapTab)
+        {
+            MapGridPanel mapGridPanel = (MapGridPanel)mapTab.Controls.Find("mapGridPanel", true).FirstOrDefault();
+            if (mapGridPanel != null)
+            {
+                mapGridPanel.UpdateMapMarkings(mapTab, mapTab.MapName);
+            }
+        }
         private void button4_Click(object sender, EventArgs e)
         {
             if (tabControl2.TabPages.Count < 1)

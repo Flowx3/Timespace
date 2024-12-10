@@ -12,10 +12,13 @@ namespace TimeSpace
 {
     public class MapGridPanel : Panel
     {
-        private byte[] _grid;
-        private int _width;
-        private int _height;
-        private int _cellSize;
+        public byte[] _grid;
+        public int _width;
+        public int _height;
+        public int _cellSize;
+        private string _currentMapId;
+        private (int x, int y)? _highlightedPosition = null;
+        private byte _originalHighlightValue = 0;
 
         private const int FixedPanelWidth = 790;
         private const int FixedPanelHeight = 450;
@@ -39,11 +42,12 @@ namespace TimeSpace
 
             this.MouseClick += MapGridPanel_MouseClick; // Subscribe to mouse click event
         }
-        public void SetGrid(int width, int height, byte[] grid)
+        public void SetGrid(string mapId, int width, int height, byte[] grid)
         {
             _width = width;
             _height = height;
             _grid = grid;
+            _currentMapId = mapId;
 
             // Calculate the maximum cell size that fits the panel
             int maxCellWidth = FixedPanelWidth / _width;
@@ -111,7 +115,7 @@ namespace TimeSpace
 
             // Check if the position has any flags (not white)
             Color positionColor = GetColor(value);
-            if (positionColor != Color.White)
+            if (positionColor != Color.White && positionColor != Color.Red && positionColor != Color.Purple)
             {
                 errorMessage = $"Position ({x}, {y}) is invalid. It contains a blocking flag (Color: {positionColor}).";
                 return true;
@@ -147,48 +151,144 @@ namespace TimeSpace
         private readonly Dictionary<int, Color> _flagColors = new Dictionary<int, Color>
     {
         { 0x1, Color.Gray },     // IsWalkingDisabled
-        { 0x2, Color.Red },      // IsAttackDisabledThrough
+        { 0x2, Color.Blue },      // IsAttackDisabledThrough
         { 0x4, Color.Blue },     // UnknownYet
-        { 0x8, Color.Green },    // IsMonsterAggroDisabled
+        { 0x8, Color.MediumVioletRed },    // IsMonsterAggroDisabled
         { 0x10, Color.Purple },  // IsPvpDisabled
         { 0x20, Color.Orange },  // MateDoll
+        { 0x30, Color.Gold },    // Objective
         { 0x40, Color.LightBlue }, // Portal
+        { 0x50,  Color.Green}, // Monster
         { 0x80, Color.Red },     // Monster
         { 0x100, Color.Purple }, // Target Monster
-        { 0x200, Color.Gold }    // Objective
     };
 
-        // Add methods to update grid with new element types
-        public void MarkPortal(int x, int y)
+        // Method to reset the grid to default state
+        public void ResetGrid()
         {
-            if (IsValidPosition(x, y))
+            if (_grid != null)
             {
-                _grid[y * _width + x] = 0x40; // Portal flag
+                for (int i = 0; i < _grid.Length; i++)
+                {
+                    _grid[i] = 0; // Reset to default (white)
+                }
                 Invalidate();
             }
         }
-
-        public void MarkMonster(int x, int y, bool isTarget = false)
+        public void HighlightPosition(int x, int y)
         {
-            if (IsValidPosition(x, y))
+            if (!IsValidPosition(x, y)) return;
+
+            // Store previous position to restore it
+            if (_highlightedPosition.HasValue)
             {
-                _grid[y * _width + x] = (byte)(isTarget ? 0x100 : 0x80); // Target or regular monster flag
+                // Restore the original value at the previous position
+                int prevIdx = _highlightedPosition.Value.y * _width + _highlightedPosition.Value.x;
+                _grid[prevIdx] = _originalHighlightValue;
+            }
+
+            // Store new position and its original value
+            _highlightedPosition = (x, y);
+            int idx = y * _width + x;
+            _originalHighlightValue = _grid[idx];
+
+            // Apply highlight
+            _grid[idx] = 0x50; // Green highlight flag
+
+            Invalidate();
+        }
+        public void ClearHighlight()
+        {
+            if (_highlightedPosition.HasValue)
+            {
+                int idx = _highlightedPosition.Value.y * _width + _highlightedPosition.Value.x;
+                _grid[idx] = _originalHighlightValue;
+                _highlightedPosition = null;
                 Invalidate();
             }
         }
-
-        public void MarkObjective(int x, int y)
+        
+        public void UpdateMapMarkings(CustomTabPage currentMapTab, string mapId)
         {
-            if (IsValidPosition(x, y))
+            // Only update if this grid belongs to the current map
+            if (currentMapTab == null || _grid == null || _currentMapId != mapId)
+                return;
+            // Create a temporary copy of the original grid
+            byte[] originalGrid = new byte[_grid.Length];
+            Array.Copy(_grid, originalGrid, _grid.Length);
+
+            // Mark portals for this specific map
+            foreach (var portal in currentMapTab.Portals)
             {
-                _grid[y * _width + x] = 0x200; // Objective flag
-                Invalidate();
+                if (IsValidPosition(portal.FromX, portal.FromY))
+                {
+                    MarkPortal(portal.FromX, portal.FromY);
+                }
             }
+
+            // Mark monsters for this specific map
+            foreach (DataGridViewRow row in currentMapTab.MonsterDataGridView.Rows)
+            {
+                if (row.IsNewRow || row.Cells["X"].Value == null || row.Cells["Y"].Value == null)
+                    continue;
+
+                int x = Convert.ToInt32(row.Cells["X"].Value);
+                int y = Convert.ToInt32(row.Cells["Y"].Value);
+                bool isTarget = DetermineIfMonsterIsTarget(row);
+
+                if (IsValidPosition(x, y))
+                {
+                    MarkMonster(x, y, isTarget);
+                }
+            }
+
+            // Mark objectives for this specific map
+            foreach (var obj in currentMapTab.Objects)
+            {
+                int x = obj.GetX();
+                int y = obj.GetY();
+
+                if (x != 1500 && y != 1500 && IsValidPosition(x, y))
+                {
+                    MarkObjective(x, y);
+                }
+            }
+
+            // Preserve original grid values where we haven't added custom markings
+            for (int i = 0; i < _grid.Length; i++)
+            {
+                if (_grid[i] == 0) // If we haven't marked this cell
+                {
+                    _grid[i] = originalGrid[i]; // Restore original value
+                }
+            }
+
+            Invalidate();
+        }
+
+        private void MarkPortal(int x, int y)
+        {
+            _grid[y * _width + x] = 0x40;
+        }
+
+        private void MarkMonster(int x, int y, bool isTarget)
+        {
+            _grid[y * _width + x] = (byte)(isTarget ? 0x100 : 0x80);
+        }
+
+        private void MarkObjective(int x, int y)
+        {
+            _grid[y * _width + x] = 0x30;
         }
 
         private bool IsValidPosition(int x, int y)
         {
             return x >= 0 && x < _width && y >= 0 && y < _height && _grid != null;
+        }
+        private bool DetermineIfMonsterIsTarget(DataGridViewRow row)
+        {
+            bool isTarget = Convert.ToBoolean(row.Cells["AsTarget"].Value);
+            return isTarget;
         }
 
         // Method to clear specific type of marking
@@ -544,6 +644,12 @@ namespace TimeSpace
                 if (mapData != null)
                 {
                     DisplayMapGrid(mapData);
+                    // After map is loaded, update with custom markings
+                    MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).FirstOrDefault();
+                    if (mapGridPanel != null)
+                    {
+                        mapGridPanel.UpdateMapMarkings(this, MapName);
+                    }
                 }
                 else
                 {
@@ -559,7 +665,8 @@ namespace TimeSpace
         private void DisplayMapGrid(MapDataDTO mapData)
         {
             MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).First();
-            mapGridPanel.SetGrid(mapData.Width, mapData.Height, mapData.Grid);
+            mapGridPanel.ResetGrid();
+            mapGridPanel.SetGrid(MapName,mapData.Width, mapData.Height, mapData.Grid);
         }
 
         private void MapGridPanel_CellClicked(object sender, CellClickedEventArgs e)
@@ -811,6 +918,14 @@ namespace TimeSpace
                 portalPanel.Refresh();
             }
             SaveAndRefreshPortals(sender,e, false);
+        }
+        public void RefreshGridMarkings()
+        {
+            MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).FirstOrDefault();
+            if (mapGridPanel != null)
+            {
+                mapGridPanel.UpdateMapMarkings(this, MapName);
+            }
         }
         public void SaveAndRefreshPortals(object sender, EventArgs e, bool generateScripts)
         {

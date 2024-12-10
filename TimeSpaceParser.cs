@@ -185,18 +185,22 @@ public class TimeSpaceParser
     }
     private void ParsePortalDefinition(string line)
     {
-        // Example: local portal_3_11_to_3_10 = Portal.Create(PortalType.TsNormal).From(map_3_11, 14, 1).To(map_3_10, 14, 28).MinimapOrientation(PortalMinimapOrientation.South)
-        var match = Regex.Match(line, @"portal_(\d+_\d+)_to_(\d+_\d+).*From\(map_(\d+_\d+),\s*(\d+),\s*(\d+)\)\.To\(map_(\d+_\d+),\s*(\d+),\s*(\d+)\).*MinimapOrientation\(PortalMinimapOrientation\.(\w+)\)");
+        // Example 1: local portal_3_11_to_3_10 = Portal.Create(PortalType.TsNormal).From(map_3_11, 14, 1).To(map_3_10, 14, 28).MinimapOrientation(PortalMinimapOrientation.South)
+        // Example 2: local portal_3_5_to_UNKNOWN = Portal.Create(PortalType.TSEndClosed).From(map_3_5, 14, 1).To(map_3_5, 14, 1).MinimapOrientation(PortalMinimapOrientation.North)
+
+        var match = Regex.Match(line, @"portal_(\d+_\d+)_to_(\w+).*From\(map_(\d+_\d+),\s*(\d+),\s*(\d+)\)\.To\(map_([^,]+),\s*(\d+),\s*(\d+)\).*MinimapOrientation\(PortalMinimapOrientation\.(\w+)\)");
 
         if (match.Success)
         {
             string sourceMapName = $"map_{match.Groups[3].Value}";
-            string targetMapName = $"map_{match.Groups[6].Value}";
+            string targetMapName = match.Groups[2].Value.Equals("UNKNOWN", StringComparison.OrdinalIgnoreCase)
+                ? "UNKNOWN"  // Set target map to "UNKNOWN" directly
+                : $"map_{match.Groups[6].Value}";
             int fromX = int.Parse(match.Groups[4].Value);
             int fromY = int.Parse(match.Groups[5].Value);
             int toX = int.Parse(match.Groups[7].Value);
             int toY = int.Parse(match.Groups[8].Value);
-            string orientation = match.Groups[9].Value; 
+            string orientation = match.Groups[9].Value;
 
             var portalTypeMatch = Regex.Match(line, @"PortalType\.(\w+)");
             string portalType = portalTypeMatch.Success ? portalTypeMatch.Groups[1].Value : "TsNormal"; // Default to TsNormal if not found
