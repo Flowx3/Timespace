@@ -155,7 +155,24 @@ namespace TimeSpace
                 panel.Controls.Remove(label);
             }
         }
+        public void SetObjectivesAndPortals(string objectiveType, List<Portal> portals)
+        {
+            cboObjectiveType.SelectedItem = objectiveType;
+            if (objectiveType == "Lever")
+            {
+                var portal1 = portals.FirstOrDefault(p => p.MapFrom == cboLeverPortal1.SelectedItem?.ToString());
+                if (portal1 != null)
+                    cboLeverPortal1.SelectedItem = portal1.MapFrom;
 
+                var portal2 = portals.FirstOrDefault(p => p.MapFrom == cboLeverPortal2.SelectedItem?.ToString());
+                if (portal2 != null)
+                    cboLeverPortal2.SelectedItem = portal2.MapFrom;
+
+                var portal3 = portals.FirstOrDefault(p => p.MapFrom == cboLeverPortal3.SelectedItem?.ToString());
+                if (portal3 != null)
+                    cboLeverPortal3.SelectedItem = portal3.MapFrom;
+            }
+        }
         public void SetPosition(int x, int y)
         {
             txtX.Text = x.ToString();
@@ -179,7 +196,7 @@ namespace TimeSpace
             var script = new StringBuilder();
             // Here you would generate the script for each object  
             // For now, we'll assume the current object is the only one  
-            string objectiveType = cboObjectiveType.SelectedItem.ToString();
+            string objectiveType = cboObjectiveType?.SelectedItem?.ToString();
             if (string.IsNullOrEmpty(txtX.Text) || string.IsNullOrEmpty(txtY.Text) || string.IsNullOrEmpty(objectiveType))
             {
                 return string.Empty;

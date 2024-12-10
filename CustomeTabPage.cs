@@ -27,6 +27,7 @@ namespace TimeSpace
         private readonly MapEventGenerator eventGenerator;
         public DataGridView MonsterDataGridView => monsterDataGridView;
         private MapGridPanel _mapGridPanel;
+        private byte[] originalGrid;
         public string MapName { get; private set; }
         public Func<List<string>> getMapNames;
         public Dictionary<string, Panel> MapPortalPanels { get; set; }
@@ -323,19 +324,12 @@ namespace TimeSpace
                 var row = monsterDataGridView.Rows[e.RowIndex];
                 if (row.IsNewRow) return;
 
-                try
-                {
                     if (row.Cells["X"].Value != null && row.Cells["Y"].Value != null)
                     {
                         int x = Convert.ToInt32(row.Cells["X"].Value);
                         int y = Convert.ToInt32(row.Cells["Y"].Value);
                         _mapGridPanel.HighlightPosition(x, y);
                     }
-                }
-                catch
-                {
-                    // Handle any conversion errors silently
-                }
             }
         }
 
@@ -352,28 +346,35 @@ namespace TimeSpace
         }
         public void LoadMap(Form1 form)
         {
-            if (int.TryParse(txtMapVNUM.Text, out int mapVnum))
+            if (!int.TryParse(txtMapVNUM.Text, out int mapVnum))
             {
-                var mapData = form.loadedMaps.FirstOrDefault(m => m.Id == mapVnum);
-                if (mapData != null)
+                return; // Invalid map number
+            }
+
+            var mapData = form.loadedMaps.FirstOrDefault(m => m.Id == mapVnum);
+            if (mapData == null || mapData.Grid == null || mapData.Width <= 0 || mapData.Height <= 0)
+            {
+                return; // Invalid map data
+            }
+
+            try
+            {
+                originalGrid = new byte[mapData.Grid.Length];
+                Array.Copy(mapData.Grid, originalGrid, mapData.Grid.Length);
+
+                MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).FirstOrDefault();
+                _mapGridPanel = mapGridPanel;
+
+                if (mapGridPanel != null)
                 {
                     DisplayMapGrid(mapData);
-                    // After map is loaded, update with custom markings
-                    MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).FirstOrDefault();
-                    _mapGridPanel = mapGridPanel;
-                    if (mapGridPanel != null)
-                    {
-                        mapGridPanel.UpdateMapMarkings(this, MapName);
-                    }
-                }
-                else
-                {
-                    MessageBox.Show("Map not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    mapGridPanel.RecalculateCellSize(); // Now with proper validation
+                    mapGridPanel.UpdateMapMarkings(this, MapName, originalGrid);
                 }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Invalid map number.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error loading map: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -401,7 +402,6 @@ namespace TimeSpace
         {
             lock (positionsLock)
             {
-                // Create a temporary list without the current position
                 var tempTakenPositions = new List<Point>(sharedTakenPositions);
                 if (currentPosition.HasValue)
                 {
@@ -412,13 +412,11 @@ namespace TimeSpace
                 {
                     if (gridSelector.ShowDialog() == DialogResult.OK && gridSelector.SelectedCoordinates.HasValue)
                     {
-                        // Remove old position if it exists
                         if (currentPosition.HasValue)
                         {
                             sharedTakenPositions.Remove(currentPosition.Value);
                         }
 
-                        // Update to new position
                         Point selectedPos = gridSelector.SelectedCoordinates.Value;
                         txtMapCoordinates.Text = $"{selectedPos.X}_{selectedPos.Y}";
                         Text = $"map_{selectedPos.X}_{selectedPos.Y}";
@@ -439,7 +437,6 @@ namespace TimeSpace
         {
             lock (positionsLock)
             {
-                // Remove old position if it exists
                 if (currentPosition.HasValue)
                 {
                     sharedTakenPositions.Remove(currentPosition.Value);
@@ -639,7 +636,7 @@ namespace TimeSpace
             MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).FirstOrDefault();
             if (mapGridPanel != null)
             {
-                mapGridPanel.UpdateMapMarkings(this, MapName);
+                mapGridPanel.UpdateMapMarkings(this, MapName, originalGrid);
             }
         }
         public void SaveAndRefreshPortals(object sender, EventArgs e, bool generateScripts)
@@ -898,36 +895,6 @@ namespace TimeSpace
                 row.DefaultCellStyle.SelectionBackColor = SystemColors.Highlight;
             }
         }
-        //private void ProcessObjectives(Dictionary<string, StringBuilder> mapScripts)
-        //{
-        //    foreach (var mapTab in mapTabs)
-        //    {
-        //        string mapName = mapTab.MapName;
-        //        if (!mapScripts.ContainsKey(mapName))
-        //        {
-        //            mapScripts[mapName] = new StringBuilder();
-        //        }
-        //        var objects = new List<string>();
-        //        foreach (var mapObject in mapTab.Objects)
-        //        {
-        //            if (string.IsNullOrEmpty(mapObject.ObjectType) || mapObject.GetX() == 1500 || mapObject.GetY() == 1500)
-        //            {
-        //                continue;
-        //            }
-        //            string objectScript = mapObject.GenerateObjectiveScript();
-        //            if (!string.IsNullOrEmpty(objectScript))
-        //            {
-        //                objects.Add(objectScript);
-        //            }
-        //        }
-        //        if (objects.Any())
-        //        {
-        //            mapScripts[mapName].AppendLine($"{mapName}.AddObjects({{");
-        //            mapScripts[mapName].AppendLine(string.Join(", \n", objects));
-        //            mapScripts[mapName].AppendLine("})");
-        //        }
-        //    }
-        //}
         private void BtnAddObjective_Click(object sender, EventArgs e)
         {
             if (Objects.Count >= 4)
@@ -995,16 +962,15 @@ namespace TimeSpace
             Objects.Add(mapObject);
 
             this.objectivePanel.Controls.Add(mapObject.CreateObject());
- 
+            mapObject.SetPosition(x, y);
+            mapObject.SetObjectivesAndPortals(objectType, Portals);
+            mapObject.ObjectType = objectType;
+
             if (objectType == "Lever")
             {
                 if (taskEventManagerForm != null)
                 {
                     taskEventManagerForm.UpdatePortalComboboxes(lockedPortalsList);
-                }
-                else
-                {
-                    // Handle the null case appropriately
                 }
             }
         }

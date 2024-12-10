@@ -35,25 +35,46 @@ namespace TimeSpace
         }
         public void SetGrid(string mapId, int width, int height, byte[] grid)
         {
+            // Validate input parameters
+            if (width <= 0 || height <= 0)
+            {
+                throw new ArgumentException($"Invalid grid dimensions: width={width}, height={height}");
+            }
+            if (grid == null)
+            {
+                throw new ArgumentNullException(nameof(grid));
+            }
+
             _width = width;
             _height = height;
             _grid = grid;
             _currentMapId = mapId;
 
-            // Calculate the maximum cell size that fits the panel
-            int maxCellWidth = FixedPanelWidth / _width;
-            int maxCellHeight = FixedPanelHeight / _height;
+            // Calculate cell size based on panel dimensions
+            int maxCellWidth = Math.Max(1, FixedPanelWidth / _width);
+            int maxCellHeight = Math.Max(1, FixedPanelHeight / _height);
             _cellSize = Math.Min(maxCellWidth, maxCellHeight);
 
-            // Calculate the total width and height required to display the grid
+            // Calculate total dimensions
             int totalWidth = _width * _cellSize;
             int totalHeight = _height * _cellSize;
 
-            // Set the panel's size to fit the grid
-            this.AutoScroll = true; // Ensure scrolling is enabled
+            // Set panel size
+            this.AutoScroll = true;
             this.Width = Math.Max(FixedPanelWidth, totalWidth);
             this.Height = Math.Max(FixedPanelHeight, totalHeight);
-            Invalidate(); // Trigger a repaint
+
+            Invalidate();
+        }
+
+        public void RecalculateCellSize()
+        {
+            if (_width <= 0 || _height <= 0)
+            {
+                throw new InvalidOperationException("Cannot recalculate cell size: invalid grid dimensions");
+            }
+
+            SetGrid(_currentMapId, _width, _height, _grid);
         }
         public bool IsWalkable(int x, int y)
         {
@@ -151,7 +172,7 @@ namespace TimeSpace
         { 0x40, Color.LightBlue }, // Portal
         { 0x50,  Color.Green}, // Monster
         { 0x80, Color.Red },     // Monster
-        { 0x100, Color.Purple }, // Target Monster
+        { 0x90, Color.Purple }, // Target Monster
     };
 
         // Method to reset the grid to default state
@@ -159,10 +180,8 @@ namespace TimeSpace
         {
             if (_grid != null)
             {
-                for (int i = 0; i < _grid.Length; i++)
-                {
-                    _grid[i] = 0; // Reset to default (white)
-                }
+                // Create a new grid instead of modifying the existing one
+                _grid = new byte[_width * _height];
                 Invalidate();
             }
         }
@@ -199,16 +218,15 @@ namespace TimeSpace
             }
         }
 
-        public void UpdateMapMarkings(CustomTabPage currentMapTab, string mapId)
+        public void UpdateMapMarkings(CustomTabPage currentMapTab, string mapId, byte[] originalGrid)
         {
-            // Only update if this grid belongs to the current map
             if (currentMapTab == null || _grid == null || _currentMapId != mapId)
                 return;
-            // Create a temporary copy of the original grid
-            byte[] originalGrid = new byte[_grid.Length];
-            Array.Copy(_grid, originalGrid, _grid.Length);
 
-            // Mark portals for this specific map
+            // Use the passed original grid instead of current potentially modified grid
+            Array.Copy(originalGrid, _grid, _grid.Length);
+
+            // Mark portals, monsters, and objectives as before...
             foreach (var portal in currentMapTab.Portals)
             {
                 if (IsValidPosition(portal.FromX, portal.FromY))
@@ -225,7 +243,7 @@ namespace TimeSpace
 
                 int x = Convert.ToInt32(row.Cells["X"].Value);
                 int y = Convert.ToInt32(row.Cells["Y"].Value);
-                bool isTarget = DetermineIfMonsterIsTarget(row);
+                bool isTarget = Convert.ToBoolean(row.Cells["AsTarget"].Value);
 
                 if (IsValidPosition(x, y))
                 {
@@ -264,7 +282,7 @@ namespace TimeSpace
 
         private void MarkMonster(int x, int y, bool isTarget)
         {
-            _grid[y * _width + x] = (byte)(isTarget ? 0x100 : 0x80);
+            _grid[y * _width + x] = (byte)(isTarget ? 0x90 : 0x80);
         }
 
         private void MarkObjective(int x, int y)
@@ -275,11 +293,6 @@ namespace TimeSpace
         private bool IsValidPosition(int x, int y)
         {
             return x >= 0 && x < _width && y >= 0 && y < _height && _grid != null;
-        }
-        private bool DetermineIfMonsterIsTarget(DataGridViewRow row)
-        {
-            bool isTarget = Convert.ToBoolean(row.Cells["AsTarget"].Value);
-            return isTarget;
         }
 
         // Method to clear specific type of marking
