@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Text;
 using System.Windows.Forms;
 using YamlDotNet.Core;
@@ -7,6 +8,7 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace TimeSpace
 {
+
     struct Config {
         public string GameDataPath { get; set; }
         public string GameMapsPath { get; set; }
@@ -22,10 +24,12 @@ namespace TimeSpace
         private Dictionary<string, string> timespacesData;
         private MapResourceFileLoader mapResourceFileLoader;
         private System.Windows.Forms.Timer updateTimer;
+        public AppSettings Settings { get; private set; }
 
         private CustomTabPage _CustomTabPage;
         public Form1()
         {
+            LoadSettings();
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             InitializeComponent();
             AdjustLayout();
@@ -134,7 +138,33 @@ namespace TimeSpace
                 MessageBox.Show("TS data saved successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
+        private void LoadSettings()
+        {
+            // Load settings from a file or initialize defaults
+            if (File.Exists("appsettings.json"))
+            {
+                var json = File.ReadAllText("appsettings.json");
+                Settings = JsonConvert.DeserializeObject<AppSettings>(json);
+            }
+            else
+            {
+                Settings = new AppSettings();
+            }
+        }
 
+        public void SaveSettings()
+        {
+            // Save settings to a file
+            var json = JsonConvert.SerializeObject(Settings, Formatting.Indented);
+            File.WriteAllText("appsettings.json", json);
+        }
+
+        // Event handler for when the panel height setting changes
+        private void numericUpDownPanelHeight_ValueChanged(object sender, EventArgs e)
+        {
+            Settings.PanelHeight = (int)numericUpDownPanelHeight.Value;
+            SaveSettings();
+        }
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             label9.Visible = false;
@@ -439,4 +469,8 @@ namespace TimeSpace
             return script.ToString();
         }
     }
+}
+public class AppSettings
+{
+    public int PanelHeight { get; set; } = 400;
 }

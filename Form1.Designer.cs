@@ -1,18 +1,20 @@
 ﻿using System.Windows.Forms;
+using System.Drawing;
+using YamlDotNet.Core.Tokens;
 
 namespace TimeSpace
 {
     partial class Form1
     {
-        /// <summary>
-        ///  Required designer variable.
-        /// </summary>
+        /// <summary>  
+        ///  Required designer variable.  
+        /// </summary>  
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary>
-        ///  Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        /// <summary>  
+        ///  Clean up any resources being used.  
+        /// </summary>  
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>  
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -22,12 +24,12 @@ namespace TimeSpace
             base.Dispose(disposing);
         }
 
-        #region Windows Form Designer generated code
+        #region Windows Form Designer generated code  
 
-        /// <summary>
-        ///  Required method for Designer support - do not modify
-        ///  the contents of this method with the code editor.
-        /// </summary>
+        /// <summary>  
+        ///  Required method for Designer support - do not modify  
+        ///  the contents of this method with the code editor.  
+        /// </summary>  
         private void InitializeComponent()
         {
             openFileDialog1 = new OpenFileDialog();
@@ -61,6 +63,7 @@ namespace TimeSpace
             label3 = new Label();
             label2 = new Label();
             label1 = new Label();
+            numericUpDownPanelHeight = new NumericUpDown();
             tabPage1 = new TabPage();
             button9 = new Button();
             textBox13 = new TextBox();
@@ -71,9 +74,11 @@ namespace TimeSpace
             textBox1 = new TextBox();
             button1 = new Button();
             tabControl1 = new TabControl();
+            label11 = new Label();
             tabPage3.SuspendLayout();
             tabPage2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownPanelHeight).BeginInit();
             tabPage1.SuspendLayout();
             tabControl1.SuspendLayout();
             SuspendLayout();
@@ -84,20 +89,22 @@ namespace TimeSpace
             // 
             // tabPage3
             // 
+            tabPage3.BackColor = Color.FromArgb(45, 45, 48);
             tabPage3.Controls.Add(tabControl2);
             tabPage3.Controls.Add(button6);
             tabPage3.Controls.Add(button5);
             tabPage3.Controls.Add(button4);
+            tabPage3.ForeColor = Color.White;
             tabPage3.Location = new Point(4, 24);
             tabPage3.Name = "tabPage3";
             tabPage3.Padding = new Padding(3);
             tabPage3.Size = new Size(1823, 830);
             tabPage3.TabIndex = 2;
             tabPage3.Text = "TimeSpace Editor";
-            tabPage3.UseVisualStyleBackColor = true;
             // 
             // tabControl2
             // 
+            tabControl2.ForeColor = Color.White;
             tabControl2.Location = new Point(6, 3);
             tabControl2.Name = "tabControl2";
             tabControl2.SelectedIndex = 0;
@@ -108,38 +115,45 @@ namespace TimeSpace
             // button6
             // 
             button6.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            button6.BackColor = Color.FromArgb(28, 28, 28);
+            button6.ForeColor = Color.White;
             button6.Location = new Point(139, 755);
             button6.Name = "button6";
             button6.Size = new Size(66, 67);
             button6.TabIndex = 3;
             button6.Text = "Generate";
-            button6.UseVisualStyleBackColor = true;
+            button6.UseVisualStyleBackColor = false;
             button6.Click += button6_Click;
             // 
             // button5
             // 
             button5.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            button5.BackColor = Color.FromArgb(28, 28, 28);
+            button5.ForeColor = Color.White;
             button5.Location = new Point(71, 755);
             button5.Name = "button5";
             button5.Size = new Size(62, 67);
             button5.TabIndex = 2;
             button5.Text = "Add Map";
-            button5.UseVisualStyleBackColor = true;
+            button5.UseVisualStyleBackColor = false;
             button5.Click += button5_Click;
             // 
             // button4
             // 
             button4.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            button4.BackColor = Color.FromArgb(28, 28, 28);
+            button4.ForeColor = Color.White;
             button4.Location = new Point(3, 755);
             button4.Name = "button4";
             button4.Size = new Size(62, 67);
             button4.TabIndex = 1;
             button4.Text = "Remove Map";
-            button4.UseVisualStyleBackColor = true;
+            button4.UseVisualStyleBackColor = false;
             button4.Click += button4_Click;
             // 
             // tabPage2
             // 
+            tabPage2.BackColor = Color.FromArgb(45, 45, 48);
             tabPage2.Controls.Add(textBox10);
             tabPage2.Controls.Add(textBox9);
             tabPage2.Controls.Add(textBox8);
@@ -164,16 +178,18 @@ namespace TimeSpace
             tabPage2.Controls.Add(label3);
             tabPage2.Controls.Add(label2);
             tabPage2.Controls.Add(label1);
+            tabPage2.ForeColor = Color.White;
             tabPage2.Location = new Point(4, 24);
             tabPage2.Name = "tabPage2";
             tabPage2.Padding = new Padding(3);
             tabPage2.Size = new Size(1823, 830);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "TimeSpace Configuration";
-            tabPage2.UseVisualStyleBackColor = true;
             // 
             // textBox10
             // 
+            textBox10.BackColor = Color.FromArgb(30, 30, 30);
+            textBox10.ForeColor = Color.White;
             textBox10.Location = new Point(251, 222);
             textBox10.Name = "textBox10";
             textBox10.Size = new Size(82, 23);
@@ -182,6 +198,8 @@ namespace TimeSpace
             // 
             // textBox9
             // 
+            textBox9.BackColor = Color.FromArgb(30, 30, 30);
+            textBox9.ForeColor = Color.White;
             textBox9.Location = new Point(98, 222);
             textBox9.Name = "textBox9";
             textBox9.Size = new Size(82, 23);
@@ -190,6 +208,8 @@ namespace TimeSpace
             // 
             // textBox8
             // 
+            textBox8.BackColor = Color.FromArgb(30, 30, 30);
+            textBox8.ForeColor = Color.White;
             textBox8.Location = new Point(113, 479);
             textBox8.Name = "textBox8";
             textBox8.Size = new Size(152, 23);
@@ -197,6 +217,8 @@ namespace TimeSpace
             // 
             // textBox7
             // 
+            textBox7.BackColor = Color.FromArgb(30, 30, 30);
+            textBox7.ForeColor = Color.White;
             textBox7.Location = new Point(113, 433);
             textBox7.Name = "textBox7";
             textBox7.Size = new Size(152, 23);
@@ -204,6 +226,8 @@ namespace TimeSpace
             // 
             // textBox6
             // 
+            textBox6.BackColor = Color.FromArgb(30, 30, 30);
+            textBox6.ForeColor = Color.White;
             textBox6.Location = new Point(113, 385);
             textBox6.Name = "textBox6";
             textBox6.Size = new Size(152, 23);
@@ -211,6 +235,8 @@ namespace TimeSpace
             // 
             // textBox4
             // 
+            textBox4.BackColor = Color.FromArgb(30, 30, 30);
+            textBox4.ForeColor = Color.White;
             textBox4.Location = new Point(113, 344);
             textBox4.Name = "textBox4";
             textBox4.Size = new Size(152, 23);
@@ -218,6 +244,8 @@ namespace TimeSpace
             // 
             // textBox5
             // 
+            textBox5.BackColor = Color.FromArgb(30, 30, 30);
+            textBox5.ForeColor = Color.White;
             textBox5.Location = new Point(178, 62);
             textBox5.Name = "textBox5";
             textBox5.PlaceholderText = "Y";
@@ -226,6 +254,8 @@ namespace TimeSpace
             // 
             // textBox3
             // 
+            textBox3.BackColor = Color.FromArgb(30, 30, 30);
+            textBox3.ForeColor = Color.White;
             textBox3.Location = new Point(89, 62);
             textBox3.Name = "textBox3";
             textBox3.PlaceholderText = "X";
@@ -234,6 +264,8 @@ namespace TimeSpace
             // 
             // textBox2
             // 
+            textBox2.BackColor = Color.FromArgb(30, 30, 30);
+            textBox2.ForeColor = Color.White;
             textBox2.Location = new Point(89, 13);
             textBox2.Name = "textBox2";
             textBox2.Size = new Size(152, 23);
@@ -242,6 +274,7 @@ namespace TimeSpace
             // label10
             // 
             label10.AutoSize = true;
+            label10.ForeColor = Color.White;
             label10.Location = new Point(201, 225);
             label10.Name = "label10";
             label10.Size = new Size(10, 15);
@@ -252,6 +285,7 @@ namespace TimeSpace
             // label9
             // 
             label9.AutoSize = true;
+            label9.ForeColor = Color.White;
             label9.Location = new Point(6, 225);
             label9.MinimumSize = new Size(80, 0);
             label9.Name = "label9";
@@ -264,36 +298,43 @@ namespace TimeSpace
             // checkBox1
             // 
             checkBox1.AutoSize = true;
+            checkBox1.BackColor = Color.FromArgb(45, 45, 48);
+            checkBox1.ForeColor = Color.White;
             checkBox1.Location = new Point(88, 185);
             checkBox1.Name = "checkBox1";
             checkBox1.Size = new Size(91, 19);
             checkBox1.TabIndex = 20;
             checkBox1.Text = "Protect NPC";
-            checkBox1.UseVisualStyleBackColor = true;
+            checkBox1.UseVisualStyleBackColor = false;
             // 
             // button3
             // 
+            button3.BackColor = Color.FromArgb(28, 28, 28);
+            button3.ForeColor = Color.White;
             button3.Location = new Point(181, 537);
             button3.Name = "button3";
             button3.Size = new Size(75, 24);
             button3.TabIndex = 19;
             button3.Text = "Generate";
-            button3.UseVisualStyleBackColor = true;
+            button3.UseVisualStyleBackColor = false;
             button3.Click += button6_Click;
             // 
             // button2
             // 
+            button2.BackColor = Color.FromArgb(28, 28, 28);
+            button2.ForeColor = Color.White;
             button2.Location = new Point(14, 537);
             button2.Name = "button2";
             button2.Size = new Size(75, 24);
             button2.TabIndex = 18;
             button2.Text = "Save TS";
-            button2.UseVisualStyleBackColor = true;
+            button2.UseVisualStyleBackColor = false;
             button2.Click += button2_Click;
             // 
             // label8
             // 
             label8.AutoSize = true;
+            label8.ForeColor = Color.White;
             label8.Location = new Point(11, 482);
             label8.Name = "label8";
             label8.Size = new Size(93, 15);
@@ -303,6 +344,7 @@ namespace TimeSpace
             // label7
             // 
             label7.AutoSize = true;
+            label7.ForeColor = Color.White;
             label7.Location = new Point(11, 436);
             label7.Name = "label7";
             label7.Size = new Size(53, 15);
@@ -312,6 +354,7 @@ namespace TimeSpace
             // label6
             // 
             label6.AutoSize = true;
+            label6.ForeColor = Color.White;
             label6.Location = new Point(11, 393);
             label6.Name = "label6";
             label6.Size = new Size(82, 15);
@@ -321,6 +364,7 @@ namespace TimeSpace
             // label5
             // 
             label5.AutoSize = true;
+            label5.ForeColor = Color.White;
             label5.Location = new Point(9, 347);
             label5.Name = "label5";
             label5.Size = new Size(54, 15);
@@ -329,6 +373,8 @@ namespace TimeSpace
             // 
             // comboBox1
             // 
+            comboBox1.BackColor = Color.FromArgb(30, 30, 30);
+            comboBox1.ForeColor = Color.White;
             comboBox1.FormattingEnabled = true;
             comboBox1.Items.AddRange(new object[] { "KillAllMonster", "KillMonsterVnum", "CollectItemVnum", "InteractObjectsVnum", "Conversation", "GoToExit" });
             comboBox1.Location = new Point(89, 143);
@@ -340,6 +386,7 @@ namespace TimeSpace
             // label4
             // 
             label4.AutoSize = true;
+            label4.ForeColor = Color.White;
             label4.Location = new Point(8, 151);
             label4.Name = "label4";
             label4.Size = new Size(57, 15);
@@ -348,6 +395,8 @@ namespace TimeSpace
             // 
             // numericUpDown1
             // 
+            numericUpDown1.BackColor = Color.FromArgb(30, 30, 30);
+            numericUpDown1.ForeColor = Color.White;
             numericUpDown1.Location = new Point(89, 102);
             numericUpDown1.Name = "numericUpDown1";
             numericUpDown1.Size = new Size(152, 23);
@@ -356,6 +405,7 @@ namespace TimeSpace
             // label3
             // 
             label3.AutoSize = true;
+            label3.ForeColor = Color.White;
             label3.Location = new Point(6, 110);
             label3.Name = "label3";
             label3.Size = new Size(33, 15);
@@ -365,6 +415,7 @@ namespace TimeSpace
             // label2
             // 
             label2.AutoSize = true;
+            label2.ForeColor = Color.White;
             label2.Location = new Point(6, 65);
             label2.Name = "label2";
             label2.Size = new Size(73, 15);
@@ -374,14 +425,31 @@ namespace TimeSpace
             // label1
             // 
             label1.AutoSize = true;
+            label1.ForeColor = Color.White;
             label1.Location = new Point(6, 16);
             label1.Name = "label1";
             label1.Size = new Size(77, 15);
             label1.TabIndex = 0;
             label1.Text = "Timespace ID";
             // 
+            // numericUpDownPanelHeight
+            // 
+            numericUpDownPanelHeight.BackColor = Color.FromArgb(30, 30, 30);
+            numericUpDownPanelHeight.ForeColor = Color.White;
+            numericUpDownPanelHeight.Increment = new decimal(new int[] { 10, 0, 0, 0 });
+            numericUpDownPanelHeight.Location = new Point(106, 140);
+            numericUpDownPanelHeight.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
+            numericUpDownPanelHeight.Minimum = new decimal(new int[] { 100, 0, 0, 0 });
+            numericUpDownPanelHeight.Name = "numericUpDownPanelHeight";
+            numericUpDownPanelHeight.Size = new Size(61, 23);
+            numericUpDownPanelHeight.TabIndex = 10;
+            numericUpDownPanelHeight.Value = new decimal(new int[] { 100, 0, 0, 0 });
+            // 
             // tabPage1
             // 
+            tabPage1.BackColor = Color.FromArgb(45, 45, 45);
+            tabPage1.Controls.Add(label11);
+            tabPage1.Controls.Add(numericUpDownPanelHeight);
             tabPage1.Controls.Add(button9);
             tabPage1.Controls.Add(textBox13);
             tabPage1.Controls.Add(button8);
@@ -390,54 +458,64 @@ namespace TimeSpace
             tabPage1.Controls.Add(textBox11);
             tabPage1.Controls.Add(textBox1);
             tabPage1.Controls.Add(button1);
+            tabPage1.ForeColor = Color.White;
             tabPage1.Location = new Point(4, 24);
             tabPage1.Name = "tabPage1";
             tabPage1.Padding = new Padding(3);
             tabPage1.Size = new Size(1823, 830);
             tabPage1.TabIndex = 0;
             tabPage1.Text = "Settings";
-            tabPage1.UseVisualStyleBackColor = true;
             // 
             // button9
             // 
+            button9.BackColor = Color.FromArgb(28, 28, 28);
+            button9.ForeColor = Color.White;
             button9.Location = new Point(532, 102);
             button9.Name = "button9";
             button9.Size = new Size(75, 23);
             button9.TabIndex = 9;
             button9.Text = "Browse";
-            button9.UseVisualStyleBackColor = true;
+            button9.UseVisualStyleBackColor = false;
             button9.Click += button9_Click;
             // 
             // textBox13
             // 
+            textBox13.BackColor = Color.FromArgb(30, 30, 30);
+            textBox13.ForeColor = Color.White;
             textBox13.Location = new Point(8, 102);
             textBox13.Name = "textBox13";
-            textBox13.Text = "Choose TimeSpace to Load";
             textBox13.Size = new Size(512, 23);
             textBox13.TabIndex = 8;
+            textBox13.Text = "Choose TimeSpace to Load";
             // 
             // button8
             // 
+            button8.BackColor = Color.FromArgb(28, 28, 28);
+            button8.ForeColor = Color.White;
             button8.Location = new Point(532, 68);
             button8.Name = "button8";
             button8.Size = new Size(75, 23);
             button8.TabIndex = 7;
             button8.Text = "Browse";
-            button8.UseVisualStyleBackColor = true;
+            button8.UseVisualStyleBackColor = false;
             button8.Click += button8_Click;
             // 
             // button7
             // 
+            button7.BackColor = Color.FromArgb(28, 28, 28);
+            button7.ForeColor = Color.White;
             button7.Location = new Point(532, 39);
             button7.Name = "button7";
             button7.Size = new Size(75, 23);
             button7.TabIndex = 6;
             button7.Text = "Browse";
-            button7.UseVisualStyleBackColor = true;
+            button7.UseVisualStyleBackColor = false;
             button7.Click += button7_Click;
             // 
             // textBox12
             // 
+            textBox12.BackColor = Color.FromArgb(30, 30, 30);
+            textBox12.ForeColor = Color.White;
             textBox12.Location = new Point(8, 64);
             textBox12.Name = "textBox12";
             textBox12.Size = new Size(512, 23);
@@ -445,6 +523,8 @@ namespace TimeSpace
             // 
             // textBox11
             // 
+            textBox11.BackColor = Color.FromArgb(30, 30, 30);
+            textBox11.ForeColor = Color.White;
             textBox11.Location = new Point(8, 35);
             textBox11.Name = "textBox11";
             textBox11.Size = new Size(512, 23);
@@ -452,6 +532,8 @@ namespace TimeSpace
             // 
             // textBox1
             // 
+            textBox1.BackColor = Color.FromArgb(30, 30, 30);
+            textBox1.ForeColor = Color.White;
             textBox1.Location = new Point(8, 6);
             textBox1.Name = "textBox1";
             textBox1.Size = new Size(512, 23);
@@ -459,12 +541,14 @@ namespace TimeSpace
             // 
             // button1
             // 
+            button1.BackColor = Color.FromArgb(28, 28, 28);
+            button1.ForeColor = Color.White;
             button1.Location = new Point(532, 10);
             button1.Name = "button1";
             button1.Size = new Size(75, 23);
             button1.TabIndex = 3;
             button1.Text = "Browse";
-            button1.UseVisualStyleBackColor = true;
+            button1.UseVisualStyleBackColor = false;
             button1.Click += button1_Click;
             // 
             // tabControl1
@@ -473,6 +557,7 @@ namespace TimeSpace
             tabControl1.Controls.Add(tabPage2);
             tabControl1.Controls.Add(tabPage3);
             tabControl1.Dock = DockStyle.Fill;
+            tabControl1.ForeColor = Color.White;
             tabControl1.Location = new Point(0, 0);
             tabControl1.Name = "tabControl1";
             tabControl1.SelectedIndex = 0;
@@ -480,10 +565,20 @@ namespace TimeSpace
             tabControl1.SizeMode = TabSizeMode.FillToRight;
             tabControl1.TabIndex = 0;
             // 
+            // label11
+            // 
+            label11.AutoSize = true;
+            label11.Location = new Point(18, 142);
+            label11.Name = "label11";
+            label11.Size = new Size(72, 15);
+            label11.TabIndex = 11;
+            label11.Text = "PanelHeight";
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.FromArgb(45, 45, 48);
             ClientSize = new Size(1831, 858);
             Controls.Add(tabControl1);
             Name = "Form1";
@@ -494,6 +589,7 @@ namespace TimeSpace
             tabPage2.ResumeLayout(false);
             tabPage2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownPanelHeight).EndInit();
             tabPage1.ResumeLayout(false);
             tabPage1.PerformLayout();
             tabControl1.ResumeLayout(false);
@@ -529,6 +625,7 @@ namespace TimeSpace
         private ComboBox comboBox1;
         private Label label4;
         private NumericUpDown numericUpDown1;
+        private NumericUpDown numericUpDownPanelHeight;
         private Label label3;
         private Label label2;
         private Label label1;
@@ -542,5 +639,6 @@ namespace TimeSpace
         private TabControl tabControl1;
         private Button button9;
         private TextBox textBox13;
+        private Label label11;
     }
 }

@@ -5,6 +5,7 @@
     private const int GRID_HEIGHT = 11;
     private List<Point> takenPositions;
     private Point? selectedPosition;
+    private Point? currentPosition;
     private Button[,] gridButtons;
     private Button confirmButton;
     private Label coordinatesLabel;
@@ -12,9 +13,10 @@
 
     public Point? SelectedCoordinates { get; private set; }
 
-    public GridSelectorForm(List<Point> existingPositions)
+    public GridSelectorForm(List<Point> existingPositions, Point? currentPos = null)
     {
         takenPositions = existingPositions ?? new List<Point>();
+        currentPosition = currentPos;
         InitializeGridForm();
         CreateGridButtons();
     }
@@ -27,13 +29,15 @@
         this.FormBorderStyle = FormBorderStyle.FixedDialog;
         this.MaximizeBox = false;
         this.MinimizeBox = false;
+        this.BackColor = Color.FromArgb(50, 50, 50);
 
         // Initialize grid panel
         gridPanel = new Panel
         {
             Location = new Point(40, 40),
             Size = new Size(CELL_SIZE * (GRID_WIDTH + 1), CELL_SIZE * (GRID_HEIGHT + 1)),
-            BorderStyle = BorderStyle.FixedSingle
+            BorderStyle = BorderStyle.FixedSingle,
+            BackColor = Color.FromArgb(50, 50, 50)
         };
         this.Controls.Add(gridPanel);
 
@@ -45,7 +49,9 @@
                 Text = $"[{i}]",
                 Location = new Point(5, 40 + i * CELL_SIZE),
                 Size = new Size(30, CELL_SIZE),
-                TextAlign = ContentAlignment.MiddleRight
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(50, 50, 50)
             };
             this.Controls.Add(rowLabel);
         }
@@ -58,7 +64,9 @@
                 Text = $"[{j}]",
                 Location = new Point(40 + j * CELL_SIZE, 5),
                 Size = new Size(CELL_SIZE, 30),
-                TextAlign = ContentAlignment.BottomCenter
+                TextAlign = ContentAlignment.BottomCenter,
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(50, 50, 50)
             };
             this.Controls.Add(colLabel);
         }
@@ -67,18 +75,22 @@
         coordinatesLabel = new Label
         {
             Location = new Point(40, CELL_SIZE * (GRID_HEIGHT + 1) + 50),
-            Size = new Size(200, 30),
-            Text = "Selected: None"
+            Size = new Size(300, 30),
+            Text = "Selected: None",
+            ForeColor = Color.White,
+            BackColor = Color.FromArgb(50, 50, 50)
         };
         this.Controls.Add(coordinatesLabel);
 
         // Create confirm button
         confirmButton = new Button
         {
-            Location = new Point(250, CELL_SIZE * (GRID_HEIGHT + 1) + 50),
+            Location = new Point(350, CELL_SIZE * (GRID_HEIGHT + 1) + 50),
             Size = new Size(100, 30),
             Text = "Confirm",
-            Enabled = false
+            Enabled = false,
+            BackColor = Color.FromArgb(30, 30, 30),
+            ForeColor = Color.White
         };
         confirmButton.Click += ConfirmButton_Click;
         this.Controls.Add(confirmButton);
@@ -95,20 +107,44 @@
                 {
                     Location = new Point(j * CELL_SIZE, i * CELL_SIZE),
                     Size = new Size(CELL_SIZE, CELL_SIZE),
-                    Text = "  ",
-                    Tag = new Point(j, i)
+                    Tag = new Point(j, i),
+                    BackColor = Color.FromArgb(30, 30, 30),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat
                 };
+                btn.FlatAppearance.BorderColor = Color.Gray;
 
-                if (takenPositions.Contains(new Point(j, i)))
+                Point currentPoint = new Point(j, i);
+
+                if (takenPositions.Contains(currentPoint))
                 {
-                    btn.Text = "OO";
+                    // Mark taken positions
                     btn.Enabled = false;
+                    btn.BackColor = Color.FromArgb(70, 70, 70); // Darker gray
+                    btn.Text = "X";
+                }
+                else if (currentPosition.HasValue && currentPoint == currentPosition.Value)
+                {
+                    // Highlight current position
+                    btn.BackColor = Color.FromArgb(0, 150, 136); // Teal color
+                    btn.Text = "";
+                    btn.Click += GridButton_Click;
+                }
+                else
+                {
+                    btn.Text = "";
+                    btn.Click += GridButton_Click;
                 }
 
-                btn.Click += GridButton_Click;
                 gridButtons[j, i] = btn;
                 gridPanel.Controls.Add(btn);
             }
+        }
+
+        // Update coordinates label if current position is set
+        if (currentPosition.HasValue)
+        {
+            coordinatesLabel.Text = $"Current Position: ({currentPosition.Value.X}, {currentPosition.Value.Y})";
         }
     }
 
@@ -123,13 +159,21 @@
             Point prev = selectedPosition.Value;
             if (!takenPositions.Contains(prev))
             {
-                gridButtons[prev.X, prev.Y].Text = "  ";
+                // Reset to default or current position color
+                if (currentPosition.HasValue && prev == currentPosition.Value)
+                {
+                    gridButtons[prev.X, prev.Y].BackColor = Color.FromArgb(0, 150, 136); // Teal color
+                }
+                else
+                {
+                    gridButtons[prev.X, prev.Y].BackColor = Color.FromArgb(30, 30, 30);
+                }
             }
         }
 
         // Update new selection
         selectedPosition = coordinates;
-        clickedButton.Text = "XX";
+        clickedButton.BackColor = Color.FromArgb(0, 120, 215); // Highlight color
         coordinatesLabel.Text = $"Selected: ({coordinates.X}, {coordinates.Y})";
         confirmButton.Enabled = true;
     }

@@ -59,34 +59,37 @@ public class TaskEventManagerForm : Form
         despawnAllMobsInRoom.Checked = eventScript.Contains("Event.DespawnAllMobsInRoom");
     }
 
-
     private void InitializeComponents(List<string> lockedPortalsList)
     {
-        // Form settings  
+        // Form settings
         Text = "Task Event Manager";
         Size = new Size(600, 450);
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
+        BackColor = Color.FromArgb(50, 50, 50);
 
-        // Event Type Selection  
+        // Event Type Selection
         var lblEventType = new Label
         {
             Text = "Event Type:",
             Location = new Point(20, 20),
-            Width = 80
+            Width = 80,
+            ForeColor = Color.White
         };
         eventTypeComboBox = new ComboBox
         {
             Location = new Point(100, 20),
             Width = 150,
-            DropDownStyle = ComboBoxStyle.DropDownList
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            BackColor = Color.FromArgb(30, 30, 30),
+            ForeColor = Color.White
         };
         eventTypeComboBox.Items.AddRange(new string[] { "TaskFinish", "TaskFail" });
         eventTypeComboBox.SelectedIndex = 0;
         eventTypeComboBox.SelectedIndexChanged += EventType_Changed;
 
-        // Initialize portal ComboBoxes  
+        // Initialize portal ComboBoxes
         taskFinishPortals = new ComboBox[4];
         taskFailPortals = new ComboBox[4];
 
@@ -103,14 +106,17 @@ public class TaskEventManagerForm : Form
             {
                 Text = $"Portal {i + 1}:",
                 Location = new Point(20, 60 + (i * 40)),
-                Width = 80
+                Width = 80,
+                ForeColor = Color.White
             };
 
             taskFinishPortals[i] = new ComboBox
             {
                 Location = new Point(100, 60 + (i * 40)),
                 Width = 200,
-                DropDownStyle = ComboBoxStyle.DropDownList
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Color.FromArgb(30, 30, 30),
+                ForeColor = Color.White
             };
             taskFinishPortals[i].Items.AddRange(portalsList.ToArray());
             taskFinishPortals[i].SelectedIndex = 0;  // Will select the empty option
@@ -120,6 +126,8 @@ public class TaskEventManagerForm : Form
                 Location = new Point(100, 60 + (i * 40)),
                 Width = 200,
                 DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Color.FromArgb(30, 30, 30),
+                ForeColor = Color.White,
                 Visible = false
             };
             taskFailPortals[i].Items.AddRange(portalsList.ToArray());
@@ -130,60 +138,71 @@ public class TaskEventManagerForm : Form
             Controls.Add(taskFailPortals[i]);
         }
 
-        // Time modifications  
+        // Time modifications
         var lblAddTime = new Label
         {
             Text = "Add Time:",
             Location = new Point(20, 220),
-            Width = 80
+            Width = 80,
+            ForeColor = Color.White
         };
         addTimeEvent = new NumericUpDown
         {
             Location = new Point(100, 220),
             Width = 100,
             Minimum = 0,
-            Maximum = 999
+            Maximum = 999,
+            BackColor = Color.FromArgb(30, 30, 30),
+            ForeColor = Color.White
         };
         var lblRemoveTime = new Label
         {
             Text = "Remove Time:",
             Location = new Point(220, 220),
-            Width = 80
+            Width = 80,
+            ForeColor = Color.White
         };
         removeTimeEvent = new NumericUpDown
         {
             Location = new Point(300, 220),
             Width = 100,
             Minimum = 0,
-            Maximum = 999
+            Maximum = 999,
+            BackColor = Color.FromArgb(30, 30, 30),
+            ForeColor = Color.White
         };
 
-        // Despawn mobs checkbox  
+        // Despawn mobs checkbox
         despawnAllMobsInRoom = new CheckBox
         {
             Text = "Despawn All Mobs",
             Location = new Point(20, 300),
-            AutoSize = true
+            AutoSize = true,
+            ForeColor = Color.White,
+            BackColor = Color.FromArgb(50, 50, 50)
         };
 
-        // Apply button  
+        // Apply button
         applyButton = new Button
         {
             Text = "Apply",
             Location = new Point(20, 340),
-            Width = 100
+            Width = 100,
+            BackColor = Color.FromArgb(30, 30, 30),
+            ForeColor = Color.White
         };
         applyButton.Click += ApplyButton_Click;
 
-        // Add controls to form  
+        // Add controls to form
         Controls.AddRange(new Control[] {
-        lblEventType, eventTypeComboBox,
-        lblAddTime, addTimeEvent,
-        lblRemoveTime, removeTimeEvent,
-        despawnAllMobsInRoom,
-        applyButton
-    });
+            lblEventType, eventTypeComboBox,
+            lblAddTime, addTimeEvent,
+            lblRemoveTime, removeTimeEvent,
+            despawnAllMobsInRoom,
+            applyButton
+        });
     }
+
     public void UpdatePortalComboboxes(List<string> newPortalsList)
     {
         // Add empty option to portal list
@@ -212,9 +231,10 @@ public class TaskEventManagerForm : Form
             }
         }
     }
+
     private void EventType_Changed(object sender, EventArgs e)
     {
-        // Ensure eventTypeComboBox.SelectedItem is not null  
+        // Ensure eventTypeComboBox.SelectedItem is not null
         if (eventTypeComboBox.SelectedItem == null)
         {
             return;
@@ -223,7 +243,7 @@ public class TaskEventManagerForm : Form
         bool isTaskFinish = eventTypeComboBox.SelectedItem.ToString() == "TaskFinish";
         for (int i = 0; i < 4; i++)
         {
-            // Ensure taskFinishPortals and taskFailPortals elements are not null  
+            // Ensure taskFinishPortals and taskFailPortals elements are not null
             if (taskFinishPortals != null && taskFinishPortals[i] != null)
             {
                 taskFinishPortals[i].Visible = isTaskFinish;
@@ -234,7 +254,7 @@ public class TaskEventManagerForm : Form
             }
         }
 
-        // Ensure addTimeEvent and removeTimeEvent are not null  
+        // Ensure addTimeEvent and removeTimeEvent are not null
         if (addTimeEvent != null)
         {
             addTimeEvent.Enabled = isTaskFinish;

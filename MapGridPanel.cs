@@ -35,7 +35,7 @@ namespace TimeSpace
         }
         public void SetGrid(string mapId, int width, int height, byte[] grid)
         {
-            // Validate input parameters
+            // Validate input parameters  
             if (width <= 0 || height <= 0)
             {
                 throw new ArgumentException($"Invalid grid dimensions: width={width}, height={height}");
@@ -50,16 +50,16 @@ namespace TimeSpace
             _grid = grid;
             _currentMapId = mapId;
 
-            // Calculate cell size based on panel dimensions
+            // Calculate cell size based on panel dimensions  
             int maxCellWidth = Math.Max(1, FixedPanelWidth / _width);
             int maxCellHeight = Math.Max(1, FixedPanelHeight / _height);
             _cellSize = Math.Min(maxCellWidth, maxCellHeight);
 
-            // Calculate total dimensions
+            // Calculate total dimensions  
             int totalWidth = _width * _cellSize;
             int totalHeight = _height * _cellSize;
 
-            // Set panel size
+            // Set panel size  
             this.AutoScroll = true;
             this.Width = Math.Max(FixedPanelWidth, totalWidth);
             this.Height = Math.Max(FixedPanelHeight, totalHeight);
@@ -73,7 +73,6 @@ namespace TimeSpace
             {
                 throw new InvalidOperationException("Cannot recalculate cell size: invalid grid dimensions");
             }
-
             SetGrid(_currentMapId, _width, _height, _grid);
         }
         public bool IsWalkable(int x, int y)
@@ -175,12 +174,11 @@ namespace TimeSpace
         { 0x90, Color.Purple }, // Target Monster
     };
 
-        // Method to reset the grid to default state
         public void ResetGrid()
         {
             if (_grid != null)
             {
-                // Create a new grid instead of modifying the existing one
+                // Create a new grid instead of modifying the existing one  
                 _grid = new byte[_width * _height];
                 Invalidate();
             }
@@ -223,10 +221,13 @@ namespace TimeSpace
             if (currentMapTab == null || _grid == null || _currentMapId != mapId)
                 return;
 
-            // Use the passed original grid instead of current potentially modified grid
+            // Clear the grid before applying new markings  
+            ResetGrid();
+
+            // Use the passed original grid instead of current potentially modified grid  
             Array.Copy(originalGrid, _grid, _grid.Length);
 
-            // Mark portals, monsters, and objectives as before...
+            // Mark portals, monsters, and objectives as before...  
             foreach (var portal in currentMapTab.Portals)
             {
                 if (IsValidPosition(portal.FromX, portal.FromY))
@@ -235,7 +236,7 @@ namespace TimeSpace
                 }
             }
 
-            // Mark monsters for this specific map
+            // Mark monsters for this specific map  
             foreach (DataGridViewRow row in currentMapTab.MonsterDataGridView.Rows)
             {
                 if (row.IsNewRow || row.Cells["X"].Value == null || row.Cells["Y"].Value == null)
@@ -244,14 +245,13 @@ namespace TimeSpace
                 int x = Convert.ToInt32(row.Cells["X"].Value);
                 int y = Convert.ToInt32(row.Cells["Y"].Value);
                 bool isTarget = Convert.ToBoolean(row.Cells["AsTarget"].Value);
-
                 if (IsValidPosition(x, y))
                 {
                     MarkMonster(x, y, isTarget);
                 }
             }
 
-            // Mark objectives for this specific map
+            // Mark objectives for this specific map  
             foreach (var obj in currentMapTab.Objects)
             {
                 int x = obj.GetX();
@@ -263,15 +263,14 @@ namespace TimeSpace
                 }
             }
 
-            // Preserve original grid values where we haven't added custom markings
+            // Preserve original grid values where we haven't added custom markings  
             for (int i = 0; i < _grid.Length; i++)
             {
-                if (_grid[i] == 0) // If we haven't marked this cell
+                if (_grid[i] == 0) // If we haven't marked this cell  
                 {
-                    _grid[i] = originalGrid[i]; // Restore original value
+                    _grid[i] = originalGrid[i]; // Restore original value  
                 }
             }
-
             Invalidate();
         }
 

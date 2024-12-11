@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using YamlDotNet.Core;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 
 namespace TimeSpace
 {
@@ -21,13 +18,17 @@ namespace TimeSpace
             CellY = cellY;
         }
     }
+
     public class CustomTabPage : TabPage
     {
         private TaskEventManagerForm taskEventManagerForm;
         private readonly MapEventGenerator eventGenerator;
         public DataGridView MonsterDataGridView => monsterDataGridView;
+        private DataGridView npcDataGridView;
+        private List<Npc> NpcEvents { get; set; } = new List<Npc>();
         private MapGridPanel _mapGridPanel;
         private byte[] originalGrid;
+        private Form1 _mainForm;
         public string MapName { get; private set; }
         public Func<List<string>> getMapNames;
         public Dictionary<string, Panel> MapPortalPanels { get; set; }
@@ -43,6 +44,11 @@ namespace TimeSpace
         public Dictionary<string, List<string>> eventManagerScripts = new Dictionary<string, List<string>>();
         private bool isDisposed = false;
 
+        private TabControl mainTabControl;
+        private TabPage monsterTabPage;
+        private TabPage waveTabPage;
+        private TabPage npcTabPage;
+
         private TextBox txtMapVNUM;
         private TextBox txtMapCoordinates;
         private TextBox txtTaskText;
@@ -53,25 +59,27 @@ namespace TimeSpace
         private FlowLayoutPanel eventPanel;
         private FlowLayoutPanel objectivePanel;
         private Point? currentPosition = null;
-        private Button btnAddAttribute;
+
+        private Panel wavePanel;
         private NumericUpDown waveCountInput;
         private NumericUpDown waveDelayInput;
         public CheckBox useWavesCheckbox;
 
         public CustomTabPage(string mapName, Form1 form, Func<List<string>> getMapNames)
         {
+            _mainForm = form;
             MonsterEvents = new List<Monster>();
             Text = mapName;
             this.getMapNames = getMapNames;
             this.MapName = mapName;
+            InitializeComponents(form);
             eventGenerator = new MapEventGenerator(waveDelayInput, eventManagerScripts);
             MapPortalPanels = new Dictionary<string, Panel>();
-            InitializeComponents(form);
         }
 
         private void InitializeComponents(Form1 form)
         {
-            var containerPanel = new Panel { Dock = DockStyle.Fill };
+            var containerPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(50, 50, 50) };
             var leftPanel = CreateLeftPanel(form);
             var rightPanel = CreateRightPanel();
 
@@ -82,50 +90,87 @@ namespace TimeSpace
 
         private Panel CreateLeftPanel(Form1 form)
         {
-            var leftPanel = new Panel { Width = 1000, Dock = DockStyle.Left };
+            var leftPanel = new Panel { Width = 1000, Dock = DockStyle.Left, BackColor = Color.FromArgb(50, 50, 50) };
 
-            txtMapVNUM = new TextBox { Name = "txtMapVNUM", Location = new Point(150, 10), Width = 200 };
-            txtMapCoordinates = new TextBox { Location = new Point(150, 40), Width = 200 };
+            // Initialize controls
+            txtMapVNUM = new TextBox { Name = "txtMapVNUM", Location = new Point(150, 10), Width = 200, BackColor = Color.FromArgb(30, 30, 30), ForeColor = Color.White };
+            txtMapCoordinates = new TextBox { Location = new Point(150, 40), Width = 200, BackColor = Color.FromArgb(30, 30, 30), ForeColor = Color.White };
             cboTaskType = new ComboBox
             {
                 Location = new Point(150, 70),
                 Width = 200,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                Items = { "None", "KillAllMonsters", "Survive" }
+                Items = { "None", "KillAllMonsters", "Survive" },
+                BackColor = Color.FromArgb(30, 30, 30),
+                ForeColor = Color.White
             };
-            txtTaskText = new TextBox { Location = new Point(150, 100), Width = 200 };
+            txtTaskText = new TextBox { Location = new Point(150, 100), Width = 200, BackColor = Color.FromArgb(30, 30, 30), ForeColor = Color.White };
             timeForTask = new NumericUpDown
             {
                 Width = 50,
                 Location = new Point(440, 100),
                 Maximum = 600,
-                Increment = 10
+                Increment = 10,
+                BackColor = Color.FromArgb(30, 30, 30),
+                ForeColor = Color.White
             };
 
+            // Portal panel remains at the top
             portalPanel = new FlowLayoutPanel
             {
                 Location = new Point(10, 130),
-                Width = 1000,
+                Width = 980,  // Slightly reduced to account for panel padding
                 Height = 250,
                 AutoScroll = true,
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
-                Padding = new Padding(0, 5, 0, 5)
+                Padding = new Padding(0, 5, 0, 5),
+                BackColor = Color.FromArgb(50, 50, 50)
             };
 
-            eventPanel = new FlowLayoutPanel
+            // Position TabControl below the portal panel
+            mainTabControl = new TabControl
             {
-                Location = new Point(10, 420),
-                Width = 1000,
-                Height = 250,
-                AutoScroll = true,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                Padding = new Padding(0, 5, 0, 5)
+                Location = new Point(10, 390),  // Position starts right after portal panel
+                Width = 980,  // Match portal panel width
+                Height = 500,
+                Dock = DockStyle.None,  // Remove docking to maintain specific position
+                Appearance = TabAppearance.Normal,
+                BackColor = Color.FromArgb(50, 50, 50)
             };
 
+            // Initialize TabPages
+            monsterTabPage = new TabPage
+            {
+                Text = "Monsters",
+                BackColor = Color.FromArgb(50, 50, 50),
+                Padding = new Padding(3),
+            };
+
+            waveTabPage = new TabPage
+            {
+                Text = "Waves",
+                BackColor = Color.FromArgb(50, 50, 50),
+                Padding = new Padding(3)
+            };
+
+            npcTabPage = new TabPage
+            {
+                Text = "NPCs",
+                BackColor = Color.FromArgb(50, 50, 50),
+                Padding = new Padding(3)
+            };
+
+            // Initialize the controls for each tab
+            InitializeMonsterDataGridView();
+            InitializeWaveControls();
+            InitializeNpcDataGridView();
+
+            // Add TabPages to the TabControl
+            mainTabControl.TabPages.AddRange(new TabPage[] { monsterTabPage, waveTabPage, npcTabPage });
+
+            // Add all controls to the left panel
             AddControlsToLeftPanel(leftPanel, form);
-            InitializeDataGridView();
 
             return leftPanel;
         }
@@ -134,33 +179,35 @@ namespace TimeSpace
         {
             leftPanel.Controls.AddRange(new Control[]
             {
-            new Label { Text = "Map Vnum:", Location = new Point(10, 10) },
-            txtMapVNUM,
-            CreateButton("Load Map", new Point(360, 10), (sender, e) => LoadMap(form)),
-            new Label { Text = "Map Coordinates:", Location = new Point(10, 40) },
-            txtMapCoordinates,
-            CreateButton("...", new Point(txtMapCoordinates.Right + 10, 40), BtnSelectCoordinates_Click, 30, txtMapCoordinates.Height),
-            new Label { Text = "Task Type:", Location = new Point(10, 70) },
-            cboTaskType,
-            new Label { Text = "Task Text:", Location = new Point(10, 100) },
-            txtTaskText,
-            new Label { Text = "Time for Task:", Location = new Point(360, 105), Width = 80 },
-            timeForTask,
-            portalPanel,
-            CreateButton("Add Portal", new Point(10, 390), BtnAddPortal_Click),
-            CreateButton("Remove Last Portal", new Point(150, 390), BtnRemovePortal_Click),
-            CreateButton("Save Portals", new Point(290, 390), SaveAllValues),
-            eventPanel,
-            CreateButton("Add Monster", new Point(10, 730), BtnAddEvent_Click),
-            CreateButton("Remove Last Monster", new Point(150, 730), BtnRemoveEvent_Click),
-            CreateButton("Save Monsters", new Point(290, 730), BtnSaveMonsterAndObjective_Click),
-            CreateButton("Manage Events", new Point(360, 70), (s, e) => ManageEvents())
+                new Label { Text = "Map Vnum:", Location = new Point(10, 10), ForeColor = Color.White },
+                txtMapVNUM,
+                CreateButton("Load Map", new Point(360, 10), (sender, e) => LoadMap(form)),
+                new Label { Text = "Map Coordinates:", Location = new Point(10, 40), ForeColor = Color.White },
+                txtMapCoordinates,
+                CreateButton("...", new Point(txtMapCoordinates.Right + 10, 40), BtnSelectCoordinates_Click, 30, txtMapCoordinates.Height),
+                new Label { Text = "Task Type:", Location = new Point(10, 70), ForeColor = Color.White },
+                cboTaskType,
+                new Label { Text = "Task Text:", Location = new Point(10, 100), ForeColor = Color.White },
+                txtTaskText,
+                new Label { Text = "Time for Task:", Location = new Point(360, 105), Width = 80, ForeColor = Color.White },
+                timeForTask,
+                portalPanel,
+                CreateButton("Add Portal", new Point(10, 390), BtnAddPortal_Click),
+                CreateButton("Remove Last Portal", new Point(150, 390), BtnRemovePortal_Click),
+                CreateButton("Save Portals", new Point(290, 390), SaveAllValues),
+                mainTabControl, // Add the TabControl here
+                CreateButton("Save All", new Point(10, 900), SaveAllValues),
+                CreateButton("Manage Events", new Point(360, 70), (s, e) => ManageEvents())
             });
+
+            // Adjust the position of the mainTabControl to be below the portal buttons
+            mainTabControl.Location = new Point(10, 450);
+            mainTabControl.Height = 500;
         }
 
         private Panel CreateRightPanel()
         {
-            var rightPanel = new Panel { Dock = DockStyle.Fill };
+            var rightPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(50, 50, 50) };
             var mapGridPanel = new MapGridPanel();
             mapGridPanel.CellClicked += MapGridPanel_CellClicked;
 
@@ -172,17 +219,18 @@ namespace TimeSpace
                 AutoScroll = true,
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
-                Padding = new Padding(0, 5, 0, 5)
+                Padding = new Padding(0, 5, 0, 5),
+                BackColor = Color.FromArgb(50, 50, 50)
             };
 
             rightPanel.Controls.AddRange(new Control[]
             {
-            mapGridPanel,
-            objectivePanel,
-            CreateButton("Add Objective", new Point(10, 470), BtnAddObjective_Click, width: 150, height: 30),
-            CreateButton("Remove Last Objective", new Point(170, 470), BtnRemoveObjective_Click, width: 150, height: 30),
-            CreateButton("Save Objectives", new Point(330, 470), BtnSaveMonsterAndObjective_Click, width: 150, height: 30),
-            new Label { Dock = DockStyle.Top, AutoSize = true, Text = "Hover Position: " }
+                mapGridPanel,
+                objectivePanel,
+                CreateButton("Add Objective", new Point(10, 470), BtnAddObjective_Click, width: 150, height: 30),
+                CreateButton("Remove Last Objective", new Point(170, 470), BtnRemoveObjective_Click, width: 150, height: 30),
+                CreateButton("Save Objectives", new Point(330, 470), SaveAllValues, width: 150, height: 30),
+                new Label { Dock = DockStyle.Top, AutoSize = true, Text = "Hover Position: ", ForeColor = Color.White }
             });
             return rightPanel;
         }
@@ -194,11 +242,14 @@ namespace TimeSpace
                 Text = text,
                 Location = location,
                 Width = width,
-                Height = height
+                Height = height,
+                BackColor = Color.FromArgb(28, 28, 28),
+                ForeColor = Color.White
             };
             button.Click += clickHandler;
             return button;
         }
+
         private void ManageEvents()
         {
             List<string> existingEvents = null;
@@ -223,96 +274,167 @@ namespace TimeSpace
             }
         }
 
-        private void InitializeDataGridView()
+        private void InitializeMonsterDataGridView()
         {
-            useWavesCheckbox = new CheckBox
-            {
-                Text = "Use Waves",
-                Location = new Point(10, 10),
-                AutoSize = true
-            };
-            useWavesCheckbox.CheckedChanged += UseWavesCheckbox_CheckedChanged;
-
-            waveCountInput = new NumericUpDown
-            {
-                Location = new Point(230, 10),
-                Width = 60,
-                Minimum = 1,
-                Maximum = 10,
-                Enabled = false
-            };
-
-            waveDelayInput = new NumericUpDown
-            {
-                Location = new Point(430, 10),
-                Width = 60,
-                Minimum = 0,
-                Maximum = 300,
-                Value = 30,
-                Enabled = false
-            };
-
-            var wavePanel = new Panel
-            {
-                Location = new Point(0, 0),
-                Width = 800,
-                Height = 40
-            };
-            wavePanel.Controls.AddRange(new Control[]
-            {
-        useWavesCheckbox,
-        new Label { Text = "Number of Waves:", Location = new Point(120, 12), AutoSize = true },
-        waveCountInput,
-        new Label { Text = "Wave Delay (seconds):", Location = new Point(300, 12), AutoSize = true },
-        waveDelayInput
-            });
-
-            btnAddAttribute = new Button
-            {
-                Text = "Manage Attributes",
-                Location = new Point(0, wavePanel.Bottom + 10),
-                Width = 120,
-                Height = 30
-            };
-            btnAddAttribute.Click += BtnAddAttribute_Click;
-
+            // First create and position the DataGridView
             monsterDataGridView = new DataGridView
             {
-                Location = new Point(0, btnAddAttribute.Bottom + 10),
-                Width = 800,
-                Height = 200,
+                Location = new Point(10, 10),  // Start at top of tab
+                Width = 950,
+                Height = 350,  // Reduced height to make room for buttons
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize,
-                AllowUserToAddRows = false
+                AllowUserToAddRows = false,
+                BackgroundColor = Color.FromArgb(28, 28, 28),
+                ForeColor = Color.White
             };
             monsterDataGridView.Columns.AddRange(new DataGridViewColumn[]
             {
         new DataGridViewTextBoxColumn { Name = "Vnum", HeaderText = "Vnum" },
         new DataGridViewTextBoxColumn { Name = "X", HeaderText = "X" },
         new DataGridViewTextBoxColumn { Name = "Y", HeaderText = "Y" },
+        new DataGridViewTextBoxColumn { Name = "Wave", HeaderText = "Wave" },
         new DataGridViewCheckBoxColumn { Name = "AsTarget", HeaderText = "As Target" },
-        new DataGridViewTextBoxColumn
-        {
-            Name = "Attributes",
-            HeaderText = "Additional Attributes",
-            ReadOnly = true
-        }
+        new DataGridViewTextBoxColumn { Name = "Attributes", HeaderText = "Additional Attributes", ReadOnly = true }
             });
             monsterDataGridView.CellDoubleClick += MonsterDataGridView_CellDoubleClick;
 
-            eventPanel.Controls.AddRange(new Control[]
-            {
-        wavePanel,
-        btnAddAttribute,
-        monsterDataGridView
-            });
-            eventPanel.Height = monsterDataGridView.Bottom + 20;
+            // Position buttons below the DataGridView
+            var btnAddMonster = CreateButton("Add Monster", new Point(10, 370), BtnAddEvent_Click);
+            var btnRemoveMonster = CreateButton("Remove Last Monster", new Point(150, 370), BtnRemoveEvent_Click);
+            var btnSaveMonsters = CreateButton("Save Monsters", new Point(290, 370), SaveAllValues);
 
-            if (monsterDataGridView != null)
+            monsterTabPage.Controls.AddRange(new Control[]
             {
-                monsterDataGridView.CellMouseEnter += MonsterGrid_CellMouseEnter;
-                monsterDataGridView.CellMouseLeave += MonsterGrid_CellMouseLeave;
-                monsterDataGridView.MouseLeave += MonsterGrid_MouseLeave;
+        monsterDataGridView,
+        btnAddMonster,
+        btnRemoveMonster,
+        btnSaveMonsters
+            });
+        }
+
+        private void InitializeWaveControls()
+        {
+            wavePanel = new Panel
+            {
+                Location = new Point(10, 10),
+                Width = 950,
+                Height = 50,
+                BackColor = Color.FromArgb(50, 50, 50)
+            };
+
+            useWavesCheckbox = new CheckBox
+            {
+                Text = "Use Waves",
+                Location = new Point(10, 15),
+                AutoSize = true,
+                BackColor = Color.FromArgb(50, 50, 50),
+                ForeColor = Color.White
+            };
+            useWavesCheckbox.CheckedChanged += UseWavesCheckbox_CheckedChanged;
+
+            waveCountInput = new NumericUpDown
+            {
+                Location = new Point(150, 15),
+                Width = 60,
+                Minimum = 1,
+                Maximum = 10,
+                Enabled = false,
+                BackColor = Color.FromArgb(30, 30, 30),
+                ForeColor = Color.White
+            };
+
+            waveDelayInput = new NumericUpDown
+            {
+                Location = new Point(350, 15),
+                Width = 60,
+                Minimum = 0,
+                Maximum = 300,
+                Value = 30,
+                Enabled = false,
+                BackColor = Color.FromArgb(30, 30, 30),
+                ForeColor = Color.White
+            };
+
+            wavePanel.Controls.AddRange(new Control[]
+            {
+        useWavesCheckbox,
+        new Label { Text = "Number of Waves:", Location = new Point(220, 17), AutoSize = true, ForeColor = Color.White },
+        waveCountInput,
+        new Label { Text = "Wave Delay (seconds):", Location = new Point(420, 17), AutoSize = true, ForeColor = Color.White },
+        waveDelayInput
+            });
+        }
+
+        private void InitializeNpcDataGridView()
+        {
+            npcDataGridView = new DataGridView
+            {
+                Location = new Point(10, 10),  // Start at top of tab
+                Width = 950,
+                Height = 350,  // Reduced height to make room for buttons
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize,
+                AllowUserToAddRows = false,
+                BackgroundColor = Color.FromArgb(28, 28, 28),
+                ForeColor = Color.White
+            };
+            npcDataGridView.Columns.AddRange(new DataGridViewColumn[]
+            {
+        new DataGridViewTextBoxColumn { Name = "Vnum", HeaderText = "Vnum" },
+        new DataGridViewTextBoxColumn { Name = "X", HeaderText = "X" },
+        new DataGridViewTextBoxColumn { Name = "Y", HeaderText = "Y" },
+        new DataGridViewTextBoxColumn { Name = "Event", HeaderText = "Event" }
+            });
+
+            // Position buttons below the DataGridView
+            var btnAddNpc = CreateButton("Add NPC", new Point(10, 370), BtnAddNpc_Click);
+            var btnRemoveNpc = CreateButton("Remove Last NPC", new Point(150, 370), BtnRemoveNpc_Click);
+            var btnSaveNpcs = CreateButton("Save NPCs", new Point(290, 370), SaveAllValues);
+
+            npcTabPage.Controls.AddRange(new Control[]
+            {
+        npcDataGridView,
+        btnAddNpc,
+        btnRemoveNpc,
+        btnSaveNpcs
+            });
+        }
+
+        // Event handlers for NPC DataGridView
+        private void BtnAddNpc_Click(object sender, EventArgs e)
+        {
+            NpcEvents.Add(new Npc(MapName));
+            npcDataGridView.Rows.Add();
+        }
+
+        private void BtnRemoveNpc_Click(object sender, EventArgs e)
+        {
+            if (npcDataGridView.Rows.Count > 0)
+            {
+                NpcEvents.RemoveAt(npcDataGridView.Rows.Count - 1);
+                npcDataGridView.Rows.RemoveAt(npcDataGridView.Rows.Count - 1);
+            }
+        }
+
+        private void UseWavesCheckbox_CheckedChanged(object sender, EventArgs e)
+        {
+            waveCountInput.Enabled = useWavesCheckbox.Checked;
+            waveDelayInput.Enabled = useWavesCheckbox.Checked;
+
+            if (useWavesCheckbox.Checked)
+            {
+                if (!monsterDataGridView.Columns.Contains("Wave"))
+                {
+                    monsterDataGridView.Columns.Insert(3, new DataGridViewTextBoxColumn { Name = "Wave", HeaderText = "Wave" });
+                }
+            }
+            else
+            {
+                if (monsterDataGridView.Columns.Contains("Wave"))
+                {
+                    monsterDataGridView.Columns.Remove("Wave");
+                }
             }
         }
         private void MonsterGrid_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
@@ -324,37 +446,37 @@ namespace TimeSpace
                 var row = monsterDataGridView.Rows[e.RowIndex];
                 if (row.IsNewRow) return;
 
-                    if (row.Cells["X"].Value != null && row.Cells["Y"].Value != null)
-                    {
-                        int x = Convert.ToInt32(row.Cells["X"].Value);
-                        int y = Convert.ToInt32(row.Cells["Y"].Value);
-                        _mapGridPanel.HighlightPosition(x, y);
-                    }
+                if (row.Cells["X"].Value != null && row.Cells["Y"].Value != null)
+                {
+                    int x = Convert.ToInt32(row.Cells["X"].Value);
+                    int y = Convert.ToInt32(row.Cells["Y"].Value);
+                    _mapGridPanel.HighlightPosition(x, y);
+                }
             }
         }
 
         private void MonsterGrid_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
         {
             if (_mapGridPanel != null)
-            _mapGridPanel.ClearHighlight();
+                _mapGridPanel.ClearHighlight();
         }
 
         private void MonsterGrid_MouseLeave(object sender, EventArgs e)
         {
             if (_mapGridPanel != null)
-            _mapGridPanel.ClearHighlight();
+                _mapGridPanel.ClearHighlight();
         }
         public void LoadMap(Form1 form)
         {
             if (!int.TryParse(txtMapVNUM.Text, out int mapVnum))
             {
-                return; // Invalid map number
+                return; // Invalid map number  
             }
 
             var mapData = form.loadedMaps.FirstOrDefault(m => m.Id == mapVnum);
             if (mapData == null || mapData.Grid == null || mapData.Width <= 0 || mapData.Height <= 0)
             {
-                return; // Invalid map data
+                return; // Invalid map data  
             }
 
             try
@@ -367,8 +489,12 @@ namespace TimeSpace
 
                 if (mapGridPanel != null)
                 {
+                    // Clear existing markings  
+                    mapGridPanel.ResetGrid();
+
+                    // Display the new map grid  
                     DisplayMapGrid(mapData);
-                    mapGridPanel.RecalculateCellSize(); // Now with proper validation
+                    mapGridPanel.RecalculateCellSize(); // Now with proper validation  
                     mapGridPanel.UpdateMapMarkings(this, MapName, originalGrid);
                 }
             }
@@ -382,7 +508,7 @@ namespace TimeSpace
         {
             MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).First();
             mapGridPanel.ResetGrid();
-            mapGridPanel.SetGrid(MapName,mapData.Width, mapData.Height, mapData.Grid);
+            mapGridPanel.SetGrid(MapName, mapData.Width, mapData.Height, mapData.Grid);
         }
 
         private void MapGridPanel_CellClicked(object sender, CellClickedEventArgs e)
@@ -408,7 +534,7 @@ namespace TimeSpace
                     tempTakenPositions.Remove(currentPosition.Value);
                 }
 
-                using (var gridSelector = new GridSelectorForm(tempTakenPositions))
+                using (var gridSelector = new GridSelectorForm(tempTakenPositions, currentPosition))
                 {
                     if (gridSelector.ShowDialog() == DialogResult.OK && gridSelector.SelectedCoordinates.HasValue)
                     {
@@ -503,26 +629,6 @@ namespace TimeSpace
                     {
                         txtMapCoordinates.Text = string.Empty;
                     }
-                }
-            }
-        }
-        private void UseWavesCheckbox_CheckedChanged(object sender, EventArgs e)
-        {
-            waveCountInput.Enabled = useWavesCheckbox.Checked;
-            waveDelayInput.Enabled = useWavesCheckbox.Checked;
-
-            if (useWavesCheckbox.Checked)
-            {
-                if (!monsterDataGridView.Columns.Contains("Wave"))
-                {
-                    monsterDataGridView.Columns.Insert(3, new DataGridViewTextBoxColumn { Name = "Wave", HeaderText = "Wave" });
-                }
-            }
-            else
-            {
-                if (monsterDataGridView.Columns.Contains("Wave"))
-                {
-                    monsterDataGridView.Columns.Remove("Wave");
                 }
             }
         }
@@ -920,6 +1026,7 @@ namespace TimeSpace
         {
             BtnSaveMonsterAndObjective_Click(sender, e);
             SaveAndRefreshPortals(sender, e, true);
+            LoadMap(_mainForm);
         }
         public void SetMapVnum(int vnum)
         {
