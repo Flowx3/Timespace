@@ -88,7 +88,7 @@ public class TimeSpaceParser
             {
                 foreach (var script in scripts)
                 {
-                    mapPage.eventManagerScripts[mapPage.MapName] = scripts;
+                    mapPage.EventManagerScripts[mapPage.MapName] = scripts;
                 }
             }
         }
@@ -177,11 +177,11 @@ public class TimeSpaceParser
 
         newScript.AppendLine("})");
 
-        if (!page.eventManagerScripts.ContainsKey(page.MapName))
+        if (!page.EventManagerScripts.ContainsKey(page.MapName))
         {
-            page.eventManagerScripts[page.MapName] = new List<string>();
+            page.EventManagerScripts[page.MapName] = new List<string>();
         }
-        page.eventManagerScripts[page.MapName].Add(newScript.ToString());
+        page.EventManagerScripts[page.MapName].Add(newScript.ToString());
     }
     private void ParsePortalDefinition(string line)
     {

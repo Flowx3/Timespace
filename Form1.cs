@@ -287,7 +287,7 @@ namespace TimeSpace
             luaScript.AppendLine("local TimeSpaceTask = require('TimeSpaceTask')");
             foreach (var maptab in mapTabs)
             {
-                if (maptab.useWavesCheckbox.Checked)
+                if (maptab.UseWavesCheckbox.Checked)
                 {
                     luaScript.AppendLine("local MonsterWave = require('MonsterWave')");
                     continue;
