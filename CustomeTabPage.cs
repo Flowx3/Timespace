@@ -662,7 +662,7 @@ namespace TimeSpace
         }
         private void BtnAddPortal_Click(object sender, EventArgs e)
         {
-            if (Portals.Count >= 4)
+            if (Portals.Count >= MAX_PORTALS)
             {
                 MessageBox.Show("You don't need more than 4 Portals.");
                 return;
@@ -962,7 +962,7 @@ namespace TimeSpace
         }
         private void BtnAddObjective_Click(object sender, EventArgs e)
         {
-            if (Objects.Count >= 4)
+            if (Objects.Count >= MAX_OBJECTS)
             {
                 MessageBox.Show("You dont need more than 4 Objects.");
                 return;
