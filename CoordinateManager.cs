@@ -26,7 +26,7 @@ public class CoordinateManager
                 availablePositions.Remove(_currentPosition.Value);
             }
 
-            using var gridSelector = new GridSelectorForm(availablePositions, _currentPosition);
+            using var gridSelector = new ModernGridSelector(availablePositions, _currentPosition);
             if (gridSelector.ShowDialog() == DialogResult.OK && gridSelector.SelectedCoordinates.HasValue)
             {
                 UpdatePosition(gridSelector.SelectedCoordinates.Value);

@@ -1,321 +1,269 @@
-﻿using System.Text;
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
 
-public class TaskEventManagerForm : Form
+public enum TimeSpaceFinishType
 {
-    private ComboBox[] taskFinishPortals;
-    private ComboBox[] taskFailPortals;
-    private NumericUpDown addTimeEvent;
-    private NumericUpDown removeTimeEvent;
-    private CheckBox despawnAllMobsInRoom;
+    TIME_IS_UP = 1,
+    NPC_DIED = 2,
+    OUT_OF_LIVES = 3,
+    TEAM_MEMBER_OUT_OF_LIVES = 4,
+    SUCCESS = 5,
+    SUCCESS_HIGH_SCORE = 6
+}
+
+public class ModernEventManagerForm : Form
+{
     private ComboBox eventTypeComboBox;
-    private string currentMapName;
+    private Panel eventConfigPanel;
     private Button applyButton;
-    private List<string> existingEvents;
+    private string currentMapName;
+    private List<string> mapList;
+    private List<string> portalList;
 
-    public TaskEventManagerForm(string mapName, List<string> lockedPortalsList, List<string> existingEventScripts = null)
+    // Event-specific controls
+    private SearchableComboBox mapSearchComboBox;
+    private SearchableComboBox portalSearchComboBox;
+    private SearchableComboBox finishTypeComboBox;
+    private ModernNumericUpDown timeNumericUpDown;
+    private ModernCheckBox despawnMobsCheckBox;
+
+    public ModernEventManagerForm(string currentMap, List<string> maps, List<string> portals)
     {
-        currentMapName = mapName;
-        existingEvents = existingEventScripts ?? new List<string>();
-        InitializeComponents(lockedPortalsList);
-        LoadExistingEvents();
+        currentMapName = currentMap;
+        mapList = maps;
+        portalList = portals;
+        InitializeComponents();
+        StyleComponents();
     }
 
-    private void LoadExistingEvents()
-    {
-        if (existingEvents.Count == 0) return;
-
-        // Load the first event by default
-        string eventScript = existingEvents[0];
-
-        // Determine event type
-        bool isTaskFinish = eventScript.Contains(".OnTaskFinish");
-        eventTypeComboBox.SelectedItem = isTaskFinish ? "TaskFinish" : "TaskFail";
-
-        // Extract portals
-        var portalMatches = System.Text.RegularExpressions.Regex.Matches(eventScript, @"Event\.OpenPortal\((portal_[^)]+)\)");
-        ComboBox[] activePortals = isTaskFinish ? taskFinishPortals : taskFailPortals;
-
-        for (int i = 0; i < Math.Min(portalMatches.Count, activePortals.Length); i++)
-        {
-            string portalName = portalMatches[i].Groups[1].Value;
-            if (activePortals[i].SelectedItem != portalName)
-                activePortals[i].SelectedItem = portalName;
-        }
-
-        // Extract time modifications
-        var addTimeMatch = System.Text.RegularExpressions.Regex.Match(eventScript, @"Event\.AddTime\((\d+)\)");
-        if (addTimeMatch.Success && isTaskFinish)
-        {
-            addTimeEvent.Value = int.Parse(addTimeMatch.Groups[1].Value);
-        }
-
-        var removeTimeMatch = System.Text.RegularExpressions.Regex.Match(eventScript, @"Event\.RemoveTime\((\d+)\)");
-        if (removeTimeMatch.Success && !isTaskFinish)
-        {
-            removeTimeEvent.Value = int.Parse(removeTimeMatch.Groups[1].Value);
-        }
-
-        // Check for despawn mobs
-        despawnAllMobsInRoom.Checked = eventScript.Contains("Event.DespawnAllMobsInRoom");
-    }
-
-    private void InitializeComponents(List<string> lockedPortalsList)
+    private void InitializeComponents()
     {
         // Form settings
-        Text = "Task Event Manager";
-        Size = new Size(600, 450);
+        Text = "Modern Event Manager";
+        Size = new Size(600, 500);
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
-        BackColor = Color.FromArgb(50, 50, 50);
+        BackColor = Color.FromArgb(30, 30, 35);
 
         // Event Type Selection
         var lblEventType = new Label
         {
             Text = "Event Type:",
             Location = new Point(20, 20),
-            Width = 80,
-            ForeColor = Color.White
+            Size = new Size(100, 25),
+            ForeColor = Color.White,
+            Font = new Font("Segoe UI", 10F)
         };
+
         eventTypeComboBox = new ComboBox
         {
-            Location = new Point(100, 20),
-            Width = 150,
+            Location = new Point(130, 20),
+            Size = new Size(200, 30),
             DropDownStyle = ComboBoxStyle.DropDownList,
-            BackColor = Color.FromArgb(30, 30, 30),
-            ForeColor = Color.White
+            BackColor = Color.FromArgb(45, 45, 50),
+            ForeColor = Color.White,
+            Font = new Font("Segoe UI", 10F)
         };
-        eventTypeComboBox.Items.AddRange(new string[] { "TaskFinish", "TaskFail" });
-        eventTypeComboBox.SelectedIndex = 0;
+
+        eventTypeComboBox.Items.AddRange(new string[] {
+            "TryStartTaskForMap",
+            "OpenPortal",
+            "FinishTimeSpace",
+            "SetTime",
+            "AddTime",
+            "DespawnAllMobsInRoom"
+        });
+
         eventTypeComboBox.SelectedIndexChanged += EventType_Changed;
 
-        // Initialize portal ComboBoxes
-        taskFinishPortals = new ComboBox[4];
-        taskFailPortals = new ComboBox[4];
-
-        // Add empty option to portal list
-        var portalsList = new List<string> { "" };  // Add empty option
-        if (lockedPortalsList != null && lockedPortalsList.Any())
+        // Event Configuration Panel
+        eventConfigPanel = new Panel
         {
-            portalsList.AddRange(lockedPortalsList);
-        }
-
-        for (int i = 0; i < 4; i++)
-        {
-            var lblPortal = new Label
-            {
-                Text = $"Portal {i + 1}:",
-                Location = new Point(20, 60 + (i * 40)),
-                Width = 80,
-                ForeColor = Color.White
-            };
-
-            taskFinishPortals[i] = new ComboBox
-            {
-                Location = new Point(100, 60 + (i * 40)),
-                Width = 200,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Color.FromArgb(30, 30, 30),
-                ForeColor = Color.White
-            };
-            taskFinishPortals[i].Items.AddRange(portalsList.ToArray());
-            taskFinishPortals[i].SelectedIndex = 0;  // Will select the empty option
-
-            taskFailPortals[i] = new ComboBox
-            {
-                Location = new Point(100, 60 + (i * 40)),
-                Width = 200,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Color.FromArgb(30, 30, 30),
-                ForeColor = Color.White,
-                Visible = false
-            };
-            taskFailPortals[i].Items.AddRange(portalsList.ToArray());
-            taskFailPortals[i].SelectedIndex = 0;  // Will select the empty option
-
-            Controls.Add(lblPortal);
-            Controls.Add(taskFinishPortals[i]);
-            Controls.Add(taskFailPortals[i]);
-        }
-
-        // Time modifications
-        var lblAddTime = new Label
-        {
-            Text = "Add Time:",
-            Location = new Point(20, 220),
-            Width = 80,
-            ForeColor = Color.White
-        };
-        addTimeEvent = new NumericUpDown
-        {
-            Location = new Point(100, 220),
-            Width = 100,
-            Minimum = 0,
-            Maximum = 999,
-            BackColor = Color.FromArgb(30, 30, 30),
-            ForeColor = Color.White
-        };
-        var lblRemoveTime = new Label
-        {
-            Text = "Remove Time:",
-            Location = new Point(220, 220),
-            Width = 80,
-            ForeColor = Color.White
-        };
-        removeTimeEvent = new NumericUpDown
-        {
-            Location = new Point(300, 220),
-            Width = 100,
-            Minimum = 0,
-            Maximum = 999,
-            BackColor = Color.FromArgb(30, 30, 30),
-            ForeColor = Color.White
+            Location = new Point(20, 60),
+            Size = new Size(540, 330),
+            BackColor = Color.FromArgb(40, 40, 45)
         };
 
-        // Despawn mobs checkbox
-        despawnAllMobsInRoom = new CheckBox
-        {
-            Text = "Despawn All Mobs",
-            Location = new Point(20, 300),
-            AutoSize = true,
-            ForeColor = Color.White,
-            BackColor = Color.FromArgb(50, 50, 50)
-        };
+        // Initialize all possible controls
+        InitializeEventControls();
 
-        // Apply button
+        // Apply Button
         applyButton = new Button
         {
             Text = "Apply",
-            Location = new Point(20, 340),
-            Width = 100,
-            BackColor = Color.FromArgb(30, 30, 30),
-            ForeColor = Color.White
+            Location = new Point(230, 410),
+            Size = new Size(120, 35),
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.FromArgb(70, 130, 180),
+            ForeColor = Color.White,
+            Font = new Font("Segoe UI", 10F)
         };
         applyButton.Click += ApplyButton_Click;
 
         // Add controls to form
         Controls.AddRange(new Control[] {
-            lblEventType, eventTypeComboBox,
-            lblAddTime, addTimeEvent,
-            lblRemoveTime, removeTimeEvent,
-            despawnAllMobsInRoom,
+            lblEventType,
+            eventTypeComboBox,
+            eventConfigPanel,
             applyButton
         });
+
+        eventTypeComboBox.SelectedIndex = 0;
     }
 
-    public void UpdatePortalComboboxes(List<string> newPortalsList)
+    private void InitializeEventControls()
     {
-        // Add empty option to portal list
-        var portalsList = new List<string> { "" };  // Add empty option
-        if (newPortalsList != null && newPortalsList.Any())
+        // Map Search ComboBox
+        mapSearchComboBox = new SearchableComboBox
         {
-            portalsList.AddRange(newPortalsList);
-        }
+            Location = new Point(20, 20),
+            Size = new Size(500, 30),
+            Items = { mapList }
+        };
 
-        foreach (var comboBox in taskFinishPortals.Concat(taskFailPortals))
+        // Portal Search ComboBox
+        portalSearchComboBox = new SearchableComboBox
         {
-            if (comboBox != null)
-            {
-                string selectedValue = comboBox.SelectedItem?.ToString();
-                comboBox.Items.Clear();
-                comboBox.Items.AddRange(portalsList.ToArray());
+            Location = new Point(20, 20),
+            Size = new Size(500, 30),
+            Items = { portalList }
+        };
 
-                if (selectedValue != null && portalsList.Contains(selectedValue))
-                {
-                    comboBox.SelectedItem = selectedValue;
-                }
-                else
-                {
-                    comboBox.SelectedIndex = 0;  // Select empty option
-                }
-            }
-        }
+        // TimeSpace Finish Type ComboBox
+        finishTypeComboBox = new SearchableComboBox
+        {
+            Location = new Point(20, 20),
+            Size = new Size(500, 30),
+            Items = { Enum.GetNames(typeof(TimeSpaceFinishType)).ToList() }
+        };
+
+        // Time NumericUpDown
+        timeNumericUpDown = new ModernNumericUpDown
+        {
+            Location = new Point(20, 20),
+            Size = new Size(200, 30),
+            Minimum = 0,
+            Maximum = 3600,
+            Value = 0,
+        };
+
+        // Despawn Mobs CheckBox
+        despawnMobsCheckBox = new ModernCheckBox
+        {
+            Location = new Point(20, 20),
+            Size = new Size(200, 30),
+            Text = "Despawn All Mobs"
+        };
     }
 
     private void EventType_Changed(object sender, EventArgs e)
     {
-        // Ensure eventTypeComboBox.SelectedItem is not null
-        if (eventTypeComboBox.SelectedItem == null)
-        {
-            return;
-        }
+        eventConfigPanel.Controls.Clear();
 
-        bool isTaskFinish = eventTypeComboBox.SelectedItem.ToString() == "TaskFinish";
-        for (int i = 0; i < 4; i++)
+        switch (eventTypeComboBox.SelectedItem.ToString())
         {
-            // Ensure taskFinishPortals and taskFailPortals elements are not null
-            if (taskFinishPortals != null && taskFinishPortals[i] != null)
-            {
-                taskFinishPortals[i].Visible = isTaskFinish;
-            }
-            if (taskFailPortals != null && taskFailPortals[i] != null)
-            {
-                taskFailPortals[i].Visible = !isTaskFinish;
-            }
-        }
+            case "TryStartTaskForMap":
+                eventConfigPanel.Controls.Add(mapSearchComboBox);
+                break;
 
-        // Ensure addTimeEvent and removeTimeEvent are not null
-        if (addTimeEvent != null)
-        {
-            addTimeEvent.Enabled = isTaskFinish;
-        }
-        if (removeTimeEvent != null)
-        {
-            removeTimeEvent.Enabled = !isTaskFinish;
+            case "OpenPortal":
+                eventConfigPanel.Controls.Add(portalSearchComboBox);
+                break;
+
+            case "FinishTimeSpace":
+                eventConfigPanel.Controls.Add(finishTypeComboBox);
+                break;
+
+            case "SetTime":
+            case "AddTime":
+                eventConfigPanel.Controls.Add(timeNumericUpDown);
+                break;
+
+            case "DespawnAllMobsInRoom":
+                eventConfigPanel.Controls.Add(despawnMobsCheckBox);
+                break;
         }
     }
 
     private void ApplyButton_Click(object sender, EventArgs e)
     {
-        StringBuilder script = new StringBuilder();
-        bool isTaskFinish = eventTypeComboBox.SelectedItem?.ToString() == "TaskFinish";
-        ComboBox[] activePortals = isTaskFinish ? taskFinishPortals : taskFailPortals;
-
-        // Check if any attributes are set
-        bool hasAttributes = activePortals.Any(p => p.SelectedItem?.ToString() != "") ||
-                           (isTaskFinish && addTimeEvent.Value != 0) ||
-                           (!isTaskFinish && removeTimeEvent.Value != 0) ||
-                           despawnAllMobsInRoom.Checked;
-
-        if (!hasAttributes) return;
-
-        // Start building the script
-        script.AppendLine($"{currentMapName}.On{(isTaskFinish ? "TaskFinish" : "TaskFail")}({{");
-
-        // Add portal events
-        foreach (var portal in activePortals)
+        string eventScript = GenerateEventScript();
+        if (!string.IsNullOrEmpty(eventScript))
         {
-            if (portal.SelectedItem != null && portal.SelectedItem.ToString() != "")
+            Tag = eventScript;
+            DialogResult = DialogResult.OK;
+            Close();
+        }
+    }
+
+    private string GenerateEventScript()
+    {
+        string eventType = eventTypeComboBox.SelectedItem.ToString();
+        string value = "";
+
+        switch (eventType)
+        {
+            case "TryStartTaskForMap":
+                value = mapSearchComboBox.SelectedItem?.ToString();
+                break;
+
+            case "OpenPortal":
+                value = portalSearchComboBox.SelectedItem?.ToString();
+                break;
+
+            case "FinishTimeSpace":
+                value = $"TimeSpaceFinishType.{finishTypeComboBox.SelectedItem}";
+                break;
+
+            case "SetTime":
+            case "AddTime":
+                value = timeNumericUpDown.Value.ToString();
+                break;
+
+            case "DespawnAllMobsInRoom":
+                value = currentMapName;
+                break;
+        }
+
+        if (string.IsNullOrEmpty(value) && eventType != "DespawnAllMobsInRoom")
+            return null;
+
+        return $"Event.{eventType}({value})";
+    }
+
+    private void InitializeComponent()
+    {
+
+    }
+
+    private void StyleComponents()
+    {
+        // Add modern styling for all controls
+        foreach (Control control in Controls)
+        {
+            if (control is ComboBox combo)
             {
-                script.AppendLine($"    Event.OpenPortal({portal.SelectedItem}),");
+                combo.FlatStyle = FlatStyle.Flat;
+                combo.BackColor = Color.FromArgb(45, 45, 50);
+                combo.ForeColor = Color.White;
+            }
+            else if (control is TextBox txt)
+            {
+                txt.BorderStyle = BorderStyle.FixedSingle;
+                txt.BackColor = Color.FromArgb(45, 45, 50);
+                txt.ForeColor = Color.White;
+            }
+            else if (control is Button btn)
+            {
+                btn.FlatStyle = FlatStyle.Flat;
+                btn.FlatAppearance.BorderColor = Color.FromArgb(70, 130, 180);
+                btn.BackColor = Color.FromArgb(70, 130, 180);
+                btn.ForeColor = Color.White;
             }
         }
-
-        // Add time modification
-        if (isTaskFinish && addTimeEvent.Value != 0)
-        {
-            script.AppendLine($"    Event.AddTime({addTimeEvent.Value}),");
-        }
-        else if (!isTaskFinish && removeTimeEvent.Value != 0)
-        {
-            script.AppendLine($"    Event.RemoveTime({removeTimeEvent.Value}),");
-        }
-
-        // Add despawn mobs
-        if (despawnAllMobsInRoom.Checked)
-        {
-            script.AppendLine($"    Event.DespawnAllMobsInRoom({currentMapName}),");
-        }
-
-        // Handle finish timespace event for TaskFail
-        if (!isTaskFinish)
-        {
-            script.AppendLine($"    Event.FinishTimeSpace(TimeSpaceFinishType.TIME_IS_UP),");
-        }
-
-        script.AppendLine("})");
-        DialogResult = DialogResult.OK;
-        Tag = script.ToString();
-        Close();
     }
 }

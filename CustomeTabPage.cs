@@ -30,7 +30,7 @@ namespace TimeSpace
         private readonly MapEventGenerator _eventGenerator;
         private MapGridPanel _mapGridPanel;
         private byte[] _originalGrid;
-        private readonly TaskEventManagerForm _taskEventManagerForm;
+        //private readonly TaskEventManagerForm _taskEventManagerForm;
         private Point? _currentPosition;
         private bool _isDisposed;
 
@@ -45,11 +45,12 @@ namespace TimeSpace
         private TextBox _txtMapVNum;
         private TextBox _txtMapCoordinates;
         private TextBox _txtTaskText;
-        private ComboBox _cboTaskType;
-        private NumericUpDown _timeForTask;
+        private SearchableComboBox _cboTaskType;
+        private ModernNumericUpDown _timeForTask;
         private NumericUpDown _waveCountInput;
         private NumericUpDown _waveDelayInput;
         private CheckBox _useWavesCheckbox;
+        private ModernGridSelector gridSelector;
 
         // Collections
         private static readonly object _positionsLock = new object();
@@ -106,36 +107,23 @@ namespace TimeSpace
             // Initialize controls
             _txtMapVNum = new TextBox { Name = "txtMapVNUM", Location = new Point(150, 10), Width = 200, BackColor = Color.FromArgb(30, 30, 30), ForeColor = Color.White };
             _txtMapCoordinates = new TextBox { Location = new Point(150, 40), Width = 200, BackColor = Color.FromArgb(30, 30, 30), ForeColor = Color.White };
-            _cboTaskType = new ComboBox
+            _cboTaskType = new SearchableComboBox
             {
                 Location = new Point(150, 70),
                 Width = 200,
-                FormattingEnabled = true,
-                DropDownStyle = ComboBoxStyle.DropDownList,
                 Items = { "None", "KillAllMonsters", "Survive" },
-                FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(30, 30, 30),
-                ForeColor = Color.White,
-                DrawMode = DrawMode.OwnerDrawFixed
-            };
-
-            _cboTaskType.DrawItem += (sender, e) => //Warum auch immer das gemacht werden muss damit er das Schwarze Design übernimmt
-            {
-                if (e.Index < 0) return; 
-                e.DrawBackground();
-                e.Graphics.DrawString(_cboTaskType.Items[e.Index].ToString(), e.Font, Brushes.White, e.Bounds);
-                e.DrawFocusRectangle();
+                ForeColor = Color.White
             };
 
             _txtTaskText = new TextBox { Location = new Point(150, 100), Width = 200, BackColor = Color.FromArgb(30, 30, 30), ForeColor = Color.White };
-            _timeForTask = new NumericUpDown
+            _timeForTask = new ModernNumericUpDown
             {
-                Width = 50,
+                Size = new Size(75, 25),
+                Minimum = 0,
                 Location = new Point(440, 100),
                 Maximum = 600,
-                Increment = 10,
-                BackColor = Color.FromArgb(30, 30, 30),
-                ForeColor = Color.White
+                Increment = 10
             };
 
             // Portal panel remains at the top
@@ -212,7 +200,7 @@ namespace TimeSpace
                 CreateButton("Save Portals", new Point(290, 390), SaveAllValues),
                 _mainTabControl, // Add the TabControl here
                 CreateButton("Save All", new Point(10, 900), SaveAllValues),
-                CreateButton("Manage Events", new Point(360, 70), (s, e) => ManageEvents())
+                //CreateButton("Manage Events", new Point(360, 70), (s, e) => ManageEvents())
             });
 
             // Adjust the position of the mainTabControl to be below the portal buttons
@@ -265,29 +253,29 @@ namespace TimeSpace
             return button;
         }
 
-        private void ManageEvents()
-        {
-            List<string> existingEvents = null;
-            if (EventManagerScripts.ContainsKey(MapName))
-            {
-                existingEvents = EventManagerScripts[MapName];
-            }
+        //private void ManageEvents()
+        //{
+        //    List<string> existingEvents = null;
+        //    if (EventManagerScripts.ContainsKey(MapName))
+        //    {
+        //        existingEvents = EventManagerScripts[MapName];
+        //    }
 
-            var eventManager = new TaskEventManagerForm(MapName, _lockedPortalsList, existingEvents);
-            if (eventManager.ShowDialog() == DialogResult.OK)
-            {
-                string generatedScript = eventManager.Tag as string;
-                if (!string.IsNullOrEmpty(generatedScript))
-                {
-                    if (!EventManagerScripts.ContainsKey(MapName))
-                    {
-                        EventManagerScripts[MapName] = new List<string>();
-                    }
-                    EventManagerScripts[MapName].Clear();
-                    EventManagerScripts[MapName].Add(generatedScript); 
-                }
-            }
-        }
+        //    var eventManager = new TaskEventManagerForm(MapName, _lockedPortalsList, existingEvents);
+        //    if (eventManager.ShowDialog() == DialogResult.OK)
+        //    {
+        //        string generatedScript = eventManager.Tag as string;
+        //        if (!string.IsNullOrEmpty(generatedScript))
+        //        {
+        //            if (!EventManagerScripts.ContainsKey(MapName))
+        //            {
+        //                EventManagerScripts[MapName] = new List<string>();
+        //            }
+        //            EventManagerScripts[MapName].Clear();
+        //            EventManagerScripts[MapName].Add(generatedScript); 
+        //        }
+        //    }
+        //}
 
         private void InitializeMonsterDataGridView()
         {
@@ -495,23 +483,28 @@ namespace TimeSpace
                     tempTakenPositions.Remove(_currentPosition.Value);
                 }
 
-                using (var gridSelector = new GridSelectorForm(tempTakenPositions, _currentPosition))
+                // Create the grid selector if it doesn't exist
+                if (gridSelector == null)
                 {
-                    if (gridSelector.ShowDialog() == DialogResult.OK && gridSelector.SelectedCoordinates.HasValue)
+                    gridSelector = new ModernGridSelector(tempTakenPositions, _currentPosition);
+                    gridSelector.Location = new Point(50, 50); // Adjust as needed
+                    gridSelector.CoordinatesSelected += (s, selectedPos) =>
                     {
                         if (_currentPosition.HasValue)
                         {
                             _sharedTakenPositions.Remove(_currentPosition.Value);
                         }
-
-                        Point selectedPos = gridSelector.SelectedCoordinates.Value;
-                        _txtMapCoordinates.Text = $"{selectedPos.X}_{selectedPos.Y}";
+                        _txtMapCoordinates.Text = $"{selectedPos.X}*{selectedPos.Y}";
                         Text = $"map_{selectedPos.X}_{selectedPos.Y}";
                         MapName = $"map_{selectedPos.X}_{selectedPos.Y}";
                         _currentPosition = selectedPos;
                         _sharedTakenPositions.Add(selectedPos);
-                    }
+                    };
+                    this.Controls.Add(gridSelector);
                 }
+
+                // Show the grid selector with animation
+                gridSelector.ShowAnimated();
             }
         }
 
@@ -773,10 +766,10 @@ namespace TimeSpace
                 portal.RefreshMapComboboxes();
             }
 
-            if (_taskEventManagerForm != null)
-            {
-                _taskEventManagerForm.UpdatePortalComboboxes(_lockedPortalsList);
-            }
+            //if (_taskEventManagerForm != null)
+            //{
+            //    _taskEventManagerForm.UpdatePortalComboboxes(_lockedPortalsList);
+            //}
         }
 
         private bool IsValidPortal(Portal portal)
@@ -995,10 +988,7 @@ namespace TimeSpace
         {
             this._txtMapCoordinates.Text = coords;
         }
-        public void SetTaskType(string taskType)
-        {
-            this._cboTaskType.SelectedItem = taskType;
-        }
+        public void SetTaskType(string taskType) => _cboTaskType.SelectedItem = taskType;
         public void AddMonster(int vnum, int x, int y, bool asTarget, Dictionary<string, string> attributes)
         {
             var monster = new Monster(MapName)
@@ -1032,13 +1022,13 @@ namespace TimeSpace
             mapObject.SetObjectivesAndPortals(objectType, Portals);
             mapObject.ObjectType = objectType;
 
-            if (objectType == "Lever")
-            {
-                if (_taskEventManagerForm != null)
-                {
-                    _taskEventManagerForm.UpdatePortalComboboxes(_lockedPortalsList);
-                }
-            }
+            //if (objectType == "Lever")
+            //{
+            //    if (_taskEventManagerForm != null)
+            //    {
+            //        _taskEventManagerForm.UpdatePortalComboboxes(_lockedPortalsList);
+            //    }
+            //}
         }
     }
 }
