@@ -50,7 +50,6 @@ namespace TimeSpace
         private NumericUpDown _waveCountInput;
         private NumericUpDown _waveDelayInput;
         private CheckBox _useWavesCheckbox;
-        private ModernGridSelector gridSelector;
 
         // Collections
         private static readonly object _positionsLock = new object();
@@ -483,28 +482,23 @@ namespace TimeSpace
                     tempTakenPositions.Remove(_currentPosition.Value);
                 }
 
-                // Create the grid selector if it doesn't exist
-                if (gridSelector == null)
+                using (var gridSelector = new GridSelectorForm(tempTakenPositions, _currentPosition))
                 {
-                    gridSelector = new ModernGridSelector(tempTakenPositions, _currentPosition);
-                    gridSelector.Location = new Point(50, 50); // Adjust as needed
-                    gridSelector.CoordinatesSelected += (s, selectedPos) =>
+                    if (gridSelector.ShowDialog() == DialogResult.OK && gridSelector.SelectedCoordinates.HasValue)
                     {
                         if (_currentPosition.HasValue)
                         {
                             _sharedTakenPositions.Remove(_currentPosition.Value);
                         }
-                        _txtMapCoordinates.Text = $"{selectedPos.X}*{selectedPos.Y}";
+
+                        Point selectedPos = gridSelector.SelectedCoordinates.Value;
+                        _txtMapCoordinates.Text = $"{selectedPos.X}_{selectedPos.Y}";
                         Text = $"map_{selectedPos.X}_{selectedPos.Y}";
                         MapName = $"map_{selectedPos.X}_{selectedPos.Y}";
                         _currentPosition = selectedPos;
                         _sharedTakenPositions.Add(selectedPos);
-                    };
-                    this.Controls.Add(gridSelector);
+                    }
                 }
-
-                // Show the grid selector with animation
-                gridSelector.ShowAnimated();
             }
         }
 
