@@ -159,12 +159,6 @@ namespace TimeSpace
             File.WriteAllText("appsettings.json", json);
         }
 
-        // Event handler for when the panel height setting changes
-        private void numericUpDownPanelHeight_ValueChanged(object sender, EventArgs e)
-        {
-            Settings.PanelHeight = (int)numericUpDownPanelHeight.Value;
-            SaveSettings();
-        }
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             label9.Visible = false;
@@ -285,14 +279,7 @@ namespace TimeSpace
             luaScript.AppendLine("local TimeSpaceObjective = require('TimeSpaceObjective')");
             luaScript.AppendLine("local TimeSpaceTaskType = require('TimeSpaceTaskType')");
             luaScript.AppendLine("local TimeSpaceTask = require('TimeSpaceTask')");
-            foreach (var maptab in mapTabs)
-            {
-                if (maptab.UseWavesCheckbox.Checked)
-                {
-                    luaScript.AppendLine("local MonsterWave = require('MonsterWave')");
-                    continue;
-                }
-            }
+            luaScript.AppendLine("local MonsterWave = require('MonsterWave')");
             luaScript.AppendLine();
 
             // Generate objective script  

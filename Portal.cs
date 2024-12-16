@@ -45,45 +45,45 @@ namespace TimeSpace
 
         public Panel CreatePortal()
         {
-            var panel = new Panel { Width = 880, Height = 50, Margin = new Padding(0, 5, 0, 5) };
+            var panel = new Panel { Width = 880, Height = 60, Margin = new Padding(0, 5, 0, 5) };
 
             var lblMapFrom = new Label { Text = "Map From:", Location = new Point(0, 5), AutoSize = true };
-            cboMapFrom = new ComboBox { Location = new Point(80, 0), Width = 150 };
+            cboMapFrom = new SearchableComboBox { Location = new Point(80, 0), Width = 150 };
             cboMapFrom.Items.AddRange(getMapNames().ToArray());
             cboMapFrom.SelectedItem = MapFrom;
 
             var lblMapTo = new Label { Text = "Map To:", Location = new Point(240, 5), AutoSize = true };
-            cboMapTo = new ComboBox { Location = new Point(300, 0), Width = 150 };
+            cboMapTo = new SearchableComboBox { Location = new Point(300, 0), Width = 150 };
             cboMapTo.Items.AddRange(getMapNames().Concat(new[] { "UNKNOWN" }).ToArray());
             cboMapTo.SelectedItem = MapTo;
 
             var lblPortalType = new Label { Text = "Portal Type:", Location = new Point(460, 5), AutoSize = true };
-            cboPortalType = new ComboBox { Location = new Point(530, 0), Width = 100 };
+            cboPortalType = new SearchableComboBox { Location = new Point(530, 0), Width = 100 };
             cboPortalType.Items.AddRange(new string[] { "Locked", "TsNormal", "TSEndClosed", "TSEnd" });
             cboPortalType.SelectedItem = PortalType;
 
             var lblMinimapOrientation = new Label { Text = "Orientation:", Location = new Point(640, 5), AutoSize = true };
-            cboMinimapOrientation = new ComboBox { Location = new Point(710, 0), Width = 60 };
+            cboMinimapOrientation = new SearchableComboBox { Location = new Point(710, 0), Width = 60 };
             cboMinimapOrientation.Items.AddRange(new string[] { "North", "South", "East", "West" });
             cboMinimapOrientation.SelectedItem = MinimapOrientation;
 
             var lblFromX = new Label { Text = "From X:", Location = new Point(0, 35), AutoSize = true };
-            txtFromX = new TextBox { Location = new Point(60, 30), Width = 50 };
+            txtFromX = new ModernTextBox { Location = new Point(60, 35), Width = 50 };
             txtFromX.Text = FromX.ToString();
 
             var lblFromY = new Label { Text = "From Y:", Location = new Point(120, 35), AutoSize = true };
-            txtFromY = new TextBox { Location = new Point(180, 30), Width = 50 };
+            txtFromY = new ModernTextBox { Location = new Point(180, 35), Width = 50 };
             txtFromY.Text = FromY.ToString();
 
             var lblToX = new Label { Text = "To X:", Location = new Point(240, 35), AutoSize = true };
-            txtToX = new TextBox { Location = new Point(300, 30), Width = 50 };
+            txtToX = new ModernTextBox { Location = new Point(300, 35), Width = 50 };
             txtToX.Text = ToX.ToString();
 
             var lblToY = new Label { Text = "To Y:", Location = new Point(360, 35), AutoSize = true };
-            txtToY = new TextBox { Location = new Point(420, 30), Width = 50 };
+            txtToY = new ModernTextBox { Location = new Point(420, 35), Width = 50 };
             txtToY.Text = ToY.ToString();
 
-            var btnMirrorPortal = new Button { Text = "Mirror Portal", Location = new Point(480, 30), Width = 100 };
+            var btnMirrorPortal = new ModernButton { Text = "Mirror Portal", Location = new Point(480, 30), Width = 100 };
             btnMirrorPortal.Click += (sender, e) => MirrorPortal();
 
             panel.Controls.Add(lblMapFrom);

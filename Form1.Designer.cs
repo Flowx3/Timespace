@@ -34,25 +34,25 @@ namespace TimeSpace
         {
             openFileDialog1 = new OpenFileDialog();
             tabPage3 = new TabPage();
-            tabControl2 = new TabControl();
-            button6 = new Button();
-            button5 = new Button();
-            button4 = new Button();
+            tabControl2 = new ModernTabControl();
+            button6 = new ModernButton();
+            button5 = new ModernButton();
+            button4 = new ModernButton();
             tabPage2 = new TabPage();
-            textBox10 = new TextBox();
-            textBox9 = new TextBox();
-            textBox8 = new TextBox();
-            textBox7 = new TextBox();
-            textBox6 = new TextBox();
-            textBox4 = new TextBox();
-            textBox5 = new TextBox();
-            textBox3 = new TextBox();
-            textBox2 = new TextBox();
+            textBox10 = new ModernTextBox();
+            textBox9 = new ModernTextBox();
+            textBox8 = new ModernTextBox();
+            textBox7 = new ModernTextBox();
+            textBox6 = new ModernTextBox();
+            textBox4 = new ModernTextBox();
+            textBox5 = new ModernTextBox();
+            textBox3 = new ModernTextBox();
+            textBox2 = new ModernTextBox();
             label10 = new Label();
             label9 = new Label();
-            checkBox1 = new CheckBox();
-            button3 = new Button();
-            button2 = new Button();
+            checkBox1 = new ModernCheckBox();
+            button3 = new ModernButton();
+            button2 = new ModernButton();
             label8 = new Label();
             label7 = new Label();
             label6 = new Label();
@@ -63,22 +63,18 @@ namespace TimeSpace
             label3 = new Label();
             label2 = new Label();
             label1 = new Label();
-            numericUpDownPanelHeight = new NumericUpDown();
             tabPage1 = new TabPage();
-            button9 = new Button();
-            textBox13 = new TextBox();
-            button8 = new Button();
-            button7 = new Button();
-            textBox12 = new TextBox();
-            textBox11 = new TextBox();
-            textBox1 = new TextBox();
-            button1 = new Button();
-            tabControl1 = new TabControl();
-            label11 = new Label();
+            button9 = new ModernButton();
+            textBox13 = new ModernTextBox();
+            button8 = new ModernButton();
+            button7 = new ModernButton();
+            textBox12 = new ModernTextBox();
+            textBox11 = new ModernTextBox();
+            textBox1 = new ModernTextBox();
+            button1 = new ModernButton();
+            tabControl1 = new ModernTabControl();
             tabPage3.SuspendLayout();
             tabPage2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDownPanelHeight).BeginInit();
             tabPage1.SuspendLayout();
             tabControl1.SuspendLayout();
             SuspendLayout();
@@ -122,7 +118,6 @@ namespace TimeSpace
             button6.Size = new Size(66, 67);
             button6.TabIndex = 3;
             button6.Text = "Generate";
-            button6.UseVisualStyleBackColor = false;
             button6.Click += button6_Click;
             // 
             // button5
@@ -135,7 +130,6 @@ namespace TimeSpace
             button5.Size = new Size(62, 67);
             button5.TabIndex = 2;
             button5.Text = "Add Map";
-            button5.UseVisualStyleBackColor = false;
             button5.Click += button5_Click;
             // 
             // button4
@@ -148,7 +142,6 @@ namespace TimeSpace
             button4.Size = new Size(62, 67);
             button4.TabIndex = 1;
             button4.Text = "Remove Map";
-            button4.UseVisualStyleBackColor = false;
             button4.Click += button4_Click;
             // 
             // tabPage2
@@ -316,7 +309,6 @@ namespace TimeSpace
             button3.Size = new Size(75, 24);
             button3.TabIndex = 19;
             button3.Text = "Generate";
-            button3.UseVisualStyleBackColor = false;
             button3.Click += button6_Click;
             // 
             // button2
@@ -328,7 +320,6 @@ namespace TimeSpace
             button2.Size = new Size(75, 24);
             button2.TabIndex = 18;
             button2.Text = "Save TS";
-            button2.UseVisualStyleBackColor = false;
             button2.Click += button2_Click;
             // 
             // label8
@@ -432,24 +423,9 @@ namespace TimeSpace
             label1.TabIndex = 0;
             label1.Text = "Timespace ID";
             // 
-            // numericUpDownPanelHeight
-            // 
-            numericUpDownPanelHeight.BackColor = Color.FromArgb(30, 30, 30);
-            numericUpDownPanelHeight.ForeColor = Color.White;
-            numericUpDownPanelHeight.Increment = new decimal(new int[] { 10, 0, 0, 0 });
-            numericUpDownPanelHeight.Location = new Point(106, 140);
-            numericUpDownPanelHeight.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
-            numericUpDownPanelHeight.Minimum = new decimal(new int[] { 100, 0, 0, 0 });
-            numericUpDownPanelHeight.Name = "numericUpDownPanelHeight";
-            numericUpDownPanelHeight.Size = new Size(61, 23);
-            numericUpDownPanelHeight.TabIndex = 10;
-            numericUpDownPanelHeight.Value = new decimal(new int[] { 100, 0, 0, 0 });
-            // 
             // tabPage1
             // 
             tabPage1.BackColor = Color.FromArgb(45, 45, 45);
-            tabPage1.Controls.Add(label11);
-            tabPage1.Controls.Add(numericUpDownPanelHeight);
             tabPage1.Controls.Add(button9);
             tabPage1.Controls.Add(textBox13);
             tabPage1.Controls.Add(button8);
@@ -475,7 +451,6 @@ namespace TimeSpace
             button9.Size = new Size(75, 23);
             button9.TabIndex = 9;
             button9.Text = "Browse";
-            button9.UseVisualStyleBackColor = false;
             button9.Click += button9_Click;
             // 
             // textBox13
@@ -497,7 +472,6 @@ namespace TimeSpace
             button8.Size = new Size(75, 23);
             button8.TabIndex = 7;
             button8.Text = "Browse";
-            button8.UseVisualStyleBackColor = false;
             button8.Click += button8_Click;
             // 
             // button7
@@ -509,7 +483,6 @@ namespace TimeSpace
             button7.Size = new Size(75, 23);
             button7.TabIndex = 6;
             button7.Text = "Browse";
-            button7.UseVisualStyleBackColor = false;
             button7.Click += button7_Click;
             // 
             // textBox12
@@ -548,7 +521,6 @@ namespace TimeSpace
             button1.Size = new Size(75, 23);
             button1.TabIndex = 3;
             button1.Text = "Browse";
-            button1.UseVisualStyleBackColor = false;
             button1.Click += button1_Click;
             // 
             // tabControl1
@@ -565,15 +537,6 @@ namespace TimeSpace
             tabControl1.SizeMode = TabSizeMode.FillToRight;
             tabControl1.TabIndex = 0;
             // 
-            // label11
-            // 
-            label11.AutoSize = true;
-            label11.Location = new Point(18, 142);
-            label11.Name = "label11";
-            label11.Size = new Size(72, 15);
-            label11.TabIndex = 11;
-            label11.Text = "PanelHeight";
-            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -589,7 +552,6 @@ namespace TimeSpace
             tabPage2.ResumeLayout(false);
             tabPage2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).EndInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDownPanelHeight).EndInit();
             tabPage1.ResumeLayout(false);
             tabPage1.PerformLayout();
             tabControl1.ResumeLayout(false);
@@ -599,25 +561,25 @@ namespace TimeSpace
         #endregion
         private OpenFileDialog openFileDialog1;
         private TabPage tabPage3;
-        public TabControl tabControl2;
-        private Button button6;
-        private Button button5;
-        private Button button4;
+        public ModernTabControl tabControl2;
+        private ModernButton button6;
+        private ModernButton button5;
+        private ModernButton button4;
         private TabPage tabPage2;
-        private TextBox textBox10;
-        private TextBox textBox9;
-        private TextBox textBox8;
-        private TextBox textBox7;
-        private TextBox textBox6;
-        private TextBox textBox4;
-        private TextBox textBox5;
-        private TextBox textBox3;
-        private TextBox textBox2;
+        private ModernTextBox textBox10;
+        private ModernTextBox textBox9;
+        private ModernTextBox textBox8;
+        private ModernTextBox textBox7;
+        private ModernTextBox textBox6;
+        private ModernTextBox textBox4;
+        private ModernTextBox textBox5;
+        private ModernTextBox textBox3;
+        private ModernTextBox textBox2;
         private Label label10;
         private Label label9;
-        private CheckBox checkBox1;
-        private Button button3;
-        private Button button2;
+        private ModernCheckBox checkBox1;
+        private ModernButton button3;
+        private ModernButton button2;
         private Label label8;
         private Label label7;
         private Label label6;
@@ -625,20 +587,18 @@ namespace TimeSpace
         private ComboBox comboBox1;
         private Label label4;
         private NumericUpDown numericUpDown1;
-        private NumericUpDown numericUpDownPanelHeight;
         private Label label3;
         private Label label2;
         private Label label1;
         private TabPage tabPage1;
-        private Button button8;
-        private Button button7;
-        private TextBox textBox12;
-        private TextBox textBox11;
-        private TextBox textBox1;
-        private Button button1;
-        private TabControl tabControl1;
-        private Button button9;
-        private TextBox textBox13;
-        private Label label11;
+        private ModernButton button8;
+        private ModernButton button7;
+        private ModernTextBox textBox12;
+        private ModernTextBox textBox11;
+        private ModernTextBox textBox1;
+        private ModernButton button1;
+        private ModernTabControl tabControl1;
+        private ModernButton button9;
+        private ModernTextBox textBox13;
     }
 }

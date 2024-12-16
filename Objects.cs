@@ -39,10 +39,10 @@ namespace TimeSpace
             cboObjectiveType.Items.AddRange(new string[] { "OldBox", "RegularBox", "LuxuriousBox", "Lever" });
             cboObjectiveType.SelectedIndexChanged += CboObjectiveType_SelectedIndexChanged;
             var lblX = new Label { Text = "X:", Location = new System.Drawing.Point(0, 35), AutoSize = true };
-            txtX = new TextBox { Location = new System.Drawing.Point(50, 30), Width = 50 };
+            txtX = new ModernTextBox { Location = new System.Drawing.Point(50, 30), Width = 50 };
             var lblY = new Label { Text = "Y:", Location = new System.Drawing.Point(110, 35), AutoSize = true };
-            txtY = new TextBox { Location = new System.Drawing.Point(130, 30), Width = 50 };
-            var btnSelectPosition = new Button { Text = "Select Position", Location = new System.Drawing.Point(190, 30) };
+            txtY = new ModernTextBox { Location = new System.Drawing.Point(130, 30), Width = 50 };
+            var btnSelectPosition = new ModernButton { Text = "Select Position", Location = new System.Drawing.Point(190, 30) };
             panel.Controls.Add(lblObjectiveType);
             panel.Controls.Add(cboObjectiveType);
             panel.Controls.Add(lblX);

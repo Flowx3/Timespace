@@ -1,9 +1,14 @@
-﻿using System.Drawing.Drawing2D;
+﻿using System;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Windows.Forms;
 
 public class ModernButton : Control
 {
     private ButtonState _state = ButtonState.Normal;
     private bool _isHovered = false;
+    private BufferedGraphicsContext _bufferedGraphicsContext;
+    private BufferedGraphics _bufferedGraphics;
 
     public ButtonState State
     {
@@ -18,16 +23,26 @@ public class ModernButton : Control
     public ModernButton()
     {
         SetStyle(ControlStyles.AllPaintingInWmPaint |
-                ControlStyles.OptimizedDoubleBuffer |
-                ControlStyles.UserPaint, true);
-
+                 ControlStyles.OptimizedDoubleBuffer |
+                 ControlStyles.UserPaint, true);
         this.Font = new Font("Segoe UI", 9f);
+        _bufferedGraphicsContext = BufferedGraphicsManager.Current;
+        this.Size = new Size(100, 30); // Default size for visibility  
     }
 
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
+
+        if (_bufferedGraphics == null || _bufferedGraphics.Graphics == null)
+        {
+            _bufferedGraphics = _bufferedGraphicsContext.Allocate(g, this.ClientRectangle);
+        }
+
+        var bg = _bufferedGraphics.Graphics;
+        bg.Clear(this.BackColor);
+        bg.SmoothingMode = SmoothingMode.AntiAlias;
 
         var rect = new Rectangle(0, 0, Width - 1, Height - 1);
         Color backgroundColor;
@@ -56,7 +71,9 @@ public class ModernButton : Control
         }
 
         using (var brush = new SolidBrush(backgroundColor))
-            g.FillRoundedRectangle(brush, rect, 4);
+        {
+            bg.FillRoundedRectangle(brush, rect, 4);
+        }
 
         if (!string.IsNullOrEmpty(Text))
         {
@@ -67,9 +84,11 @@ public class ModernButton : Control
                     Alignment = StringAlignment.Center,
                     LineAlignment = StringAlignment.Center
                 };
-                g.DrawString(Text, Font, brush, rect, stringFormat);
+                bg.DrawString(Text, Font, brush, rect, stringFormat);
             }
         }
+
+        _bufferedGraphics.Render(g);
     }
 
     protected override void OnMouseEnter(EventArgs e)
@@ -84,6 +103,15 @@ public class ModernButton : Control
         _isHovered = false;
         this.Invalidate();
         base.OnMouseLeave(e);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _bufferedGraphics?.Dispose();
+        }
+        base.Dispose(disposing);
     }
 }
 
