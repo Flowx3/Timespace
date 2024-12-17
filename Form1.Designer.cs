@@ -57,7 +57,7 @@ namespace TimeSpace
             label7 = new Label();
             label6 = new Label();
             label5 = new Label();
-            comboBox1 = new ComboBox();
+            comboBox1 = new SearchableComboBox();
             label4 = new Label();
             numericUpDown1 = new NumericUpDown();
             label3 = new Label();
@@ -584,7 +584,7 @@ namespace TimeSpace
         private Label label7;
         private Label label6;
         private Label label5;
-        private ComboBox comboBox1;
+        private SearchableComboBox comboBox1;
         private Label label4;
         private NumericUpDown numericUpDown1;
         private Label label3;

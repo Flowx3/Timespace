@@ -42,7 +42,7 @@ public class ModernEventManagerForm : Form
     private void InitializeComponents()
     {
         // Form settings
-        Text = "Modern Event Manager";
+        Text = "Event Manager";
         Size = new Size(600, 500);
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
