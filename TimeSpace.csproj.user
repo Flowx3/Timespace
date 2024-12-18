@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Compile Update="ModernTabControl.cs">
+    <Compile Update="UpdatedControls\ModernTabControl.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Update="EventManager.cs">
@@ -16,25 +16,25 @@
     <Compile Update="MapGridPanel.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Update="Modernbutton.cs">
+    <Compile Update="UpdatedControls\Modernbutton.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Update="ModernCheckBox.cs">
+    <Compile Update="UpdatedControls\ModernCheckBox.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Update="ModernDataGridView.cs">
+    <Compile Update="UpdatedControls\ModernDataGridView.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Update="ModernNumericUpDown .cs">
+    <Compile Update="UpdatedControls\ModernNumericUpDown .cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Update="ModernTextBox.cs">
+    <Compile Update="UpdatedControls\ModernTextBox.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Update="MonsterAttributeForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="SearchableComboBox.cs">
+    <Compile Update="UpdatedControls\SearchableComboBox.cs">
       <SubType>Component</SubType>
     </Compile>
   </ItemGroup>

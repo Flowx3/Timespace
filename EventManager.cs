@@ -1,75 +1,87 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Windows.Forms;
+﻿using TimeSpace;
 
-public enum TimeSpaceFinishType
+public class EventManagerForm : Form
 {
-    TIME_IS_UP = 1,
-    NPC_DIED = 2,
-    OUT_OF_LIVES = 3,
-    TEAM_MEMBER_OUT_OF_LIVES = 4,
-    SUCCESS = 5,
-    SUCCESS_HIGH_SCORE = 6
-}
-
-public class ModernEventManagerForm : Form
-{
-    private ComboBox eventTypeComboBox;
+    private ListBox eventTypeListBox;
+    private ListView selectedEventsListView;
     private Panel eventConfigPanel;
     private Button applyButton;
     private string currentMapName;
-    private List<string> mapList;
+    private Func<List<string>> mapList;
     private List<string> portalList;
+    private List<string> selectedEvents;
+    private string formTitle;
 
     // Event-specific controls
     private SearchableComboBox mapSearchComboBox;
     private SearchableComboBox portalSearchComboBox;
     private SearchableComboBox finishTypeComboBox;
     private ModernNumericUpDown timeNumericUpDown;
-    private ModernCheckBox despawnMobsCheckBox;
 
-    public ModernEventManagerForm(string currentMap, List<string> maps, List<string> portals)
+    public List<string> Events => selectedEvents;
+
+    public EventManagerForm(string currentMap, Func<List<string>> maps, List<string> portals, List<string> existingEvents = null)
     {
         currentMapName = currentMap;
         mapList = maps;
         portalList = portals;
+        selectedEvents = existingEvents ?? new List<string>();
+        formTitle = "Event Manager";
         InitializeComponents();
         StyleComponents();
+        LoadExistingEvents();
     }
 
     private void InitializeComponents()
     {
         // Form settings
-        Text = "Event Manager";
-        Size = new Size(600, 500);
+        Text = formTitle;
+        Size = new Size(1000, 600);
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         BackColor = Color.FromArgb(30, 30, 35);
 
-        // Event Type Selection
-        var lblEventType = new Label
+        // Left Panel - Event Types
+        var leftPanel = CreateLeftPanel();
+
+        // Right Panel - Selected Events and Configuration
+        var rightPanel = CreateRightPanel();
+
+        // Add panels to form
+        Controls.Add(rightPanel);
+        Controls.Add(leftPanel);
+    }
+
+    private Panel CreateLeftPanel()
+    {
+        var leftPanel = new Panel
         {
-            Text = "Event Type:",
-            Location = new Point(20, 20),
-            Size = new Size(100, 25),
-            ForeColor = Color.White,
-            Font = new Font("Segoe UI", 10F)
+            Dock = DockStyle.Left,
+            Width = 200,
+            BackColor = Color.FromArgb(40, 40, 45),
+            Padding = new Padding(10)
         };
 
-        eventTypeComboBox = new ComboBox
+        var lblAvailableEvents = new Label
         {
-            Location = new Point(130, 20),
-            Size = new Size(200, 30),
-            DropDownStyle = ComboBoxStyle.DropDownList,
+            Text = "Available Events",
+            Dock = DockStyle.Top,
+            Height = 30,
+            ForeColor = Color.White,
+            Font = new Font("Segoe UI", 10F, FontStyle.Bold)
+        };
+
+        eventTypeListBox = new ListBox
+        {
+            Dock = DockStyle.Fill,
             BackColor = Color.FromArgb(45, 45, 50),
             ForeColor = Color.White,
-            Font = new Font("Segoe UI", 10F)
+            Font = new Font("Segoe UI", 10F),
+            BorderStyle = BorderStyle.None
         };
 
-        eventTypeComboBox.Items.AddRange(new string[] {
+        eventTypeListBox.Items.AddRange(new string[] {
             "TryStartTaskForMap",
             "OpenPortal",
             "FinishTimeSpace",
@@ -78,25 +90,98 @@ public class ModernEventManagerForm : Form
             "DespawnAllMobsInRoom"
         });
 
-        eventTypeComboBox.SelectedIndexChanged += EventType_Changed;
+        eventTypeListBox.DoubleClick += EventType_DoubleClick;
 
-        // Event Configuration Panel
+        leftPanel.Controls.Add(eventTypeListBox);
+        leftPanel.Controls.Add(lblAvailableEvents);
+
+        return leftPanel;
+    }
+
+    private Panel CreateRightPanel()
+    {
+        var rightPanel = new Panel
+        {
+            Dock = DockStyle.Fill,
+            Padding = new Padding(10)
+        };
+
+        var lblSelectedEvents = new Label
+        {
+            Text = "Selected Events",
+            Height = 30,
+            Dock = DockStyle.Top,
+            ForeColor = Color.White,
+            Font = new Font("Segoe UI", 10F, FontStyle.Bold)
+        };
+
+        selectedEventsListView = new ListView
+        {
+            Dock = DockStyle.Top,
+            Height = 200,
+            View = View.Details,
+            FullRowSelect = true,
+            BackColor = Color.FromArgb(45, 45, 50),
+            ForeColor = Color.White,
+            Font = new Font("Segoe UI", 10F)
+        };
+        selectedEventsListView.Columns.Add("Events", -2);
+        selectedEventsListView.DoubleClick += SelectedEvents_DoubleClick;
+
+        var buttonPanel = new FlowLayoutPanel
+        {
+            Height = 40,
+            Dock = DockStyle.Top,
+            FlowDirection = FlowDirection.LeftToRight,
+            BackColor = Color.FromArgb(30, 30, 35)
+        };
+
+        var removeButton = new Button
+        {
+            Text = "Remove Selected",
+            Height = 30,
+            Width = 120,
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.FromArgb(70, 130, 180),
+            ForeColor = Color.White
+        };
+        removeButton.Click += RemoveEvent_Click;
+
+        var editButton = new Button
+        {
+            Text = "Edit Selected",
+            Height = 30,
+            Width = 120,
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.FromArgb(70, 130, 180),
+            ForeColor = Color.White
+        };
+        editButton.Click += EditEvent_Click;
+
+        buttonPanel.Controls.AddRange(new Control[] { removeButton, editButton });
+
+        var lblConfiguration = new Label
+        {
+            Text = "Event Configuration",
+            Height = 30,
+            Dock = DockStyle.Top,
+            ForeColor = Color.White,
+            Font = new Font("Segoe UI", 10F, FontStyle.Bold)
+        };
+
         eventConfigPanel = new Panel
         {
-            Location = new Point(20, 60),
-            Size = new Size(540, 330),
+            Dock = DockStyle.Fill,
             BackColor = Color.FromArgb(40, 40, 45)
         };
 
-        // Initialize all possible controls
         InitializeEventControls();
 
-        // Apply Button
         applyButton = new Button
         {
             Text = "Apply",
-            Location = new Point(230, 410),
-            Size = new Size(120, 35),
+            Height = 35,
+            Dock = DockStyle.Bottom,
             FlatStyle = FlatStyle.Flat,
             BackColor = Color.FromArgb(70, 130, 180),
             ForeColor = Color.White,
@@ -104,166 +189,289 @@ public class ModernEventManagerForm : Form
         };
         applyButton.Click += ApplyButton_Click;
 
-        // Add controls to form
-        Controls.AddRange(new Control[] {
-            lblEventType,
-            eventTypeComboBox,
-            eventConfigPanel,
-            applyButton
-        });
+        rightPanel.Controls.Add(eventConfigPanel);
+        rightPanel.Controls.Add(lblConfiguration);
+        rightPanel.Controls.Add(buttonPanel);
+        rightPanel.Controls.Add(selectedEventsListView);
+        rightPanel.Controls.Add(lblSelectedEvents);
+        rightPanel.Controls.Add(applyButton);
 
-        eventTypeComboBox.SelectedIndex = 0;
+        return rightPanel;
     }
 
     private void InitializeEventControls()
     {
-        // Map Search ComboBox
         mapSearchComboBox = new SearchableComboBox
         {
-            Location = new Point(20, 20),
             Size = new Size(500, 30),
             Items = { mapList }
         };
+        mapSearchComboBox.SelectedIndexChanged += ConfigControl_ValueChanged;
 
-        // Portal Search ComboBox
         portalSearchComboBox = new SearchableComboBox
         {
-            Location = new Point(20, 20),
             Size = new Size(500, 30),
             Items = { portalList }
         };
+        portalSearchComboBox.SelectedIndexChanged += ConfigControl_ValueChanged;
 
-        // TimeSpace Finish Type ComboBox
         finishTypeComboBox = new SearchableComboBox
         {
-            Location = new Point(20, 20),
             Size = new Size(500, 30),
             Items = { Enum.GetNames(typeof(TimeSpaceFinishType)).ToList() }
         };
+        finishTypeComboBox.SelectedIndexChanged += ConfigControl_ValueChanged;
 
-        // Time NumericUpDown
         timeNumericUpDown = new ModernNumericUpDown
         {
-            Location = new Point(20, 20),
             Size = new Size(200, 30),
             Minimum = 0,
             Maximum = 3600,
-            Value = 0,
+            Value = 0
         };
-
-        // Despawn Mobs CheckBox
-        despawnMobsCheckBox = new ModernCheckBox
-        {
-            Location = new Point(20, 20),
-            Size = new Size(200, 30),
-            Text = "Despawn All Mobs"
-        };
+        timeNumericUpDown.ValueChanged += ConfigControl_ValueChanged;
     }
 
-    private void EventType_Changed(object sender, EventArgs e)
+    private void ShowEventConfiguration(string eventType, string currentValue = null)
     {
         eventConfigPanel.Controls.Clear();
+        eventTypeListBox.SelectedItem = eventType;
 
-        switch (eventTypeComboBox.SelectedItem.ToString())
+        Control configControl = null;
+        Label label = new Label
+        {
+            Text = $"Configure {eventType}:",
+            Location = new Point(10, 10),
+            Size = new Size(200, 25),
+            ForeColor = Color.White,
+            Font = new Font("Segoe UI", 10F)
+        };
+
+        switch (eventType)
         {
             case "TryStartTaskForMap":
-                eventConfigPanel.Controls.Add(mapSearchComboBox);
+                configControl = mapSearchComboBox;
+                if (currentValue != null)
+                    mapSearchComboBox.SelectedItem = currentValue;
                 break;
 
             case "OpenPortal":
-                eventConfigPanel.Controls.Add(portalSearchComboBox);
+                configControl = portalSearchComboBox;
+                if (currentValue != null)
+                    portalSearchComboBox.SelectedItem = currentValue;
                 break;
 
             case "FinishTimeSpace":
-                eventConfigPanel.Controls.Add(finishTypeComboBox);
+                configControl = finishTypeComboBox;
+                if (currentValue != null)
+                    finishTypeComboBox.SelectedItem = currentValue.Replace("TimeSpaceFinishType.", "");
                 break;
 
             case "SetTime":
             case "AddTime":
-                eventConfigPanel.Controls.Add(timeNumericUpDown);
+                configControl = timeNumericUpDown;
+                if (currentValue != null && int.TryParse(currentValue, out int time))
+                    timeNumericUpDown.Value = time;
                 break;
 
             case "DespawnAllMobsInRoom":
-                eventConfigPanel.Controls.Add(despawnMobsCheckBox);
+                var script = $"Event.DespawnAllMobsInRoom({currentMapName})";
+                AddEventToList(script);
+                return;
+        }
+
+        if (configControl != null)
+        {
+            configControl.Location = new Point(10, 40);
+            eventConfigPanel.Controls.Add(label);
+            eventConfigPanel.Controls.Add(configControl);
+        }
+    }
+
+    private void SelectedEvents_DoubleClick(object sender, EventArgs e)
+    {
+        EditSelectedEvent();
+    }
+
+    private void EditEvent_Click(object sender, EventArgs e)
+    {
+        EditSelectedEvent();
+    }
+
+    private void EditSelectedEvent()
+    {
+        if (selectedEventsListView.SelectedItems.Count == 0) return;
+
+        var selectedEvent = selectedEventsListView.SelectedItems[0].Text;
+        var match = System.Text.RegularExpressions.Regex.Match(selectedEvent, @"Event\.(\w+)\((.*)\)");
+
+        if (match.Success)
+        {
+            var eventType = match.Groups[1].Value;
+            var value = match.Groups[2].Value;
+
+            // Store the index for later removal
+            var selectedIndex = selectedEventsListView.SelectedIndices[0];
+
+            ShowEventConfiguration(eventType, value);
+
+            // Remove the old event when showing configuration for editing
+            selectedEvents.RemoveAt(selectedIndex);
+            selectedEventsListView.Items.RemoveAt(selectedIndex);
+        }
+    }
+    private void EventType_DoubleClick(object sender, EventArgs e)
+    {
+        if (eventTypeListBox.SelectedItem == null) return;
+
+        var selectedType = eventTypeListBox.SelectedItem.ToString();
+        eventConfigPanel.Controls.Clear();
+
+        Control configControl = null;
+        string defaultScript = null;
+
+        switch (selectedType)
+        {
+            case "TryStartTaskForMap":
+                configControl = mapSearchComboBox;
+                configControl.Location = new Point(10, 10);
                 break;
+
+            case "OpenPortal":
+                configControl = portalSearchComboBox;
+                configControl.Location = new Point(10, 10);
+                break;
+
+            case "FinishTimeSpace":
+                configControl = finishTypeComboBox;
+                configControl.Location = new Point(10, 10);
+                break;
+
+            case "SetTime":
+            case "AddTime":
+                configControl = timeNumericUpDown;
+                configControl.Location = new Point(10, 10);
+                break;
+
+            case "DespawnAllMobsInRoom":
+                defaultScript = $"Event.DespawnAllMobsInRoom({currentMapName})";
+                AddEventToList(defaultScript);
+                return;
+        }
+
+        if (configControl != null)
+        {
+            var label = new Label
+            {
+                Text = $"Configure {selectedType}:",
+                Location = new Point(10, 10),
+                Size = new Size(200, 25),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10F)
+            };
+
+            configControl.Location = new Point(10, 40);
+            eventConfigPanel.Controls.Add(label);
+            eventConfigPanel.Controls.Add(configControl);
+        }
+    }
+
+    private void ConfigControl_ValueChanged(object sender, EventArgs e)
+    {
+        if (eventTypeListBox.SelectedItem == null) return;
+
+        var selectedType = eventTypeListBox.SelectedItem.ToString();
+        string value = GetConfigurationValue(sender);
+
+        if (!string.IsNullOrEmpty(value))
+        {
+            var script = $"Event.{selectedType}({value})";
+            AddEventToList(script);
+            eventConfigPanel.Controls.Clear();
+        }
+    }
+
+    private string GetConfigurationValue(object sender)
+    {
+        if (sender is SearchableComboBox combo && combo.SelectedItem != null)
+        {
+            if (combo == finishTypeComboBox)
+                return $"TimeSpaceFinishType.{combo.SelectedItem}";
+            return combo.SelectedItem.ToString();
+        }
+        else if (sender is ModernNumericUpDown numeric)
+        {
+            return numeric.Value.ToString();
+        }
+        return null;
+    }
+
+    private void AddEventToList(string script)
+    {
+        selectedEvents.Add(script);
+        selectedEventsListView.Items.Add(script);
+    }
+
+    private void RemoveEvent_Click(object sender, EventArgs e)
+    {
+        if (selectedEventsListView.SelectedItems.Count > 0)
+        {
+            var index = selectedEventsListView.SelectedIndices[0];
+            selectedEvents.RemoveAt(index);
+            selectedEventsListView.Items.RemoveAt(index);
+        }
+    }
+
+    private void LoadExistingEvents()
+    {
+        if (selectedEvents != null)
+        {
+            foreach (var evt in selectedEvents)
+            {
+                selectedEventsListView.Items.Add(evt);
+            }
         }
     }
 
     private void ApplyButton_Click(object sender, EventArgs e)
     {
-        string eventScript = GenerateEventScript();
-        if (!string.IsNullOrEmpty(eventScript))
-        {
-            Tag = eventScript;
-            DialogResult = DialogResult.OK;
-            Close();
-        }
-    }
-
-    private string GenerateEventScript()
-    {
-        string eventType = eventTypeComboBox.SelectedItem.ToString();
-        string value = "";
-
-        switch (eventType)
-        {
-            case "TryStartTaskForMap":
-                value = mapSearchComboBox.SelectedItem?.ToString();
-                break;
-
-            case "OpenPortal":
-                value = portalSearchComboBox.SelectedItem?.ToString();
-                break;
-
-            case "FinishTimeSpace":
-                value = $"TimeSpaceFinishType.{finishTypeComboBox.SelectedItem}";
-                break;
-
-            case "SetTime":
-            case "AddTime":
-                value = timeNumericUpDown.Value.ToString();
-                break;
-
-            case "DespawnAllMobsInRoom":
-                value = currentMapName;
-                break;
-        }
-
-        if (string.IsNullOrEmpty(value) && eventType != "DespawnAllMobsInRoom")
-            return null;
-
-        return $"Event.{eventType}({value})";
-    }
-
-    private void InitializeComponent()
-    {
-
+        DialogResult = DialogResult.OK;
+        Close();
     }
 
     private void StyleComponents()
     {
-        // Add modern styling for all controls
         foreach (Control control in Controls)
         {
-            if (control is ComboBox combo)
-            {
-                combo.FlatStyle = FlatStyle.Flat;
-                combo.BackColor = Color.FromArgb(45, 45, 50);
-                combo.ForeColor = Color.White;
-            }
-            else if (control is TextBox txt)
-            {
-                txt.BorderStyle = BorderStyle.FixedSingle;
-                txt.BackColor = Color.FromArgb(45, 45, 50);
-                txt.ForeColor = Color.White;
-            }
-            else if (control is Button btn)
-            {
-                btn.FlatStyle = FlatStyle.Flat;
-                btn.FlatAppearance.BorderColor = Color.FromArgb(70, 130, 180);
-                btn.BackColor = Color.FromArgb(70, 130, 180);
-                btn.ForeColor = Color.White;
-            }
+            StyleControl(control);
+        }
+    }
+
+    private void StyleControl(Control control)
+    {
+        if (control is ComboBox combo)
+        {
+            combo.FlatStyle = FlatStyle.Flat;
+            combo.BackColor = Color.FromArgb(45, 45, 50);
+            combo.ForeColor = Color.White;
+        }
+        else if (control is TextBox txt)
+        {
+            txt.BorderStyle = BorderStyle.FixedSingle;
+            txt.BackColor = Color.FromArgb(45, 45, 50);
+            txt.ForeColor = Color.White;
+        }
+        else if (control is Button btn)
+        {
+            btn.FlatStyle = FlatStyle.Flat;
+            btn.FlatAppearance.BorderColor = Color.FromArgb(70, 130, 180);
+            btn.BackColor = Color.FromArgb(70, 130, 180);
+            btn.ForeColor = Color.White;
+        }
+
+        foreach (Control child in control.Controls)
+        {
+            StyleControl(child);
         }
     }
 }

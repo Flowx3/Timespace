@@ -10,10 +10,10 @@ namespace TimeSpace
     {
         private readonly Dictionary<string, StringBuilder> mapScripts = new Dictionary<string, StringBuilder>();
         private readonly List<Monster> monsterEvents = new List<Monster>();
-        private readonly NumericUpDown waveDelayInput;
+        private readonly ModernNumericUpDown waveDelayInput;
         private readonly Dictionary<string, List<string>> eventManagerScripts;
 
-        public MapEventGenerator(NumericUpDown waveDelayInput, Dictionary<string, List<string>> eventManagerScripts)
+        public MapEventGenerator(ModernNumericUpDown waveDelayInput, Dictionary<string, List<string>> eventManagerScripts)
         {
             this.waveDelayInput = waveDelayInput;
             this.eventManagerScripts = eventManagerScripts;
@@ -51,6 +51,9 @@ namespace TimeSpace
 
             // Process Map Join Events
             ProcessMapJoinEvents(mapName);
+
+            // Process Task Finish/Fail Events
+            ProcessTaskEvents(tab, mapName);
         }
 
         private void ProcessMonsters(DataGridView monsterDataGridView, string mapName)
@@ -140,7 +143,31 @@ namespace TimeSpace
 
             mapScripts[mapName].AppendLine("})");
         }
+        private void ProcessTaskEvents(CustomTabPage tab, string mapName)
+        {
+            var taskFinishEvents = tab.GetTaskFinishEvents();
+            var taskFailEvents = tab.GetTaskFailEvents();
 
+            if (taskFinishEvents.Any())
+            {
+                mapScripts[mapName].AppendLine($"{mapName}.OnTaskFinish({{");
+                foreach (var evt in taskFinishEvents)
+                {
+                    mapScripts[mapName].AppendLine($"    {evt},");
+                }
+                mapScripts[mapName].AppendLine("})");
+            }
+
+            if (taskFailEvents.Any())
+            {
+                mapScripts[mapName].AppendLine($"{mapName}.OnTaskFail({{");
+                foreach (var evt in taskFailEvents)
+                {
+                    mapScripts[mapName].AppendLine($"    {evt},");
+                }
+                mapScripts[mapName].AppendLine("})");
+            }
+        }
         private void EnsureMapScriptExists(string mapName)
         {
             if (!mapScripts.ContainsKey(mapName))

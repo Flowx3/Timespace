@@ -13,10 +13,10 @@ namespace TimeSpace
         public string MapTo { get; set; }
         public string PortalType { get; set; }
         public string MinimapOrientation { get; set; }
-        public int FromX { get; set; }
-        public int FromY { get; set; }
-        public int ToX { get; set; }
-        public int ToY { get; set; }
+        public int? FromX { get; set; }
+        public int? FromY { get; set; }
+        public int? ToX { get; set; }
+        public int? ToY { get; set; }
         public Panel Panel { get; set; }
         public ComboBox cboMapFrom;
         public ComboBox cboMapTo;
@@ -29,7 +29,7 @@ namespace TimeSpace
         public Func<List<string>> getMapNames;
         private CustomTabPage customTabPage;
 
-        public Portal(string mapFrom, string mapTo, string portalType, string minimapOrientation, int fromX, int fromY, int toX, int toY, Func<List<string>> GetMapNames, CustomTabPage customTabPage)
+        public Portal(string mapFrom, string mapTo, string portalType, string minimapOrientation, int? fromX, int? fromY, int? toX, int? toY, Func<List<string>> GetMapNames, CustomTabPage customTabPage)
         {
             MapFrom = mapFrom;
             MapTo = mapTo;
@@ -176,8 +176,8 @@ namespace TimeSpace
         {
             MapFrom = MapFrom.Replace("map_", "");
             MapTo = MapTo.Replace("map_", "");
-            int toX = MapTo.Equals("UNKNOWN", StringComparison.OrdinalIgnoreCase) ? FromX : ToX;
-            int toY = MapTo.Equals("UNKNOWN", StringComparison.OrdinalIgnoreCase) ? FromY : ToY;
+            int? toX = MapTo.Equals("UNKNOWN", StringComparison.OrdinalIgnoreCase) ? FromX : ToX;
+            int? toY = MapTo.Equals("UNKNOWN", StringComparison.OrdinalIgnoreCase) ? FromY : ToY;
             string toLine;
             if (MapTo.Equals("UNKNOWN", StringComparison.OrdinalIgnoreCase))
             {

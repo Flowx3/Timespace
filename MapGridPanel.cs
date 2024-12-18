@@ -1,5 +1,4 @@
-﻿
-namespace TimeSpace
+﻿namespace TimeSpace
 {
     public class MapGridPanel : Panel
     {
@@ -19,19 +18,19 @@ namespace TimeSpace
         public MapGridPanel()
         {
             // Set fixed panel size
-            this.Width = FixedPanelWidth;
-            this.Height = FixedPanelHeight;
+            Width = FixedPanelWidth;
+            Height = FixedPanelHeight;
 
             // Set the panel's Name property
-            this.Name = "mapGridPanel";
+            Name = "mapGridPanel";
 
-            this.Size = new Size(FixedPanelWidth, FixedPanelHeight);
+            Size = new Size(FixedPanelWidth, FixedPanelHeight);
             // Enable auto scrolling and double buffering
             //this.AutoScroll = true;
-            this.DoubleBuffered = true;
-            this.BorderStyle = BorderStyle.FixedSingle;
+            DoubleBuffered = true;
+            BorderStyle = BorderStyle.FixedSingle;
 
-            this.MouseClick += MapGridPanel_MouseClick; // Subscribe to mouse click event
+            MouseClick += MapGridPanel_MouseClick; // Subscribe to mouse click event
         }
         public void SetGrid(string mapId, int width, int height, byte[] grid)
         {
@@ -60,9 +59,9 @@ namespace TimeSpace
             int totalHeight = _height * _cellSize;
 
             // Set panel size  
-            this.AutoScroll = true;
-            this.Width = Math.Max(FixedPanelWidth, totalWidth);
-            this.Height = Math.Max(FixedPanelHeight, totalHeight);
+            AutoScroll = true;
+            Width = Math.Max(FixedPanelWidth, totalWidth);
+            Height = Math.Max(FixedPanelHeight, totalHeight);
 
             Invalidate();
         }
@@ -274,9 +273,12 @@ namespace TimeSpace
             Invalidate();
         }
 
-        private void MarkPortal(int x, int y)
+        private void MarkPortal(int? x, int? y)
         {
-            _grid[y * _width + x] = 0x40;
+            if (x.HasValue && y.HasValue)
+            {
+                _grid[y.Value * _width + x.Value] = 0x40;
+            }
         }
 
         private void MarkMonster(int x, int y, bool isTarget)
@@ -289,7 +291,7 @@ namespace TimeSpace
             _grid[y * _width + x] = 0x30;
         }
 
-        private bool IsValidPosition(int x, int y)
+        private bool IsValidPosition(int? x, int? y)
         {
             return x >= 0 && x < _width && y >= 0 && y < _height && _grid != null;
         }
