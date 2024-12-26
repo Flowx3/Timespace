@@ -4,14 +4,14 @@ using TimeSpace;
 
 public class TimeSpaceParser
 {
-    private readonly Form1 _mainForm;
+    private readonly TimeSpaceTool _mainForm;
     private readonly string _filePath;
     private readonly Dictionary<string, CustomTabPage> _mapPages;
     private readonly Func<List<string>> _getMapNames;
-    private List<CustomTabPage> mapTabs = Form1.mapTabs;
+    private List<CustomTabPage> mapTabs = TimeSpaceTool.mapTabs;
     private readonly Dictionary<string, List<string>> _eventScripts;
 
-    public TimeSpaceParser(Form1 mainForm, string filePath, Func<List<string>> getMapNames)
+    public TimeSpaceParser(TimeSpaceTool mainForm, string filePath, Func<List<string>> getMapNames)
     {
         _mainForm = mainForm;
         _filePath = filePath;

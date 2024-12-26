@@ -49,7 +49,7 @@ public class ModernNumericUpDown : UserControl
             BackColor = BackColor,
             ForeColor = ForeColor,
             Font = new Font("Segoe UI", 9F),
-            Increment = 10,
+            Increment = 1,
             TextAlign = HorizontalAlignment.Right,
             Dock = DockStyle.Fill,
             Margin = new Padding(0)

@@ -8,7 +8,7 @@ namespace TimeSpace
         public int Vnum { get; set; }
         public int X { get; set; }
         public int Y { get; set; }
-        public int Wave { get; set; } = 1;
+        public int Wave { get; set; }
         public bool AsTarget { get; set; }
         public Dictionary<string, string> Attributes { get; set; } = new Dictionary<string, string>();
 

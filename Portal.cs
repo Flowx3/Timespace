@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows.Forms;
 using System.Drawing;
 using YamlDotNet.Core;
+using MaterialSkin.Controls;
 
 namespace TimeSpace
 {
@@ -18,10 +19,10 @@ namespace TimeSpace
         public int? ToX { get; set; }
         public int? ToY { get; set; }
         public Panel Panel { get; set; }
-        public ComboBox cboMapFrom;
-        public ComboBox cboMapTo;
-        public ComboBox cboPortalType;
-        public ComboBox cboMinimapOrientation;
+        public CustomMaterialStyleComboBox cboMapFrom;
+        public CustomMaterialStyleComboBox cboMapTo;
+        public CustomMaterialStyleComboBox cboPortalType;
+        public CustomMaterialStyleComboBox cboMinimapOrientation;
         public TextBox txtFromX;
         public TextBox txtFromY;
         public TextBox txtToX;
@@ -47,23 +48,31 @@ namespace TimeSpace
         {
             var panel = new Panel { Width = 880, Height = 60, Margin = new Padding(0, 5, 0, 5) };
 
+            // Label and ComboBox for "Map From"  
             var lblMapFrom = new Label { Text = "Map From:", Location = new Point(0, 5), AutoSize = true };
-            cboMapFrom = new SearchableComboBox { Location = new Point(80, 0), Width = 150 };
+            cboMapFrom = new CustomMaterialStyleComboBox { Location = new Point(80, 0), Width = 150 };
             cboMapFrom.Items.AddRange(getMapNames().ToArray());
             cboMapFrom.SelectedItem = MapFrom;
 
+            // Label and ComboBox for "Map To"  
             var lblMapTo = new Label { Text = "Map To:", Location = new Point(240, 5), AutoSize = true };
-            cboMapTo = new SearchableComboBox { Location = new Point(300, 0), Width = 150 };
+            cboMapTo = new CustomMaterialStyleComboBox { Location = new Point(300, 0), Width = 150 };
             cboMapTo.Items.AddRange(getMapNames().Concat(new[] { "UNKNOWN" }).ToArray());
             cboMapTo.SelectedItem = MapTo;
 
+            // Label and ComboBox for "Portal Type"  
             var lblPortalType = new Label { Text = "Portal Type:", Location = new Point(460, 5), AutoSize = true };
-            cboPortalType = new SearchableComboBox { Location = new Point(530, 0), Width = 100 };
-            cboPortalType.Items.AddRange(new string[] { "Locked", "TsNormal", "TSEndClosed", "TSEnd" });
+            cboPortalType = new CustomMaterialStyleComboBox { Location = new Point(550, 0), Width = 100 };
+            cboPortalType.Items.AddRange(new string[] { "TsNormal", "Locked", "TSEndClosed", "TSEnd" });
             cboPortalType.SelectedItem = PortalType;
 
-            var lblMinimapOrientation = new Label { Text = "Orientation:", Location = new Point(640, 5), AutoSize = true };
-            cboMinimapOrientation = new SearchableComboBox { Location = new Point(710, 0), Width = 60 };
+            // Label and ComboBox for "Orientation"  
+            var lblMinimapOrientation = new Label { Text = "Orientation:", Location = new Point(680, 5), AutoSize = true };
+            cboMinimapOrientation = new CustomMaterialStyleComboBox
+            {
+                Location = new Point(770, 0),
+                Width = 100
+            };
             cboMinimapOrientation.Items.AddRange(new string[] { "North", "South", "East", "West" });
             cboMinimapOrientation.SelectedItem = MinimapOrientation;
 

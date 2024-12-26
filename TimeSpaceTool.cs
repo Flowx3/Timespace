@@ -1,5 +1,8 @@
+using MaterialSkin;
+using MaterialSkin.Controls;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 using System.Text;
 using System.Windows.Forms;
 using YamlDotNet.Core;
@@ -14,7 +17,7 @@ namespace TimeSpace
         public string GameMapsPath { get; set; }
         public string TimespacesFilePath { get; set; }
     }
-    public partial class Form1 : Form
+    public partial class TimeSpaceTool : MaterialForm
     {
         public static List<CustomTabPage> mapTabs = new List<CustomTabPage>();
         public Func<List<string>> getMapNames;
@@ -24,15 +27,17 @@ namespace TimeSpace
         private Dictionary<string, string> timespacesData;
         private MapResourceFileLoader mapResourceFileLoader;
         private System.Windows.Forms.Timer updateTimer;
-        public AppSettings Settings { get; private set; }
 
         private CustomTabPage _CustomTabPage;
-        public Form1()
+        public TimeSpaceTool()
         {
-            LoadSettings();
+            Name = "TimeSpace Tool";
+            var materialSkinManager = MaterialSkinManager.Instance;
+            materialSkinManager.AddFormToManage(this);
+            materialSkinManager.Theme = MaterialSkinManager.Themes.DARK;
+            materialSkinManager.ColorScheme = new ColorScheme(Primary.Grey900, Primary.Grey900, Primary.Grey900, Accent.Amber700, TextShade.WHITE);
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             InitializeComponent();
-            AdjustLayout();
             _CustomTabPage = new CustomTabPage($"spaceholder l0l", this, getMapNames);
             mapCount++;
             if (!File.Exists("./config.json"))
@@ -138,26 +143,6 @@ namespace TimeSpace
                 MessageBox.Show("TS data saved successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
-        private void LoadSettings()
-        {
-            // Load settings from a file or initialize defaults
-            if (File.Exists("appsettings.json"))
-            {
-                var json = File.ReadAllText("appsettings.json");
-                Settings = JsonConvert.DeserializeObject<AppSettings>(json);
-            }
-            else
-            {
-                Settings = new AppSettings();
-            }
-        }
-
-        public void SaveSettings()
-        {
-            // Save settings to a file
-            var json = JsonConvert.SerializeObject(Settings, Formatting.Indented);
-            File.WriteAllText("appsettings.json", json);
-        }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -192,6 +177,8 @@ namespace TimeSpace
         private void button5_Click(object sender, EventArgs e)
         {
             var newTab = new CustomTabPage($"map_3_{mapCount}", this, GetMapNames);
+            newTab.AutoScroll = true;
+
             tabControl2.TabPages.Add(newTab);
             mapTabs.Add(newTab);
             mapCount++;
@@ -367,33 +354,6 @@ namespace TimeSpace
             config.GameMapsPath = mapsPath;
             textBox11.Text = config.GameMapsPath;
         }
-        private void Form1_Resize(object sender, EventArgs e)
-        {
-            AdjustLayout();
-        }
-        private void AdjustLayout()
-        {
-            // Assuming you have a TabControl named tabControl2  
-            // and three buttons named button4, button5, and button6  
-
-            int buttonHeight = button4.Height; // Assuming all buttons have the same height  
-            int padding = 10; // The gap you want between the TabControl and buttons  
-
-            // Adjust the TabControl height dynamically  
-            tabControl2.Height = this.ClientSize.Height - buttonHeight - (padding * 2); // Include extra padding  
-
-            // Set the Y position for the buttons to be at the bottom of the form  
-            int buttonYPosition = this.ClientSize.Height - buttonHeight - padding;
-
-            button4.Location = new Point(button4.Location.X, buttonYPosition);
-            button5.Location = new Point(button5.Location.X, buttonYPosition);
-            button6.Location = new Point(button6.Location.X, buttonYPosition);
-        }
-        protected override void OnShown(EventArgs e)
-        {
-            base.OnShown(e);
-            AdjustLayout();
-        }
 
         private void button8_Click(object sender, EventArgs e)
         {
@@ -455,9 +415,10 @@ namespace TimeSpace
             }
             return script.ToString();
         }
+
+        private void textBox8_TextChanged(object sender, EventArgs e)
+        {
+
+        }
     }
-}
-public class AppSettings
-{
-    public int PanelHeight { get; set; } = 400;
 }

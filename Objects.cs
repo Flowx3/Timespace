@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MaterialSkin.Controls;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,12 +15,12 @@ namespace TimeSpace
         public int X { get; private set; }
         public int Y { get; private set; }
         public Panel Panel { get; private set; }
-        private ComboBox cboObjectiveType;
+        private CustomMaterialStyleComboBox cboObjectiveType;
         private TextBox txtX;
         private TextBox txtY;
-        private ComboBox cboLeverPortal1;
-        private ComboBox cboLeverPortal2;
-        private ComboBox cboLeverPortal3;
+        private CustomMaterialStyleComboBox cboLeverPortal1;
+        private CustomMaterialStyleComboBox cboLeverPortal2;
+        private CustomMaterialStyleComboBox cboLeverPortal3;
         private List<string> lockedPortalsList;
 
         public MapObject(string mapName, string objectType, int x, int y, List<string> lockedPortalsList)
@@ -27,7 +28,7 @@ namespace TimeSpace
             MapName = mapName;
             ObjectType = objectType;
             X = x;
-            Y = y;
+            Y = y; 
             this.lockedPortalsList = lockedPortalsList;
         }
 
@@ -35,7 +36,7 @@ namespace TimeSpace
         {
             var panel = new Panel { Width = 600, Height = 100 };
             var lblObjectiveType = new Label { Text = "Objective Type:", Location = new System.Drawing.Point(0, 5), AutoSize = true };
-            cboObjectiveType = new ComboBox { Location = new System.Drawing.Point(100, 0), Width = 150 };
+            cboObjectiveType = new CustomMaterialStyleComboBox { Location = new System.Drawing.Point(100, 0), Width = 150 };
             cboObjectiveType.Items.AddRange(new string[] { "OldBox", "RegularBox", "LuxuriousBox", "Lever" });
             cboObjectiveType.SelectedIndexChanged += CboObjectiveType_SelectedIndexChanged;
             var lblX = new Label { Text = "X:", Location = new System.Drawing.Point(0, 35), AutoSize = true };
@@ -62,15 +63,15 @@ namespace TimeSpace
             if (cboObjectiveType.SelectedItem?.ToString() == "Lever")
             {
                 var lblLeverPortal1 = new Label { Text = "Portal 1:", Location = new System.Drawing.Point(0, 70), AutoSize = true };
-                cboLeverPortal1 = new ComboBox { Location = new System.Drawing.Point(50, 70), Width = 100 };
+                cboLeverPortal1 = new CustomMaterialStyleComboBox { Location = new System.Drawing.Point(50, 70), Width = 100 };
                 cboLeverPortal1.Click += LeverPortalCombobox_Click; // Add click handler
 
                 var lblLeverPortal2 = new Label { Text = "Portal 2:", Location = new System.Drawing.Point(160, 70), AutoSize = true };
-                cboLeverPortal2 = new ComboBox { Location = new System.Drawing.Point(210, 70), Width = 100 };
+                cboLeverPortal2 = new CustomMaterialStyleComboBox { Location = new System.Drawing.Point(210, 70), Width = 100 };
                 cboLeverPortal2.Click += LeverPortalCombobox_Click; // Add click handler
 
                 var lblLeverPortal3 = new Label { Text = "Portal 3:", Location = new System.Drawing.Point(320, 70), AutoSize = true };
-                cboLeverPortal3 = new ComboBox { Location = new System.Drawing.Point(370, 70), Width = 100 };
+                cboLeverPortal3 = new CustomMaterialStyleComboBox { Location = new System.Drawing.Point(370, 70), Width = 100 };
                 cboLeverPortal3.Click += LeverPortalCombobox_Click; // Add click handler
 
                 Panel.Controls.Add(lblLeverPortal1);
@@ -121,7 +122,7 @@ namespace TimeSpace
         }
         private void LeverPortalCombobox_Click(object sender, EventArgs e)
         {
-            var comboBox = sender as ComboBox;
+            var comboBox = sender as CustomMaterialStyleComboBox;
             if (comboBox != null)
             {
                 // Store the current selection
@@ -143,7 +144,7 @@ namespace TimeSpace
         }
         private void RemoveLeverPortalControls(Panel panel)
         {
-            var controlsToRemove = panel.Controls.OfType<ComboBox>().Where(c => c.Location.Y > 60).ToList();
+            var controlsToRemove = panel.Controls.OfType<CustomMaterialStyleComboBox>().Where(c => c.Location.Y > 60).ToList();
             foreach (var control in controlsToRemove)
             {
                 panel.Controls.Remove(control);

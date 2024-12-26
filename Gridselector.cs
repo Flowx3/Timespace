@@ -1,4 +1,6 @@
-﻿public class GridSelectorForm : Form
+﻿using MaterialSkin.Controls;
+
+public class GridSelectorForm : Form
 {
     private const int CELL_SIZE = 40;
     private const int GRID_WIDTH = 11;
