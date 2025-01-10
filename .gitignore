@@ -6,3 +6,6 @@
 /bin/Debug/net8.0-windows
 /obj/Release/net8.0-windows
 /obj
+/Resources/Icons
+/images
+/bin/Debug/Resources/Icons
