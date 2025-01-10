@@ -4,9 +4,9 @@ using System.Drawing;
 using System.Windows.Forms;
 using TimeSpace;
 
-public class MonsterAttributeForm : MaterialForm
+public class MonsterAttributeForm : Form
 {
-    private MaterialListView attributeList;
+    private ListView attributeList;
     private MaterialButton btnAdd;
     private MaterialButton btnRemove;
     private MaterialButton btnApply;
@@ -15,8 +15,9 @@ public class MonsterAttributeForm : MaterialForm
     private MaterialTextBox2 valueBox;
     private Dictionary<string, object> selectedAttributes = new Dictionary<string, object>();
     private readonly Dictionary<string, object> initialAttributes;
+    private readonly bool isNpcMode;
 
-    private readonly string[] availableAttributes = new[]
+    private readonly string[] monsterAttributes = new[]
     {
         "SpawnAfterMobsKilled",
         "WithCustomLevel",
@@ -27,7 +28,15 @@ public class MonsterAttributeForm : MaterialForm
         "OnDeath"
     };
 
-    private readonly string[] noValueAttributes = new[]
+    private readonly string[] npcAttributes = new[]
+    {
+        "WithMustProtectAura",
+        "WithFollowPlayer",
+        "WithCustomLevel",
+        "WithHpMultiplier"
+    };
+
+    private readonly string[] monsterNoValueAttributes = new[]
     {
         "SpawnAfterTaskStart",
         "OnThreeFourthsHp",
@@ -36,21 +45,26 @@ public class MonsterAttributeForm : MaterialForm
         "OnDeath"
     };
 
+    private readonly string[] npcNoValueAttributes = new[]
+    {
+        "WithMustProtectAura",
+        "WithFollowPlayer"
+    };
+
     public Dictionary<string, object> SelectedAttributes => selectedAttributes;
 
-    public MonsterAttributeForm(Dictionary<string, object> existingAttributes = null)
+    public MonsterAttributeForm(Dictionary<string, object> existingAttributes = null, bool isNpcMode = false)
     {
+        this.isNpcMode = isNpcMode;
         initialAttributes = existingAttributes ?? new Dictionary<string, object>();
         selectedAttributes = new Dictionary<string, object>(initialAttributes);
         InitializeComponents();
-        StyleComponents();
         UpdateListView();
     }
-
     private void InitializeComponents()
     {
         // Form settings
-        Text = "Monster Attributes";
+        Text = isNpcMode ? "NPC Attributes" : "Monster Attributes";
         Size = new Size(1200, 700);
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -80,7 +94,7 @@ public class MonsterAttributeForm : MaterialForm
         };
 
         // Attributes ListView
-        attributeList = new MaterialListView
+        attributeList = new ListView
         {
             Dock = DockStyle.Top,
             Height = 250,
@@ -119,7 +133,7 @@ public class MonsterAttributeForm : MaterialForm
             ForeColor = Color.White,
             Font = new Font("Segoe UI", 11F)
         };
-        attributeCombo.Items.AddRange(availableAttributes);
+        attributeCombo.Items.AddRange(isNpcMode ? npcAttributes : monsterAttributes);
         attributeCombo.SelectedIndexChanged += AttributeCombo_SelectedIndexChanged;
 
         // Value TextBox
@@ -205,14 +219,6 @@ public class MonsterAttributeForm : MaterialForm
         Controls.Add(mainPanel);
     }
 
-    private void StyleComponents()
-    {
-        // Material Skin colors
-        var materialSkinManager = MaterialSkinManager.Instance;
-        materialSkinManager.Theme = MaterialSkinManager.Themes.DARK;
-        materialSkinManager.ColorScheme = new ColorScheme(Primary.Grey900, Primary.Grey900, Primary.Grey900, Accent.Amber700, TextShade.WHITE);
-    }
-
     private void AttributeList_DrawColumnHeader(object sender, DrawListViewColumnHeaderEventArgs e)
     {
         using (var backgroundBrush = new SolidBrush(Color.FromArgb(38, 38, 38)))
@@ -239,6 +245,7 @@ public class MonsterAttributeForm : MaterialForm
     private void AttributeCombo_SelectedIndexChanged(object sender, EventArgs e)
     {
         string selectedAttribute = attributeCombo.SelectedItem?.ToString();
+        string[] noValueAttributes = isNpcMode ? npcNoValueAttributes : monsterNoValueAttributes;
         valueBox.Enabled = !noValueAttributes.Contains(selectedAttribute);
         valueBox.Text = string.Empty;
     }
@@ -248,26 +255,28 @@ public class MonsterAttributeForm : MaterialForm
         if (attributeCombo.SelectedItem == null) return;
 
         string attr = attributeCombo.SelectedItem.ToString();
+        string[] noValueAttributes = isNpcMode ? npcNoValueAttributes : monsterNoValueAttributes;
 
         if (noValueAttributes.Contains(attr))
         {
-            if (attr == "SpawnAfterTaskStart")
+            if (!isNpcMode && attr == "SpawnAfterTaskStart")
             {
-                // For SpawnAfterTaskStart, just add it without value
                 selectedAttributes[attr] = "";
-                UpdateListView();
             }
-            else
+            else if (!isNpcMode)
             {
-                // For event attributes, open EventManager
                 using (var eventManager = new EventManagerForm(string.Empty, () => new List<string>(), new List<string>()))
                 {
                     if (eventManager.ShowDialog() == DialogResult.OK)
                     {
                         selectedAttributes[attr] = eventManager.Events;
-                        UpdateListView();
                     }
                 }
+            }
+            else
+            {
+                // For NPC no-value attributes, just add them without value
+                selectedAttributes[attr] = "";
             }
         }
         else
@@ -276,9 +285,9 @@ public class MonsterAttributeForm : MaterialForm
             if (!string.IsNullOrWhiteSpace(value))
             {
                 selectedAttributes[attr] = value;
-                UpdateListView();
             }
         }
+        UpdateListView();
     }
 
     private void BtnRemove_Click(object sender, EventArgs e)

@@ -1,8 +1,5 @@
-﻿using System.Windows.Forms;
-using System.Drawing;
-using YamlDotNet.Core.Tokens;
-using MaterialSkin.Controls;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+﻿using MaterialSkin.Controls;
+using System.Windows.Forms;
 
 namespace TimeSpace
 {
@@ -32,8 +29,39 @@ namespace TimeSpace
         ///  Required method for Designer support - do not modify  
         ///  the contents of this method with the code editor.  
         /// </summary>  
+        //private void InitializeItemSearch()
+        //{
+        //    itemSearchManager = new ItemSearchManager();
+        //    itemSearchManager.LoadItems(
+        //        config.GameDataPath,
+        //        config.GameTranslationPath,
+        //        Path.Combine(Application.StartupPath, "icons")
+        //    );
+
+        //    // Modify the itemVnumNumeric to be read-only and add a search button
+        //    var searchButton = new MaterialButton
+        //    {
+        //        Text = "Search",
+        //        Location = new Point(itemVnumNumeric.Right + 5, itemVnumNumeric.Top),
+        //        Size = new Size(60, itemVnumNumeric.Height),
+        //        UseAccentColor = false
+        //    };
+
+        //    searchButton.Click += (s, e) =>
+        //    {
+        //        var dialog = new ItemSearchDialog(itemSearchManager, (vnum, amount) =>
+        //        {
+        //            itemVnumNumeric.Value = vnum;
+        //            itemAmountNumeric.Value = amount;
+        //        });
+        //        dialog.ShowDialog(this);
+        //    };
+
+        //    rewardsPanel.Controls.Add(searchButton);
+        //}
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TimeSpaceTool));
             openFileDialog1 = new OpenFileDialog();
             tabPage3 = new TabPage();
             tabControl2 = new ModernTabControl();
@@ -42,43 +70,76 @@ namespace TimeSpace
             button5 = new MaterialButton();
             button6 = new MaterialButton();
             tabPage2 = new TabPage();
-            textBox10 = new MaterialTextBox();
-            textBox9 = new MaterialTextBox();
-            textBox8 = new MaterialTextBox();
-            textBox7 = new MaterialTextBox();
-            textBox6 = new MaterialTextBox();
-            textBox4 = new MaterialTextBox();
-            textBox5 = new MaterialTextBox();
-            textBox3 = new MaterialTextBox();
-            textBox2 = new MaterialTextBox();
-            label10 = new Label();
-            label9 = new Label();
-            checkBox1 = new ModernCheckBox();
+            pictureBox2 = new PictureBox();
+            pictureBox4 = new PictureBox();
+            pictureBox1 = new PictureBox();
+            textBox15 = new ModernTextBox();
+            label4 = new Label();
+            textBox9 = new ModernTextBox();
+            textBox14 = new ModernTextBox();
+            textBox10 = new ModernTextBox();
+            pictureBox5 = new PictureBox();
+            pictureBox3 = new PictureBox();
+            textBox8 = new ModernTextBox();
+            numericUpDown2 = new ModernNumericUpDown();
+            textBox6 = new ModernTextBox();
+            textBox4 = new ModernTextBox();
+            textBox5 = new ModernTextBox();
+            textBox3 = new ModernTextBox();
+            textBox2 = new ModernTextBox();
             label8 = new Label();
             label7 = new Label();
             label6 = new Label();
             label5 = new Label();
-            comboBox1 = new CustomMaterialStyleComboBox();
-            label4 = new Label();
             numericUpDown1 = new ModernNumericUpDown();
             label3 = new Label();
             label2 = new Label();
             label1 = new Label();
+            objectivesPanel = new Panel();
+            objectiveTypeComboBox = new MaterialComboBox();
+            objectiveValuesPanel = new Panel();
+            selectedObjectivesListBox = new ListBox();
+            addObjectiveButton = new MaterialButton();
+            removeObjectiveButton = new MaterialButton();
+            headerLabel = new Label();
+            minLevelNumeric = new ModernNumericUpDown();
+            maxLevelNumeric = new ModernNumericUpDown();
+            seedsRequiredNumeric = new ModernNumericUpDown();
+            minPlayersNumeric = new ModernNumericUpDown();
+            maxPlayersNumeric = new ModernNumericUpDown();
+            isHeroCheckBox = new CheckBox();
+            isSpecialCheckBox = new CheckBox();
+            isHiddenCheckBox = new CheckBox();
+            textBox7 = new ModernTextBox();
             tabPage1 = new TabPage();
+            materialButton1 = new MaterialButton();
+            modernTextBox1 = new ModernTextBox();
             button9 = new MaterialButton();
-            textBox13 = new MaterialTextBox();
+            textBox13 = new ModernTextBox();
             button8 = new MaterialButton();
             button7 = new MaterialButton();
-            textBox12 = new MaterialTextBox();
-            textBox11 = new MaterialTextBox();
-            textBox1 = new MaterialTextBox();
+            textBox12 = new ModernTextBox();
+            textBox11 = new ModernTextBox();
+            textBox1 = new ModernTextBox();
             button1 = new MaterialButton();
+            modernTextBox2 = new ModernTextBox();
+            materialButton2 = new MaterialButton();
             tabControl1 = new ModernTabControl();
+            minPlayersLabel = new Label();
+            maxPlayersLabel = new Label();
+            pictureBox6 = new ItemSlot(config);
             tabPage3.SuspendLayout();
             panelButtons.SuspendLayout();
             tabPage2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox2).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox4).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox5).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox3).BeginInit();
+            objectivesPanel.SuspendLayout();
             tabPage1.SuspendLayout();
             tabControl1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox6).BeginInit();
             SuspendLayout();
             // 
             // openFileDialog1
@@ -95,7 +156,7 @@ namespace TimeSpace
             tabPage3.Location = new Point(4, 29);
             tabPage3.Name = "tabPage3";
             tabPage3.Padding = new Padding(3);
-            tabPage3.Size = new Size(1817, 758);
+            tabPage3.Size = new Size(1823, 825);
             tabPage3.TabIndex = 2;
             tabPage3.Text = "TimeSpace Editor";
             // 
@@ -107,7 +168,7 @@ namespace TimeSpace
             tabControl2.Name = "tabControl2";
             tabControl2.Padding = new Point(0, 0);
             tabControl2.SelectedIndex = 0;
-            tabControl2.Size = new Size(1811, 692);
+            tabControl2.Size = new Size(1817, 759);
             tabControl2.SizeMode = TabSizeMode.Fixed;
             tabControl2.TabIndex = 4;
             tabControl2.SelectedIndexChanged += TabControl_SelectedIndexChanged;
@@ -119,275 +180,321 @@ namespace TimeSpace
             panelButtons.Controls.Add(button5);
             panelButtons.Controls.Add(button6);
             panelButtons.Dock = DockStyle.Bottom;
-            panelButtons.Location = new Point(3, 695);
+            panelButtons.Location = new Point(3, 762);
             panelButtons.Name = "panelButtons";
-            panelButtons.Size = new Size(1811, 60);
+            panelButtons.Size = new Size(1817, 60);
             panelButtons.TabIndex = 5;
-
-            ConfigureButton(button4, "Remove", new Point(10, 10), button4_Click);
-            ConfigureButton(button5, "Add", new Point(120, 10), button5_Click);
-            ConfigureButton(button6, "Generate", new Point(230, 10), button6_Click);
+            // 
+            // button4
+            // 
+            button4.AutoSize = false;
+            button4.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            button4.BackColor = Color.FromArgb(28, 28, 28);
+            button4.Density = MaterialButton.MaterialButtonDensity.Default;
+            button4.Depth = 0;
+            button4.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            button4.ForeColor = Color.White;
+            button4.HighEmphasis = true;
+            button4.Icon = null;
+            button4.Location = new Point(10, 10);
+            button4.Margin = new Padding(4, 6, 4, 6);
+            button4.MouseState = MaterialSkin.MouseState.HOVER;
+            button4.Name = "button4";
+            button4.NoAccentTextColor = Color.Empty;
+            button4.Size = new Size(100, 50);
+            button4.TabIndex = 0;
+            button4.Text = "Remove";
+            button4.Type = MaterialButton.MaterialButtonType.Contained;
+            button4.UseAccentColor = false;
+            button4.UseVisualStyleBackColor = false;
+            button4.Click += button4_Click;
+            // 
+            // button5
+            // 
+            button5.AutoSize = false;
+            button5.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            button5.BackColor = Color.FromArgb(28, 28, 28);
+            button5.Density = MaterialButton.MaterialButtonDensity.Default;
+            button5.Depth = 0;
+            button5.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            button5.ForeColor = Color.White;
+            button5.HighEmphasis = true;
+            button5.Icon = null;
+            button5.Location = new Point(120, 10);
+            button5.Margin = new Padding(4, 6, 4, 6);
+            button5.MouseState = MaterialSkin.MouseState.HOVER;
+            button5.Name = "button5";
+            button5.NoAccentTextColor = Color.Empty;
+            button5.Size = new Size(100, 50);
+            button5.TabIndex = 1;
+            button5.Text = "Add";
+            button5.Type = MaterialButton.MaterialButtonType.Contained;
+            button5.UseAccentColor = false;
+            button5.UseVisualStyleBackColor = false;
+            button5.Click += button5_Click;
+            // 
+            // button6
+            // 
+            button6.AutoSize = false;
+            button6.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            button6.BackColor = Color.FromArgb(28, 28, 28);
+            button6.Density = MaterialButton.MaterialButtonDensity.Default;
+            button6.Depth = 0;
+            button6.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            button6.ForeColor = Color.White;
+            button6.HighEmphasis = true;
+            button6.Icon = null;
+            button6.Location = new Point(230, 10);
+            button6.Margin = new Padding(4, 6, 4, 6);
+            button6.MouseState = MaterialSkin.MouseState.HOVER;
+            button6.Name = "button6";
+            button6.NoAccentTextColor = Color.Empty;
+            button6.Size = new Size(100, 50);
+            button6.TabIndex = 2;
+            button6.Text = "Generate";
+            button6.Type = MaterialButton.MaterialButtonType.Contained;
+            button6.UseAccentColor = false;
+            button6.UseVisualStyleBackColor = false;
+            button6.Click += button6_Click;
             // 
             // tabPage2
             // 
             tabPage2.AutoScroll = true;
             tabPage2.BackColor = Color.FromArgb(45, 45, 48);
-            tabPage2.Controls.Add(textBox10);
+            tabPage2.Controls.Add(pictureBox6);
+            tabPage2.Controls.Add(pictureBox2);
+            tabPage2.Controls.Add(pictureBox4);
+            tabPage2.Controls.Add(pictureBox1);
+            tabPage2.Controls.Add(textBox15);
+            tabPage2.Controls.Add(label4);
             tabPage2.Controls.Add(textBox9);
+            tabPage2.Controls.Add(textBox14);
+            tabPage2.Controls.Add(textBox10);
+            tabPage2.Controls.Add(pictureBox5);
+            tabPage2.Controls.Add(pictureBox3);
             tabPage2.Controls.Add(textBox8);
-            tabPage2.Controls.Add(textBox7);
+            tabPage2.Controls.Add(numericUpDown2);
             tabPage2.Controls.Add(textBox6);
             tabPage2.Controls.Add(textBox4);
             tabPage2.Controls.Add(textBox5);
             tabPage2.Controls.Add(textBox3);
             tabPage2.Controls.Add(textBox2);
-            tabPage2.Controls.Add(label10);
-            tabPage2.Controls.Add(label9);
-            tabPage2.Controls.Add(checkBox1);
             tabPage2.Controls.Add(label8);
             tabPage2.Controls.Add(label7);
             tabPage2.Controls.Add(label6);
             tabPage2.Controls.Add(label5);
-            tabPage2.Controls.Add(comboBox1);
-            tabPage2.Controls.Add(label4);
             tabPage2.Controls.Add(numericUpDown1);
             tabPage2.Controls.Add(label3);
             tabPage2.Controls.Add(label2);
             tabPage2.Controls.Add(label1);
+            tabPage2.Controls.Add(objectivesPanel);
+            tabPage2.Controls.Add(minLevelNumeric);
+            tabPage2.Controls.Add(maxLevelNumeric);
+            tabPage2.Controls.Add(seedsRequiredNumeric);
+            tabPage2.Controls.Add(minPlayersNumeric);
+            tabPage2.Controls.Add(maxPlayersNumeric);
+            tabPage2.Controls.Add(isHeroCheckBox);
+            tabPage2.Controls.Add(isSpecialCheckBox);
+            tabPage2.Controls.Add(isHiddenCheckBox);
             tabPage2.ForeColor = Color.White;
             tabPage2.Location = new Point(4, 29);
             tabPage2.Name = "tabPage2";
             tabPage2.Padding = new Padding(3);
-            tabPage2.Size = new Size(1817, 758);
+            tabPage2.Size = new Size(1823, 825);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "TimeSpace Configuration";
             // 
-            // textBox10
+            // pictureBox2
             // 
-            textBox10.AnimateReadOnly = false;
-            textBox10.BackColor = Color.FromArgb(28, 28, 28);
-            textBox10.BorderStyle = BorderStyle.None;
-            textBox10.Depth = 0;
-            textBox10.Font = new Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
-            textBox10.ForeColor = Color.White;
-            textBox10.LeadingIcon = null;
-            textBox10.Location = new Point(251, 222);
-            textBox10.MaxLength = 50;
-            textBox10.MouseState = MaterialSkin.MouseState.OUT;
-            textBox10.Multiline = false;
-            textBox10.Name = "textBox10";
-            textBox10.Size = new Size(82, 36);
-            textBox10.TabIndex = 24;
-            textBox10.Text = "";
-            textBox10.TrailingIcon = null;
-            textBox10.UseTallSize = false;
-            textBox10.Visible = false;
+            pictureBox2.Image = (Image)resources.GetObject("pictureBox2.Image");
+            pictureBox2.Location = new Point(648, 3);
+            pictureBox2.Name = "pictureBox2";
+            pictureBox2.Size = new Size(356, 480);
+            pictureBox2.TabIndex = 36;
+            pictureBox2.TabStop = false;
+            // 
+            // pictureBox4
+            // 
+            pictureBox4.Image = (Image)resources.GetObject("pictureBox4.Image");
+            pictureBox4.Location = new Point(648, 608);
+            pictureBox4.Name = "pictureBox4";
+            pictureBox4.Size = new Size(1086, 120);
+            pictureBox4.TabIndex = 47;
+            pictureBox4.TabStop = false;
+            // 
+            // pictureBox1
+            // 
+            pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
+            pictureBox1.Location = new Point(648, 485);
+            pictureBox1.Name = "pictureBox1";
+            pictureBox1.Size = new Size(1086, 120);
+            pictureBox1.TabIndex = 46;
+            pictureBox1.TabStop = false;
+            // 
+            // textBox15
+            // 
+            textBox15.BackColor = Color.FromArgb(28, 28, 28);
+            textBox15.BorderStyle = BorderStyle.None;
+            textBox15.Font = new Font("Segoe UI", 10F);
+            textBox15.ForeColor = Color.White;
+            textBox15.Location = new Point(1020, 53);
+            textBox15.Multiline = true;
+            textBox15.Name = "textBox15";
+            textBox15.Size = new Size(700, 281);
+            textBox15.TabIndex = 45;
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.BackColor = Color.FromArgb(103, 106, 106);
+            label4.ForeColor = Color.Black;
+            label4.Location = new Point(1304, 358);
+            label4.Name = "label4";
+            label4.Size = new Size(15, 15);
+            label4.TabIndex = 44;
+            label4.Text = "~";
             // 
             // textBox9
             // 
-            textBox9.AnimateReadOnly = false;
             textBox9.BackColor = Color.FromArgb(28, 28, 28);
-            textBox9.BorderStyle = BorderStyle.None;
-            textBox9.Depth = 0;
-            textBox9.Font = new Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
+            textBox9.BorderStyle = BorderStyle.FixedSingle;
+            textBox9.Font = new Font("Segoe UI", 10F);
             textBox9.ForeColor = Color.White;
-            textBox9.LeadingIcon = null;
-            textBox9.Location = new Point(98, 222);
-            textBox9.MaxLength = 50;
-            textBox9.MouseState = MaterialSkin.MouseState.OUT;
-            textBox9.Multiline = false;
+            textBox9.Location = new Point(1321, 354);
             textBox9.Name = "textBox9";
-            textBox9.Size = new Size(82, 36);
-            textBox9.TabIndex = 22;
-            textBox9.Text = "";
-            textBox9.TrailingIcon = null;
-            textBox9.UseTallSize = false;
-            textBox9.Visible = false;
+            textBox9.Size = new Size(31, 25);
+            textBox9.TabIndex = 43;
+            // 
+            // textBox14
+            // 
+            textBox14.BackColor = Color.FromArgb(28, 28, 28);
+            textBox14.BorderStyle = BorderStyle.FixedSingle;
+            textBox14.Font = new Font("Segoe UI", 10F);
+            textBox14.ForeColor = Color.White;
+            textBox14.Location = new Point(1267, 354);
+            textBox14.Name = "textBox14";
+            textBox14.Size = new Size(31, 25);
+            textBox14.TabIndex = 42;
+            // 
+            // textBox10
+            // 
+            textBox10.BackColor = Color.FromArgb(28, 28, 28);
+            textBox10.BorderStyle = BorderStyle.FixedSingle;
+            textBox10.Font = new Font("Segoe UI", 10F);
+            textBox10.ForeColor = Color.White;
+            textBox10.Location = new Point(1652, 354);
+            textBox10.Name = "textBox10";
+            textBox10.Size = new Size(32, 25);
+            textBox10.TabIndex = 41;
+            // 
+            // pictureBox5
+            // 
+            pictureBox5.Image = (Image)resources.GetObject("pictureBox5.Image");
+            pictureBox5.Location = new Point(1020, 340);
+            pictureBox5.Name = "pictureBox5";
+            pictureBox5.Size = new Size(700, 54);
+            pictureBox5.TabIndex = 39;
+            pictureBox5.TabStop = false;
+            // 
+            // pictureBox3
+            // 
+            pictureBox3.Image = (Image)resources.GetObject("pictureBox3.Image");
+            pictureBox3.Location = new Point(1010, 3);
+            pictureBox3.Name = "pictureBox3";
+            pictureBox3.Size = new Size(720, 480);
+            pictureBox3.TabIndex = 37;
+            pictureBox3.TabStop = false;
             // 
             // textBox8
             // 
-            textBox8.AnimateReadOnly = false;
             textBox8.BackColor = Color.FromArgb(28, 28, 28);
             textBox8.BorderStyle = BorderStyle.None;
-            textBox8.Depth = 0;
-            textBox8.Font = new Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
+            textBox8.Font = new Font("Segoe UI", 10F);
             textBox8.ForeColor = Color.White;
-            textBox8.LeadingIcon = null;
-            textBox8.Location = new Point(123, 479);
+            textBox8.Location = new Point(128, 269);
             textBox8.MaxLength = 50;
-            textBox8.MouseState = MaterialSkin.MouseState.OUT;
-            textBox8.Multiline = false;
             textBox8.Name = "textBox8";
-            textBox8.Size = new Size(152, 36);
+            textBox8.Size = new Size(152, 18);
             textBox8.TabIndex = 17;
-            textBox8.Text = "";
-            textBox8.TrailingIcon = null;
-            textBox8.UseTallSize = false;
-            textBox8.TextChanged += textBox8_TextChanged;
             // 
-            // textBox7
+            // numericUpDown2
             // 
-            textBox7.AnimateReadOnly = false;
-            textBox7.BackColor = Color.FromArgb(28, 28, 28);
-            textBox7.BorderStyle = BorderStyle.None;
-            textBox7.Depth = 0;
-            textBox7.Font = new Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
-            textBox7.ForeColor = Color.White;
-            textBox7.LeadingIcon = null;
-            textBox7.Location = new Point(123, 433);
-            textBox7.MaxLength = 50;
-            textBox7.MouseState = MaterialSkin.MouseState.OUT;
-            textBox7.Multiline = false;
-            textBox7.Name = "textBox7";
-            textBox7.Size = new Size(152, 36);
-            textBox7.TabIndex = 15;
-            textBox7.Text = "";
-            textBox7.TrailingIcon = null;
-            textBox7.UseTallSize = false;
+            numericUpDown2.BackColor = Color.FromArgb(28, 28, 28);
+            numericUpDown2.ForeColor = Color.White;
+            numericUpDown2.Increment = new decimal(new int[] { 10, 0, 0, 0 });
+            numericUpDown2.Location = new Point(128, 227);
+            numericUpDown2.Maximum = new decimal(new int[] { 3600, 0, 0, 0 });
+            numericUpDown2.Minimum = new decimal(new int[] { 0, 0, 0, 0 });
+            numericUpDown2.Name = "numericUpDown2";
+            numericUpDown2.Size = new Size(152, 25);
+            numericUpDown2.TabIndex = 18;
+            numericUpDown2.Value = new decimal(new int[] { 0, 0, 0, 0 });
             // 
             // textBox6
             // 
-            textBox6.AnimateReadOnly = false;
             textBox6.BackColor = Color.FromArgb(28, 28, 28);
             textBox6.BorderStyle = BorderStyle.None;
-            textBox6.Depth = 0;
-            textBox6.Font = new Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
+            textBox6.Font = new Font("Segoe UI", 10F);
             textBox6.ForeColor = Color.White;
-            textBox6.LeadingIcon = null;
-            textBox6.Location = new Point(123, 385);
+            textBox6.Location = new Point(128, 189);
             textBox6.MaxLength = 50;
-            textBox6.MouseState = MaterialSkin.MouseState.OUT;
-            textBox6.Multiline = false;
             textBox6.Name = "textBox6";
-            textBox6.Size = new Size(152, 36);
+            textBox6.Size = new Size(152, 18);
             textBox6.TabIndex = 13;
-            textBox6.Text = "";
-            textBox6.TrailingIcon = null;
-            textBox6.UseTallSize = false;
             // 
             // textBox4
             // 
-            textBox4.AnimateReadOnly = false;
             textBox4.BackColor = Color.FromArgb(28, 28, 28);
             textBox4.BorderStyle = BorderStyle.None;
-            textBox4.Depth = 0;
-            textBox4.Font = new Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
+            textBox4.Font = new Font("Segoe UI", 10F);
             textBox4.ForeColor = Color.White;
-            textBox4.LeadingIcon = null;
-            textBox4.Location = new Point(123, 344);
+            textBox4.Location = new Point(128, 148);
             textBox4.MaxLength = 50;
-            textBox4.MouseState = MaterialSkin.MouseState.OUT;
-            textBox4.Multiline = false;
             textBox4.Name = "textBox4";
-            textBox4.Size = new Size(152, 36);
+            textBox4.Size = new Size(152, 18);
             textBox4.TabIndex = 11;
-            textBox4.Text = "";
-            textBox4.TrailingIcon = null;
-            textBox4.UseTallSize = false;
             // 
             // textBox5
             // 
-            textBox5.AnimateReadOnly = false;
             textBox5.BackColor = Color.FromArgb(28, 28, 28);
             textBox5.BorderStyle = BorderStyle.None;
-            textBox5.Depth = 0;
-            textBox5.Font = new Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
+            textBox5.Font = new Font("Segoe UI", 10F);
             textBox5.ForeColor = Color.White;
-            textBox5.LeadingIcon = null;
-            textBox5.Location = new Point(196, 62);
+            textBox5.Location = new Point(217, 60);
             textBox5.MaxLength = 50;
-            textBox5.MouseState = MaterialSkin.MouseState.OUT;
-            textBox5.Multiline = false;
             textBox5.Name = "textBox5";
-            textBox5.Size = new Size(63, 36);
+            textBox5.Size = new Size(63, 18);
             textBox5.TabIndex = 5;
-            textBox5.Text = "";
-            textBox5.TrailingIcon = null;
-            textBox5.UseTallSize = false;
             // 
             // textBox3
             // 
-            textBox3.AnimateReadOnly = false;
             textBox3.BackColor = Color.FromArgb(28, 28, 28);
             textBox3.BorderStyle = BorderStyle.None;
-            textBox3.Depth = 0;
-            textBox3.Font = new Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
+            textBox3.Font = new Font("Segoe UI", 10F);
             textBox3.ForeColor = Color.White;
-            textBox3.LeadingIcon = null;
-            textBox3.Location = new Point(107, 62);
+            textBox3.Location = new Point(128, 60);
             textBox3.MaxLength = 50;
-            textBox3.MouseState = MaterialSkin.MouseState.OUT;
-            textBox3.Multiline = false;
             textBox3.Name = "textBox3";
-            textBox3.Size = new Size(63, 36);
+            textBox3.Size = new Size(63, 18);
             textBox3.TabIndex = 3;
-            textBox3.Text = "";
-            textBox3.TrailingIcon = null;
-            textBox3.UseTallSize = false;
             // 
             // textBox2
             // 
-            textBox2.AnimateReadOnly = false;
             textBox2.BackColor = Color.FromArgb(28, 28, 28);
             textBox2.BorderStyle = BorderStyle.None;
-            textBox2.Depth = 0;
-            textBox2.Font = new Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
+            textBox2.Font = new Font("Segoe UI", 10F);
             textBox2.ForeColor = Color.White;
-            textBox2.LeadingIcon = null;
-            textBox2.Location = new Point(107, 13);
+            textBox2.Location = new Point(128, 11);
             textBox2.MaxLength = 50;
-            textBox2.MouseState = MaterialSkin.MouseState.OUT;
-            textBox2.Multiline = false;
             textBox2.Name = "textBox2";
-            textBox2.Size = new Size(152, 36);
+            textBox2.Size = new Size(152, 18);
             textBox2.TabIndex = 1;
-            textBox2.Text = "";
-            textBox2.TrailingIcon = null;
-            textBox2.UseTallSize = false;
-            // 
-            // label10
-            // 
-            label10.AutoSize = true;
-            label10.ForeColor = Color.White;
-            label10.Location = new Point(201, 225);
-            label10.Name = "label10";
-            label10.Size = new Size(10, 15);
-            label10.TabIndex = 23;
-            label10.Text = " ";
-            label10.Visible = false;
-            // 
-            // label9
-            // 
-            label9.AutoSize = true;
-            label9.ForeColor = Color.White;
-            label9.Location = new Point(6, 225);
-            label9.MinimumSize = new Size(80, 0);
-            label9.Name = "label9";
-            label9.Size = new Size(80, 15);
-            label9.TabIndex = 21;
-            label9.Text = " ";
-            label9.TextAlign = ContentAlignment.MiddleCenter;
-            label9.Visible = false;
-            // 
-            // checkBox1
-            // 
-            checkBox1.AutoSize = true;
-            checkBox1.BackColor = Color.FromArgb(45, 45, 48);
-            checkBox1.FlatStyle = FlatStyle.Flat;
-            checkBox1.Font = new Font("Segoe UI", 9F);
-            checkBox1.ForeColor = Color.White;
-            checkBox1.Location = new Point(107, 185);
-            checkBox1.Name = "checkBox1";
-            checkBox1.Size = new Size(88, 19);
-            checkBox1.TabIndex = 20;
-            checkBox1.Text = "Protect NPC";
-            checkBox1.UseVisualStyleBackColor = false;
             // 
             // label8
             // 
             label8.AutoSize = true;
             label8.ForeColor = Color.White;
-            label8.Location = new Point(11, 482);
+            label8.Location = new Point(8, 271);
             label8.Name = "label8";
             label8.Size = new Size(93, 15);
             label8.TabIndex = 16;
@@ -397,7 +504,7 @@ namespace TimeSpace
             // 
             label7.AutoSize = true;
             label7.ForeColor = Color.White;
-            label7.Location = new Point(11, 436);
+            label7.Location = new Point(7, 229);
             label7.Name = "label7";
             label7.Size = new Size(53, 15);
             label7.TabIndex = 14;
@@ -407,7 +514,7 @@ namespace TimeSpace
             // 
             label6.AutoSize = true;
             label6.ForeColor = Color.White;
-            label6.Location = new Point(11, 393);
+            label6.Location = new Point(6, 191);
             label6.Name = "label6";
             label6.Size = new Size(82, 15);
             label6.TabIndex = 12;
@@ -417,49 +524,22 @@ namespace TimeSpace
             // 
             label5.AutoSize = true;
             label5.ForeColor = Color.White;
-            label5.Location = new Point(9, 347);
+            label5.Location = new Point(6, 150);
             label5.Name = "label5";
             label5.Size = new Size(54, 15);
             label5.TabIndex = 10;
             label5.Text = "TS Name";
-            // 
-            // comboBox1
-            // 
-            comboBox1.BackColor = Color.FromArgb(30, 30, 30);
-            comboBox1.ComboboxHeight = 30;
-            comboBox1.DrawMode = DrawMode.OwnerDrawFixed;
-            comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
-            comboBox1.FlatStyle = FlatStyle.Flat;
-            comboBox1.ForeColor = Color.White;
-            comboBox1.FormattingEnabled = true;
-            comboBox1.ItemHeight = 20;
-            comboBox1.Items.AddRange(new object[] { "KillAllMonster", "KillMonsterVnum", "CollectItemVnum", "InteractObjectsVnum", "Conversation", "GoToExit" });
-            comboBox1.Location = new Point(107, 140);
-            comboBox1.Name = "comboBox1";
-            comboBox1.Size = new Size(152, 26);
-            comboBox1.TabIndex = 9;
-            comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
-            // 
-            // label4
-            // 
-            label4.AutoSize = true;
-            label4.ForeColor = Color.White;
-            label4.Location = new Point(8, 151);
-            label4.Name = "label4";
-            label4.Size = new Size(57, 15);
-            label4.TabIndex = 8;
-            label4.Text = "Objective";
             // 
             // numericUpDown1
             // 
             numericUpDown1.BackColor = Color.FromArgb(30, 30, 30);
             numericUpDown1.ForeColor = Color.White;
             numericUpDown1.Increment = new decimal(new int[] { 1, 0, 0, 0 });
-            numericUpDown1.Location = new Point(107, 102);
+            numericUpDown1.Location = new Point(128, 100);
             numericUpDown1.Maximum = new decimal(new int[] { 3, 0, 0, 0 });
             numericUpDown1.Minimum = new decimal(new int[] { 0, 0, 0, 0 });
             numericUpDown1.Name = "numericUpDown1";
-            numericUpDown1.Size = new Size(152, 23);
+            numericUpDown1.Size = new Size(152, 25);
             numericUpDown1.TabIndex = 25;
             numericUpDown1.Value = new decimal(new int[] { 0, 0, 0, 0 });
             // 
@@ -493,10 +573,230 @@ namespace TimeSpace
             label1.TabIndex = 0;
             label1.Text = "Timespace ID";
             // 
+            // objectivesPanel
+            // 
+            objectivesPanel.BackColor = Color.FromArgb(45, 45, 48);
+            objectivesPanel.Controls.Add(objectiveTypeComboBox);
+            objectivesPanel.Controls.Add(objectiveValuesPanel);
+            objectivesPanel.Controls.Add(selectedObjectivesListBox);
+            objectivesPanel.Controls.Add(addObjectiveButton);
+            objectivesPanel.Controls.Add(removeObjectiveButton);
+            objectivesPanel.Controls.Add(headerLabel);
+            objectivesPanel.Location = new Point(300, 13);
+            objectivesPanel.Name = "objectivesPanel";
+            objectivesPanel.Size = new Size(300, 400);
+            objectivesPanel.TabIndex = 26;
+            // 
+            // objectiveTypeComboBox
+            // 
+            objectiveTypeComboBox.AutoResize = false;
+            objectiveTypeComboBox.BackColor = Color.FromArgb(28, 28, 28);
+            objectiveTypeComboBox.Depth = 0;
+            objectiveTypeComboBox.DrawMode = DrawMode.OwnerDrawVariable;
+            objectiveTypeComboBox.DropDownHeight = 118;
+            objectiveTypeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            objectiveTypeComboBox.DropDownWidth = 121;
+            objectiveTypeComboBox.Font = new Font("Microsoft Sans Serif", 14F, FontStyle.Bold, GraphicsUnit.Pixel);
+            objectiveTypeComboBox.ForeColor = Color.White;
+            objectiveTypeComboBox.IntegralHeight = false;
+            objectiveTypeComboBox.ItemHeight = 29;
+            objectiveTypeComboBox.Items.AddRange(new object[] { "KillAllMonsters", "GoToExit", "KillMonsterVnum", "CollectItem", "Conversation", "InteractObjects", "ProtectNPC" });
+            objectiveTypeComboBox.Location = new Point(0, 32);
+            objectiveTypeComboBox.MaxDropDownItems = 4;
+            objectiveTypeComboBox.MouseState = MaterialSkin.MouseState.OUT;
+            objectiveTypeComboBox.Name = "objectiveTypeComboBox";
+            objectiveTypeComboBox.Size = new Size(180, 35);
+            objectiveTypeComboBox.StartIndex = 0;
+            objectiveTypeComboBox.TabIndex = 0;
+            objectiveTypeComboBox.UseTallSize = false;
+            objectiveTypeComboBox.SelectedIndexChanged += ObjectiveTypeComboBox_SelectedIndexChanged;
+            // 
+            // objectiveValuesPanel
+            // 
+            objectiveValuesPanel.BackColor = Color.FromArgb(45, 45, 48);
+            objectiveValuesPanel.Location = new Point(0, 65);
+            objectiveValuesPanel.Name = "objectiveValuesPanel";
+            objectiveValuesPanel.Size = new Size(300, 80);
+            objectiveValuesPanel.TabIndex = 1;
+            // 
+            // selectedObjectivesListBox
+            // 
+            selectedObjectivesListBox.BackColor = Color.FromArgb(28, 28, 28);
+            selectedObjectivesListBox.ItemHeight = 15;
+            selectedObjectivesListBox.Location = new Point(0, 155);
+            selectedObjectivesListBox.Name = "selectedObjectivesListBox";
+            selectedObjectivesListBox.Size = new Size(300, 184);
+            selectedObjectivesListBox.TabIndex = 2;
+            // 
+            // addObjectiveButton
+            // 
+            addObjectiveButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            addObjectiveButton.BackColor = Color.FromArgb(28, 28, 28);
+            addObjectiveButton.Density = MaterialButton.MaterialButtonDensity.Default;
+            addObjectiveButton.Depth = 0;
+            addObjectiveButton.ForeColor = Color.White;
+            addObjectiveButton.HighEmphasis = true;
+            addObjectiveButton.Icon = null;
+            addObjectiveButton.Location = new Point(0, 355);
+            addObjectiveButton.Margin = new Padding(4, 6, 4, 6);
+            addObjectiveButton.MouseState = MaterialSkin.MouseState.HOVER;
+            addObjectiveButton.Name = "addObjectiveButton";
+            addObjectiveButton.NoAccentTextColor = Color.Empty;
+            addObjectiveButton.Size = new Size(131, 36);
+            addObjectiveButton.TabIndex = 3;
+            addObjectiveButton.Text = "Add Objective";
+            addObjectiveButton.Type = MaterialButton.MaterialButtonType.Contained;
+            addObjectiveButton.UseAccentColor = false;
+            addObjectiveButton.UseVisualStyleBackColor = false;
+            addObjectiveButton.Click += AddObjectiveButton_Click;
+            // 
+            // removeObjectiveButton
+            // 
+            removeObjectiveButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            removeObjectiveButton.BackColor = Color.FromArgb(28, 28, 28);
+            removeObjectiveButton.Density = MaterialButton.MaterialButtonDensity.Default;
+            removeObjectiveButton.Depth = 0;
+            removeObjectiveButton.ForeColor = Color.White;
+            removeObjectiveButton.HighEmphasis = true;
+            removeObjectiveButton.Icon = null;
+            removeObjectiveButton.Location = new Point(145, 355);
+            removeObjectiveButton.Margin = new Padding(4, 6, 4, 6);
+            removeObjectiveButton.MouseState = MaterialSkin.MouseState.HOVER;
+            removeObjectiveButton.Name = "removeObjectiveButton";
+            removeObjectiveButton.NoAccentTextColor = Color.Empty;
+            removeObjectiveButton.Size = new Size(160, 36);
+            removeObjectiveButton.TabIndex = 4;
+            removeObjectiveButton.Text = "Remove Objective";
+            removeObjectiveButton.Type = MaterialButton.MaterialButtonType.Contained;
+            removeObjectiveButton.UseAccentColor = false;
+            removeObjectiveButton.UseVisualStyleBackColor = false;
+            removeObjectiveButton.Click += RemoveObjectiveButton_Click;
+            // 
+            // headerLabel
+            // 
+            headerLabel.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            headerLabel.ForeColor = Color.White;
+            headerLabel.Location = new Point(0, 0);
+            headerLabel.Name = "headerLabel";
+            headerLabel.Size = new Size(300, 25);
+            headerLabel.TabIndex = 5;
+            headerLabel.Text = "TimeSpace Objectives";
+            headerLabel.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // minLevelNumeric
+            // 
+            minLevelNumeric.BackColor = Color.FromArgb(28, 28, 28);
+            minLevelNumeric.ForeColor = Color.White;
+            minLevelNumeric.Increment = new decimal(new int[] { 1, 0, 0, 0 });
+            minLevelNumeric.Location = new Point(128, 310);
+            minLevelNumeric.Maximum = new decimal(new int[] { 99, 0, 0, 0 });
+            minLevelNumeric.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            minLevelNumeric.Name = "minLevelNumeric";
+            minLevelNumeric.Size = new Size(152, 25);
+            minLevelNumeric.TabIndex = 27;
+            minLevelNumeric.Value = new decimal(new int[] { 1, 0, 0, 0 });
+            // 
+            // maxLevelNumeric
+            // 
+            maxLevelNumeric.BackColor = Color.FromArgb(28, 28, 28);
+            maxLevelNumeric.ForeColor = Color.White;
+            maxLevelNumeric.Increment = new decimal(new int[] { 1, 0, 0, 0 });
+            maxLevelNumeric.Location = new Point(128, 340);
+            maxLevelNumeric.Maximum = new decimal(new int[] { 99, 0, 0, 0 });
+            maxLevelNumeric.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            maxLevelNumeric.Name = "maxLevelNumeric";
+            maxLevelNumeric.Size = new Size(152, 25);
+            maxLevelNumeric.TabIndex = 28;
+            maxLevelNumeric.Value = new decimal(new int[] { 99, 0, 0, 0 });
+            // 
+            // seedsRequiredNumeric
+            // 
+            seedsRequiredNumeric.BackColor = Color.FromArgb(28, 28, 28);
+            seedsRequiredNumeric.ForeColor = Color.White;
+            seedsRequiredNumeric.Increment = new decimal(new int[] { 1, 0, 0, 0 });
+            seedsRequiredNumeric.Location = new Point(128, 370);
+            seedsRequiredNumeric.Maximum = new decimal(new int[] { 999, 0, 0, 0 });
+            seedsRequiredNumeric.Minimum = new decimal(new int[] { 0, 0, 0, 0 });
+            seedsRequiredNumeric.Name = "seedsRequiredNumeric";
+            seedsRequiredNumeric.Size = new Size(152, 25);
+            seedsRequiredNumeric.TabIndex = 29;
+            seedsRequiredNumeric.Value = new decimal(new int[] { 0, 0, 0, 0 });
+            // 
+            // minPlayersNumeric
+            // 
+            minPlayersNumeric.BackColor = Color.FromArgb(28, 28, 28);
+            minPlayersNumeric.ForeColor = Color.White;
+            minPlayersNumeric.Increment = new decimal(new int[] { 1, 0, 0, 0 });
+            minPlayersNumeric.Location = new Point(128, 400);
+            minPlayersNumeric.Maximum = new decimal(new int[] { 3, 0, 0, 0 });
+            minPlayersNumeric.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            minPlayersNumeric.Name = "minPlayersNumeric";
+            minPlayersNumeric.Size = new Size(152, 25);
+            minPlayersNumeric.TabIndex = 30;
+            minPlayersNumeric.Value = new decimal(new int[] { 1, 0, 0, 0 });
+            // 
+            // maxPlayersNumeric
+            // 
+            maxPlayersNumeric.BackColor = Color.FromArgb(28, 28, 28);
+            maxPlayersNumeric.ForeColor = Color.White;
+            maxPlayersNumeric.Increment = new decimal(new int[] { 1, 0, 0, 0 });
+            maxPlayersNumeric.Location = new Point(128, 430);
+            maxPlayersNumeric.Maximum = new decimal(new int[] { 3, 0, 0, 0 });
+            maxPlayersNumeric.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            maxPlayersNumeric.Name = "maxPlayersNumeric";
+            maxPlayersNumeric.Size = new Size(152, 25);
+            maxPlayersNumeric.TabIndex = 31;
+            maxPlayersNumeric.Value = new decimal(new int[] { 3, 0, 0, 0 });
+            // 
+            // isHeroCheckBox
+            // 
+            isHeroCheckBox.BackColor = Color.FromArgb(28, 28, 28);
+            isHeroCheckBox.ForeColor = Color.White;
+            isHeroCheckBox.Location = new Point(128, 459);
+            isHeroCheckBox.Name = "isHeroCheckBox";
+            isHeroCheckBox.Size = new Size(152, 20);
+            isHeroCheckBox.TabIndex = 32;
+            isHeroCheckBox.UseVisualStyleBackColor = false;
+            // 
+            // isSpecialCheckBox
+            // 
+            isSpecialCheckBox.BackColor = Color.FromArgb(45, 45, 48);
+            isSpecialCheckBox.ForeColor = Color.White;
+            isSpecialCheckBox.Location = new Point(128, 485);
+            isSpecialCheckBox.Name = "isSpecialCheckBox";
+            isSpecialCheckBox.Size = new Size(152, 20);
+            isSpecialCheckBox.TabIndex = 33;
+            isSpecialCheckBox.Text = "Is Special";
+            isSpecialCheckBox.UseVisualStyleBackColor = false;
+            // 
+            // isHiddenCheckBox
+            // 
+            isHiddenCheckBox.BackColor = Color.FromArgb(45, 45, 48);
+            isHiddenCheckBox.ForeColor = Color.White;
+            isHiddenCheckBox.Location = new Point(128, 510);
+            isHiddenCheckBox.Name = "isHiddenCheckBox";
+            isHiddenCheckBox.Size = new Size(152, 20);
+            isHiddenCheckBox.TabIndex = 34;
+            isHiddenCheckBox.Text = "Is Hidden";
+            isHiddenCheckBox.UseVisualStyleBackColor = false;
+            // 
+            // textBox7
+            // 
+            textBox7.BackColor = Color.FromArgb(28, 28, 28);
+            textBox7.BorderStyle = BorderStyle.FixedSingle;
+            textBox7.Font = new Font("Segoe UI", 10F);
+            textBox7.ForeColor = Color.White;
+            textBox7.Location = new Point(0, 0);
+            textBox7.Name = "textBox7";
+            textBox7.Size = new Size(100, 25);
+            textBox7.TabIndex = 0;
+            // 
             // tabPage1
             // 
             tabPage1.AutoScroll = true;
             tabPage1.BackColor = Color.FromArgb(45, 45, 45);
+            tabPage1.Controls.Add(materialButton1);
+            tabPage1.Controls.Add(modernTextBox1);
             tabPage1.Controls.Add(button9);
             tabPage1.Controls.Add(textBox13);
             tabPage1.Controls.Add(button8);
@@ -505,13 +805,53 @@ namespace TimeSpace
             tabPage1.Controls.Add(textBox11);
             tabPage1.Controls.Add(textBox1);
             tabPage1.Controls.Add(button1);
+            tabPage1.Controls.Add(modernTextBox2);
+            tabPage1.Controls.Add(materialButton2);
             tabPage1.ForeColor = Color.White;
             tabPage1.Location = new Point(4, 29);
             tabPage1.Name = "tabPage1";
             tabPage1.Padding = new Padding(3);
-            tabPage1.Size = new Size(1817, 758);
+            tabPage1.Size = new Size(1823, 825);
             tabPage1.TabIndex = 0;
             tabPage1.Text = "Settings";
+            // 
+            // materialButton1
+            // 
+            materialButton1.AutoSize = false;
+            materialButton1.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            materialButton1.BackColor = Color.FromArgb(28, 28, 28);
+            materialButton1.Density = MaterialButton.MaterialButtonDensity.Default;
+            materialButton1.Depth = 0;
+            materialButton1.Font = new Font("Segoe UI", 9F);
+            materialButton1.ForeColor = Color.White;
+            materialButton1.HighEmphasis = true;
+            materialButton1.Icon = null;
+            materialButton1.Location = new Point(662, 227);
+            materialButton1.Margin = new Padding(4, 6, 4, 6);
+            materialButton1.MouseState = MaterialSkin.MouseState.HOVER;
+            materialButton1.Name = "materialButton1";
+            materialButton1.NoAccentTextColor = Color.Empty;
+            materialButton1.Size = new Size(75, 23);
+            materialButton1.TabIndex = 11;
+            materialButton1.Text = "Browse";
+            materialButton1.Type = MaterialButton.MaterialButtonType.Contained;
+            materialButton1.UseAccentColor = false;
+            materialButton1.UseVisualStyleBackColor = false;
+            materialButton1.Click += MaterialButton1_Click;
+            // 
+            // modernTextBox1
+            // 
+            modernTextBox1.BackColor = Color.FromArgb(28, 28, 28);
+            modernTextBox1.BorderStyle = BorderStyle.None;
+            modernTextBox1.Font = new Font("Segoe UI", 10F);
+            modernTextBox1.ForeColor = Color.White;
+            modernTextBox1.Location = new Point(8, 232);
+            modernTextBox1.MaxLength = 50;
+            modernTextBox1.Name = "modernTextBox1";
+            modernTextBox1.ReadOnly = true;
+            modernTextBox1.Size = new Size(647, 18);
+            modernTextBox1.TabIndex = 10;
+            modernTextBox1.Text = "Choose TimeSpace to Load";
             // 
             // button9
             // 
@@ -524,7 +864,7 @@ namespace TimeSpace
             button9.ForeColor = Color.White;
             button9.HighEmphasis = true;
             button9.Icon = null;
-            button9.Location = new Point(662, 174);
+            button9.Location = new Point(662, 139);
             button9.Margin = new Padding(4, 6, 4, 6);
             button9.MouseState = MaterialSkin.MouseState.HOVER;
             button9.Name = "button9";
@@ -539,24 +879,16 @@ namespace TimeSpace
             // 
             // textBox13
             // 
-            textBox13.AnimateReadOnly = false;
             textBox13.BackColor = Color.FromArgb(28, 28, 28);
             textBox13.BorderStyle = BorderStyle.None;
-            textBox13.Depth = 0;
-            textBox13.Font = new Font("Microsoft Sans Serif", 12F);
+            textBox13.Font = new Font("Segoe UI", 10F);
             textBox13.ForeColor = Color.White;
-            textBox13.LeadingIcon = null;
-            textBox13.Location = new Point(8, 168);
+            textBox13.Location = new Point(8, 144);
             textBox13.MaxLength = 50;
-            textBox13.MouseState = MaterialSkin.MouseState.OUT;
-            textBox13.Multiline = false;
             textBox13.Name = "textBox13";
             textBox13.ReadOnly = true;
-            textBox13.Size = new Size(647, 36);
+            textBox13.Size = new Size(647, 18);
             textBox13.TabIndex = 8;
-            textBox13.Text = "Choose TimeSpace to Load";
-            textBox13.TrailingIcon = null;
-            textBox13.UseTallSize = false;
             // 
             // button8
             // 
@@ -569,7 +901,7 @@ namespace TimeSpace
             button8.ForeColor = Color.White;
             button8.HighEmphasis = true;
             button8.Icon = null;
-            button8.Location = new Point(662, 117);
+            button8.Location = new Point(662, 95);
             button8.Margin = new Padding(4, 6, 4, 6);
             button8.MouseState = MaterialSkin.MouseState.HOVER;
             button8.Name = "button8";
@@ -593,7 +925,7 @@ namespace TimeSpace
             button7.ForeColor = Color.White;
             button7.HighEmphasis = true;
             button7.Icon = null;
-            button7.Location = new Point(662, 63);
+            button7.Location = new Point(662, 51);
             button7.Margin = new Padding(4, 6, 4, 6);
             button7.MouseState = MaterialSkin.MouseState.HOVER;
             button7.Name = "button7";
@@ -608,66 +940,42 @@ namespace TimeSpace
             // 
             // textBox12
             // 
-            textBox12.AnimateReadOnly = false;
             textBox12.BackColor = Color.FromArgb(28, 28, 28);
             textBox12.BorderStyle = BorderStyle.None;
-            textBox12.Depth = 0;
-            textBox12.Font = new Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
+            textBox12.Font = new Font("Segoe UI", 10F);
             textBox12.ForeColor = Color.White;
-            textBox12.LeadingIcon = null;
-            textBox12.Location = new Point(8, 110);
+            textBox12.Location = new Point(8, 100);
             textBox12.MaxLength = 50;
-            textBox12.MouseState = MaterialSkin.MouseState.OUT;
-            textBox12.Multiline = false;
             textBox12.Name = "textBox12";
             textBox12.ReadOnly = true;
-            textBox12.Size = new Size(647, 36);
+            textBox12.Size = new Size(647, 18);
             textBox12.TabIndex = 5;
-            textBox12.Text = "";
-            textBox12.TrailingIcon = null;
-            textBox12.UseTallSize = false;
             // 
             // textBox11
             // 
-            textBox11.AnimateReadOnly = false;
             textBox11.BackColor = Color.FromArgb(28, 28, 28);
             textBox11.BorderStyle = BorderStyle.None;
-            textBox11.Depth = 0;
-            textBox11.Font = new Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
+            textBox11.Font = new Font("Segoe UI", 10F);
             textBox11.ForeColor = Color.White;
-            textBox11.LeadingIcon = null;
             textBox11.Location = new Point(8, 56);
             textBox11.MaxLength = 50;
-            textBox11.MouseState = MaterialSkin.MouseState.OUT;
-            textBox11.Multiline = false;
             textBox11.Name = "textBox11";
             textBox11.ReadOnly = true;
-            textBox11.Size = new Size(647, 36);
+            textBox11.Size = new Size(647, 18);
             textBox11.TabIndex = 4;
-            textBox11.Text = "";
-            textBox11.TrailingIcon = null;
-            textBox11.UseTallSize = false;
             // 
             // textBox1
             // 
-            textBox1.AnimateReadOnly = false;
             textBox1.BackColor = Color.FromArgb(28, 28, 28);
             textBox1.BorderStyle = BorderStyle.None;
-            textBox1.Depth = 0;
-            textBox1.Font = new Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
+            textBox1.Font = new Font("Segoe UI", 10F);
             textBox1.ForeColor = Color.White;
-            textBox1.LeadingIcon = null;
-            textBox1.Location = new Point(8, 6);
+            textBox1.Location = new Point(8, 12);
             textBox1.MaxLength = 50;
-            textBox1.MouseState = MaterialSkin.MouseState.OUT;
-            textBox1.Multiline = false;
             textBox1.Name = "textBox1";
             textBox1.ReadOnly = true;
-            textBox1.Size = new Size(647, 36);
+            textBox1.Size = new Size(647, 18);
             textBox1.TabIndex = 2;
-            textBox1.Text = "";
-            textBox1.TrailingIcon = null;
-            textBox1.UseTallSize = false;
             // 
             // button1
             // 
@@ -680,7 +988,7 @@ namespace TimeSpace
             button1.ForeColor = Color.White;
             button1.HighEmphasis = true;
             button1.Icon = null;
-            button1.Location = new Point(662, 10);
+            button1.Location = new Point(662, 7);
             button1.Margin = new Padding(4, 6, 4, 6);
             button1.MouseState = MaterialSkin.MouseState.HOVER;
             button1.Name = "button1";
@@ -693,6 +1001,43 @@ namespace TimeSpace
             button1.UseVisualStyleBackColor = false;
             button1.Click += button1_Click;
             // 
+            // modernTextBox2
+            // 
+            modernTextBox2.BackColor = Color.FromArgb(28, 28, 28);
+            modernTextBox2.BorderStyle = BorderStyle.None;
+            modernTextBox2.Font = new Font("Segoe UI", 10F);
+            modernTextBox2.ForeColor = Color.White;
+            modernTextBox2.Location = new Point(8, 188);
+            modernTextBox2.MaxLength = 50;
+            modernTextBox2.Name = "modernTextBox2";
+            modernTextBox2.ReadOnly = true;
+            modernTextBox2.Size = new Size(647, 18);
+            modernTextBox2.TabIndex = 10;
+            // 
+            // materialButton2
+            // 
+            materialButton2.AutoSize = false;
+            materialButton2.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            materialButton2.BackColor = Color.FromArgb(28, 28, 28);
+            materialButton2.Density = MaterialButton.MaterialButtonDensity.Default;
+            materialButton2.Depth = 0;
+            materialButton2.Font = new Font("Segoe UI", 9F);
+            materialButton2.ForeColor = Color.White;
+            materialButton2.HighEmphasis = true;
+            materialButton2.Icon = null;
+            materialButton2.Location = new Point(662, 183);
+            materialButton2.Margin = new Padding(4, 6, 4, 6);
+            materialButton2.MouseState = MaterialSkin.MouseState.HOVER;
+            materialButton2.Name = "materialButton2";
+            materialButton2.NoAccentTextColor = Color.Empty;
+            materialButton2.Size = new Size(75, 23);
+            materialButton2.TabIndex = 11;
+            materialButton2.Text = "Browse";
+            materialButton2.Type = MaterialButton.MaterialButtonType.Contained;
+            materialButton2.UseAccentColor = false;
+            materialButton2.UseVisualStyleBackColor = false;
+            materialButton2.Click += materialButton2_Click;
+            // 
             // tabControl1
             // 
             tabControl1.Controls.Add(tabPage1);
@@ -701,13 +1046,39 @@ namespace TimeSpace
             tabControl1.Dock = DockStyle.Fill;
             tabControl1.ForeColor = Color.White;
             tabControl1.ItemSize = new Size(75, 25);
-            tabControl1.Location = new Point(3, 64);
+            tabControl1.Location = new Point(0, 0);
             tabControl1.Name = "tabControl1";
             tabControl1.Padding = new Point(0, 0);
             tabControl1.SelectedIndex = 0;
-            tabControl1.Size = new Size(1825, 791);
+            tabControl1.Size = new Size(1831, 858);
             tabControl1.SizeMode = TabSizeMode.FillToRight;
             tabControl1.TabIndex = 0;
+            // 
+            // minPlayersLabel
+            // 
+            minPlayersLabel.ForeColor = Color.White;
+            minPlayersLabel.Location = new Point(8, 402);
+            minPlayersLabel.Name = "minPlayersLabel";
+            minPlayersLabel.Size = new Size(100, 20);
+            minPlayersLabel.TabIndex = 0;
+            minPlayersLabel.Text = "Min Players";
+            // 
+            // maxPlayersLabel
+            // 
+            maxPlayersLabel.ForeColor = Color.White;
+            maxPlayersLabel.Location = new Point(8, 432);
+            maxPlayersLabel.Name = "maxPlayersLabel";
+            maxPlayersLabel.Size = new Size(100, 20);
+            maxPlayersLabel.TabIndex = 0;
+            maxPlayersLabel.Text = "Max Players";
+            // 
+            // pictureBox6
+            // 
+            pictureBox6.Location = new Point(944, 499);
+            pictureBox6.Name = "pictureBox6";
+            pictureBox6.Size = new Size(106, 94);
+            pictureBox6.TabIndex = 48;
+            pictureBox6.TabStop = false;
             // 
             // TimeSpaceTool
             // 
@@ -721,38 +1092,32 @@ namespace TimeSpace
             Load += Form1_Load;
             tabPage3.ResumeLayout(false);
             panelButtons.ResumeLayout(false);
-            panelButtons.PerformLayout();
             tabPage2.ResumeLayout(false);
             tabPage2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox2).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox4).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox5).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox3).EndInit();
+            objectivesPanel.ResumeLayout(false);
+            objectivesPanel.PerformLayout();
             tabPage1.ResumeLayout(false);
+            tabPage1.PerformLayout();
             tabControl1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)pictureBox6).EndInit();
             ResumeLayout(false);
         }
 
-        private void ConfigureButton(MaterialButton button, string text, Point location, EventHandler onClick)
+        private void RemoveRewardButton_Click(object sender, EventArgs e)
         {
-            button.AutoSize = false;
-            button.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            button.BackColor = Color.FromArgb(28, 28, 28);
-            button.Density = MaterialButton.MaterialButtonDensity.Default;
-            button.Depth = 0;
-            button.Font = new Font("Segoe UI", 9F);
-            button.ForeColor = Color.White;
-            button.HighEmphasis = true;
-            button.Icon = null;
-            button.Location = location;
-            button.Margin = new Padding(4, 6, 4, 6);
-            button.MouseState = MaterialSkin.MouseState.HOVER;
-            button.Name = text.Replace(" ", "").ToLower() + "Button";
-            button.NoAccentTextColor = Color.Empty;
-            button.Size = new Size(100, 50); // Adjust size as needed  
-            button.TabIndex = 1;
-            button.Text = text;
-            button.Type = MaterialButton.MaterialButtonType.Contained;
-            button.UseAccentColor = false;
-            button.UseVisualStyleBackColor = false;
-            button.Click += onClick;
+            throw new NotImplementedException();
         }
+
+        private void AddRewardButton_Click(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
         private OpenFileDialog openFileDialog1;
         private TabPage tabPage3;
@@ -761,38 +1126,68 @@ namespace TimeSpace
         private MaterialButton button5;
         private MaterialButton button4;
         private TabPage tabPage2;
-        private MaterialTextBox textBox10;
-        private MaterialTextBox textBox9;
-        private MaterialTextBox textBox8;
-        private MaterialTextBox textBox7;
-        private MaterialTextBox textBox6;
-        private MaterialTextBox textBox4;
-        private MaterialTextBox textBox5;
-        private MaterialTextBox textBox3;
-        private MaterialTextBox textBox2;
-        private Label label10;
-        private Label label9;
-        private ModernCheckBox checkBox1;
+        private ModernTextBox textBox8;
+        private ModernTextBox textBox7;
+        private ModernTextBox textBox6;
+        private ModernTextBox textBox4;
+        private ModernTextBox textBox5;
+        private ModernTextBox textBox3;
+        private ModernTextBox textBox2;
         private Label label8;
         private Label label7;
         private Label label6;
         private Label label5;
-        private CustomMaterialStyleComboBox comboBox1;
-        private Label label4;
         private ModernNumericUpDown numericUpDown1;
+        private ModernNumericUpDown numericUpDown2;
+        private ModernNumericUpDown minLevelNumeric;
+        private ModernNumericUpDown maxLevelNumeric;
+        private ModernNumericUpDown seedsRequiredNumeric;
+        private ModernNumericUpDown minPlayersNumeric;
+        private ModernNumericUpDown maxPlayersNumeric;
         private Label label3;
         private Label label2;
         private Label label1;
+        private Label headerLabel;
         private TabPage tabPage1;
+        private Label minPlayersLabel;
+        private Label maxPlayersLabel;
         private MaterialButton button8;
         private MaterialButton button7;
-        private MaterialTextBox textBox12;
-        private MaterialTextBox textBox11;
-        private MaterialTextBox textBox1;
+        private CheckBox isHeroCheckBox;
+        private CheckBox isSpecialCheckBox;
+        private CheckBox isHiddenCheckBox;
+        private ModernTextBox textBox12;
+        private ModernTextBox textBox11;
+        private ModernTextBox textBox1;
         private MaterialButton button1;
         private ModernTabControl tabControl1;
         private MaterialButton button9;
-        private MaterialTextBox textBox13;
+        private ModernTextBox textBox13;
         private Panel panelButtons;
+        private Panel objectivesPanel;
+        private MaterialComboBox objectiveTypeComboBox;
+        private Panel objectiveValuesPanel;
+        private ListBox selectedObjectivesListBox;
+        private MaterialButton addObjectiveButton;
+        private MaterialButton removeObjectiveButton;
+        private Dictionary<string, (ModernTextBox, ModernTextBox)> objectiveValueControls;
+        private MaterialButton materialButton1;
+        private ModernTextBox modernTextBox1;
+        private ListBox drawRewardsListBox;
+        private ListBox specialRewardsListBox;
+        private ListBox bonusRewardsListBox;
+        private ModernTextBox modernTextBox2;
+        private MaterialButton materialButton2;
+        private PictureBox pictureBox2;
+        private PictureBox pictureBox3;
+        private PictureBox pictureBox5;
+        private Label label4;
+        private ModernTextBox textBox9;
+        private ModernTextBox textBox14;
+        private ModernTextBox textBox10;
+        private ModernTextBox textBox15;
+        private PictureBox pictureBox1;
+        private PictureBox pictureBox4;
+        private ItemSlot pictureBox6;
     }
 }

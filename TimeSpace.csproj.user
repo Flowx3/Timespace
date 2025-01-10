@@ -1,8 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Compile Update="ItemSearchForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="TimeSpaceTool.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UpdatedControls\ItemSlot.cs">
+      <SubType>Component</SubType>
     </Compile>
     <Compile Update="UpdatedControls\ModernTabControl.cs">
       <SubType>Component</SubType>
@@ -17,9 +23,6 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Update="UpdatedControls\Modernbutton.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="UpdatedControls\ModernCheckBox.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Update="UpdatedControls\ModernDataGridView.cs">

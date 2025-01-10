@@ -1,0 +1,7 @@
+{
+  "GameDataPath": "C:\\Users\\manue\\source\\repos\\NosGlobal\\client-files\\dat",
+  "GameMapsPath": "C:\\Users\\manue\\source\\repos\\NosGlobal\\client-files\\maps",
+  "TimespacesFilePath": "C:\\Users\\manue\\source\\repos\\NosGlobal\\server-translations\\en\\timespaces.yaml",
+  "TimeSpaceConfigPath": "C:\\Users\\manue\\source\\repos\\NosGlobal\\server-files\\time_space_configuration.yaml",
+  "GameTranslationPath": "C:\\Users\\manue\\source\\repos\\NosGlobal\\client-files\\lang"
+}

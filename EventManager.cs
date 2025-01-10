@@ -5,7 +5,7 @@ using TimeSpace;
 using Font = System.Drawing.Font;
 using MaterialSkin;
 
-public class EventManagerForm : MaterialForm
+public class EventManagerForm : Form
 {
     private TreeView eventTreeView;
     private MaterialListView selectedEventsListView;
@@ -36,11 +36,14 @@ public class EventManagerForm : MaterialForm
         initialEvents = new List<string>(selectedEvents);
         formTitle = "Event Manager";
         InitializeComponents();
+        KeyPreview = true;
+        KeyDown += EventManagerForm_KeyDown;
         LoadExistingEvents();
     }
 
     private void InitializeComponents()
     {
+        this.Font = new Font("Segoe UI", 10f);
         // Form settings
         Text = formTitle;
         Size = new Size(1200, 700);
@@ -116,6 +119,7 @@ public class EventManagerForm : MaterialForm
         rootNode.Nodes.Add("SetTime");
         rootNode.Nodes.Add("AddTime");
         rootNode.Nodes.Add("DespawnAllMobsInRoom");
+        rootNode.Nodes.Add("TogglePortal");
         eventTreeView.Nodes.Add(rootNode);
         eventTreeView.ExpandAll();
         eventTreeView.NodeMouseDoubleClick += EventType_NodeDoubleClick;
@@ -410,6 +414,12 @@ public class EventManagerForm : MaterialForm
                 var script = $"Event.DespawnAllMobsInRoom({currentMapName})";
                 AddEventToList(script);
                 return;
+            case "TogglePortal":
+                configControl = portalSearchComboBox;
+                portalSearchComboBox.SelectedIndex = -1;
+                if (currentValue != null)
+                    portalSearchComboBox.SelectedItem = currentValue;
+                break;
         }
 
         if (configControl != null)
@@ -492,12 +502,7 @@ public class EventManagerForm : MaterialForm
         Close();
     }
     private void StyleComponents()
-    {
-        // Material Skin colors
-        var materialSkinManager = MaterialSkinManager.Instance;
-        materialSkinManager.Theme = MaterialSkinManager.Themes.DARK;
-        materialSkinManager.ColorScheme = new ColorScheme(Primary.Grey900, Primary.Grey900, Primary.Grey900, Accent.Amber700, TextShade.WHITE);
-
+    { 
         foreach (Control control in Controls)
         {
             StyleControl(control);
@@ -550,6 +555,13 @@ public class EventManagerForm : MaterialForm
     private void SelectedEventsListView_DrawSubItem(object sender, DrawListViewSubItemEventArgs e)
     {
         e.DrawDefault = true;
+    }
+    private void EventManagerForm_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.KeyCode == Keys.Escape)
+        {
+            DiscardButton_Click(null, null);
+        }
     }
     private void DiscardButton_Click(object sender, EventArgs e)
     {

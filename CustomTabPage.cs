@@ -47,14 +47,13 @@ namespace TimeSpace
         private ModernTextBox _txtTaskText;
         private CustomMaterialStyleComboBox _cboTaskType;
         private ModernNumericUpDown _timeForTask;
-        private ModernNumericUpDown _waveCountInput;
-        private ModernNumericUpDown _waveDelayInput;
-        private ModernCheckBox _useWavesCheckbox;
+        public ModernNumericUpDown _waveDelayInput;
+        public CheckBox _useWavesCheckbox;
         private Label _lblTimeForTask;
         private Label _lblWaveDelay;
-        private Label _lblWaveCount;
         private ModernButton _btnTaskFailEvents;
         private ModernButton _btnTaskFinishEvents;
+        private ModernButton _btnOnAllTargetMobsDead;
         private DataGridViewTextBoxColumn _txtBoxColumnWave;
 
         // Collections
@@ -65,6 +64,7 @@ namespace TimeSpace
         private readonly List<CustomTabPage> _mapTabs;
         private List<string> taskFinishEvents = new List<string>();
         private List<string> taskFailEvents = new List<string>();
+        private List<string> onAllTargetMobsDead = new List<string>();
 
         // Properties
         public string MapName { get; private set; }
@@ -76,7 +76,24 @@ namespace TimeSpace
         public List<Npc> NpcEvents { get; private set; } = new List<Npc>();
         public Dictionary<string, List<string>> EventManagerScripts { get; } = new Dictionary<string, List<string>>();
         public DataGridView MonsterDataGridView => _monsterDataGridView;
+        public DataGridView NpcDataGridview => _npcDataGridView;
 
+        public List<string> GetTaskFinishEvents() => taskFinishEvents;
+        public List<string> GetTaskFailEvents() => taskFailEvents;
+        public void SetTaskFinishEvents(List<string> events)
+        {
+            taskFinishEvents = events;
+        }
+        public void SetTaskFailEvents(List<string> events)
+        {
+            taskFailEvents = events;
+        }
+
+        public List<string> GetOnAllTargetMobsDead() => onAllTargetMobsDead;
+        public void SetOnAllTargetMobsDead(List<string> events)
+        {
+            onAllTargetMobsDead = events;
+        }
 
         public CustomTabPage(string mapName, TimeSpaceTool form, Func<List<string>> getMapNames)
         {
@@ -87,7 +104,7 @@ namespace TimeSpace
             _mapTabs = TimeSpaceTool.mapTabs;
 
             InitializeComponents(form);
-            _eventGenerator = new MapEventGenerator(_waveDelayInput, EventManagerScripts);
+            _eventGenerator = new MapEventGenerator(EventManagerScripts);
             MapPortalPanels = new Dictionary<string, Panel>();
         }
 
@@ -112,7 +129,9 @@ namespace TimeSpace
             var leftPanel = new Panel { Width = 1000, Dock = DockStyle.Left, BackColor = Color.FromArgb(50, 50, 50) };
 
             _txtMapVNum = new ModernTextBox { Name = "txtMapVNUM", Location = new Point(150, 10), Width = 200, BackColor = Color.FromArgb(30, 30, 30), ForeColor = Color.White };
+            ControlStyleManager.StoreControlStyle(_txtMapVNum);
             _txtMapCoordinates = new ModernTextBox { Location = new Point(150, 40), Width = 200, BackColor = Color.FromArgb(30, 30, 30), ForeColor = Color.White };
+            ControlStyleManager.StoreControlStyle(_txtMapCoordinates);
             _cboTaskType = new CustomMaterialStyleComboBox
             {
                 Location = new Point(150, 70),
@@ -181,6 +200,7 @@ namespace TimeSpace
                 Visible = false
             };
             _btnTaskFailEvents.Click += (s, e) => OpenTaskEventManager("TaskFail");
+            ControlStyleManager.StoreControlStyle(_btnTaskFailEvents);
 
             _btnTaskFinishEvents = new ModernButton
             {
@@ -191,6 +211,7 @@ namespace TimeSpace
                 Visible = false
             };
             _btnTaskFinishEvents.Click += (s, e) => OpenTaskEventManager("TaskFinish");
+            ControlStyleManager.StoreControlStyle(_btnTaskFinishEvents);
 
             InitializeMonsterDataGridView();
             InitializeNpcDataGridView();
@@ -292,35 +313,39 @@ namespace TimeSpace
                 ForeColor = Color.White
             };
             button.Click += clickHandler;
+            ControlStyleManager.StoreControlStyle(button);
             return button;
         }
 
         private void OpenTaskEventManager(string eventType)
         {
-            var eventList = eventType == "TaskFinish" ? taskFinishEvents : taskFailEvents;
-            using (var taskEventManager = new EventManagerForm(MapName, GetMapNames,_lockedPortalsList, eventList))
+            var eventList = eventType switch
+            {
+                "TaskFinish" => taskFinishEvents,
+                "TaskFail" => taskFailEvents,
+                "OnAllTargetMobsDead" => onAllTargetMobsDead,
+                _ => new List<string>()
+            };
+
+            using (var taskEventManager = new EventManagerForm(MapName, GetMapNames, _lockedPortalsList, eventList))
             {
                 if (taskEventManager.ShowDialog() == DialogResult.OK)
                 {
-                    if (eventType == "TaskFinish")
-                        taskFinishEvents = taskEventManager.Events;
-                    else
-                        taskFailEvents = taskEventManager.Events;
-                }
-                else
-                {
-                    if (eventType == "TaskFinish")
-                        taskFinishEvents = taskEventManager.Events;
-                    else
-                        taskFailEvents = taskEventManager.Events;
-                    return;
+                    switch (eventType)
+                    {
+                        case "TaskFinish":
+                            taskFinishEvents = taskEventManager.Events;
+                            break;
+                        case "TaskFail":
+                            taskFailEvents = taskEventManager.Events;
+                            break;
+                        case "OnAllTargetMobsDead":
+                            onAllTargetMobsDead = taskEventManager.Events;
+                            break;
+                    }
                 }
             }
         }
-
-        public List<string> GetTaskFinishEvents() => taskFinishEvents;
-        public List<string> GetTaskFailEvents() => taskFailEvents;
-
         private void InitializeMonsterDataGridView()
         {
             _monsterDataGridView = new ModernDataGridView
@@ -350,48 +375,49 @@ namespace TimeSpace
             },
             new DataGridViewTextBoxColumn { Name = "Attributes", HeaderText = "Additional Attributes", ReadOnly = true }
             });
+
             _monsterDataGridView.CellDoubleClick += MonsterDataGridView_CellDoubleClick;
 
             var btnAddMonster = CreateButton("Add Monster", new Point(10, 270), BtnAddEvent_Click);
             var btnRemoveMonster = CreateButton("Remove Last Monster", new Point(150, 270), BtnRemoveEvent_Click);
             var btnSaveMonsters = CreateButton("Save Monsters", new Point(290, 270), SaveAllValues);
-            _useWavesCheckbox = new ModernCheckBox
+            _btnOnAllTargetMobsDead = new ModernButton
+            {
+                Text = "OnAllTargetMobsDead",
+                Location = new Point(10, 315),
+                Size = new Size(200, 30)
+            };
+            _btnOnAllTargetMobsDead.Click += (s,e) => OpenTaskEventManager("OnAllTargetMobsDead");
+            ControlStyleManager.StoreControlStyle(_btnOnAllTargetMobsDead);
+
+            _useWavesCheckbox = new CheckBox
             {
                 Text = "Use Waves",
                 Location = new Point(425, 265),
-                Size = new Size(90, 35)
+                Size = new Size(125, 35),
+                FlatStyle = FlatStyle.Flat,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9F),
+                BackColor = Color.FromArgb(50, 50, 50)
             };
             _useWavesCheckbox.CheckedChanged += UseWavesCheckbox_CheckedChanged;
+            ControlStyleManager.StoreControlStyle(_useWavesCheckbox);
 
-            _waveCountInput = new ModernNumericUpDown
-            {
-                Location = new Point(660, 270),
-                Size = new Size(75, 25),
-                Increment = 1,
-                Visible = false
-            };
             _waveDelayInput = new ModernNumericUpDown
             {
-                Location = new Point(850, 270),
+                Location = new Point(625, 270),
                 Size = new Size(75, 25),
                 Visible = false
             };
             _lblWaveDelay = new Label 
             {
                 Text = "Wave Delay (s)",
-                Location = new Point(750, 275),
-                ForeColor = Color.White,
-                Width = 200,
-                Visible = false
-            };
-            _lblWaveCount = new Label 
-            { 
-                Text = "Amount of Waves",
                 Location = new Point(525, 275),
                 ForeColor = Color.White,
                 Width = 200,
                 Visible = false
             };
+
             _monsterTabPage.Controls.AddRange(new Control[]
             {
                 _monsterDataGridView,
@@ -400,11 +426,11 @@ namespace TimeSpace
                 btnSaveMonsters,
                 _useWavesCheckbox,
                 _waveDelayInput,
-                _waveCountInput,
-                _lblWaveCount,
-                _lblWaveDelay
+                _lblWaveDelay,
+                _btnOnAllTargetMobsDead
         });
         }
+
         private void InitializeNpcDataGridView()
         {
             _npcDataGridView = new ModernDataGridView
@@ -422,13 +448,13 @@ namespace TimeSpace
         new DataGridViewTextBoxColumn { Name = "Vnum", HeaderText = "Vnum" },
         new DataGridViewTextBoxColumn { Name = "X", HeaderText = "X" },
         new DataGridViewTextBoxColumn { Name = "Y", HeaderText = "Y" },
-        new DataGridViewTextBoxColumn { Name = "Event", HeaderText = "Event" }
+        new DataGridViewTextBoxColumn { Name = "Attributes", HeaderText = "Additional Attributes", ReadOnly = true }
             });
 
             var btnAddNpc = CreateButton("Add NPC", new Point(10, 270), BtnAddNpc_Click);
             var btnRemoveNpc = CreateButton("Remove Last NPC", new Point(150, 270), BtnRemoveNpc_Click);
             var btnSaveNpcs = CreateButton("Save NPCs", new Point(290, 270), SaveAllValues);
-
+            _npcDataGridView.CellDoubleClick += NpcDataGridView_CellDoubleClick;
             _npcTabPage.Controls.AddRange(new Control[]
             {
                 _npcDataGridView,
@@ -462,12 +488,11 @@ namespace TimeSpace
 
         private void UseWavesCheckbox_CheckedChanged(object sender, EventArgs e)
         {
-            _waveCountInput.Visible = _useWavesCheckbox.Checked;
             _waveDelayInput.Visible = _useWavesCheckbox.Checked;
-            _lblWaveCount.Visible = _useWavesCheckbox.Checked;
             _lblWaveDelay.Visible = _useWavesCheckbox.Checked;
             _txtBoxColumnWave.Visible = _useWavesCheckbox.Checked;
         }
+
         private void MonsterGrid_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
         {
             if (_mapGridPanel != null)
@@ -552,6 +577,13 @@ namespace TimeSpace
             if (e.RowIndex >= 0 && _monsterDataGridView.Columns[e.ColumnIndex].Name == "Attributes")
             {
                 BtnAddAttribute_Click(sender, e);
+            }
+        }
+        private void NpcDataGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && _npcDataGridView.Columns[e.ColumnIndex].Name == "Attributes")
+            {
+                BtnAddNpcAttribute_Click(sender, e);
             }
         }
 
@@ -658,6 +690,93 @@ namespace TimeSpace
                     _currentPosition = null;
                     _txtMapCoordinates?.Clear();
                 }
+            }
+        }
+        private void BtnAddNpcAttribute_Click(object sender, EventArgs e)
+        {
+            Dictionary<string, object> currentAttributes = new Dictionary<string, object>();
+            if (_npcDataGridView.CurrentRow != null &&
+                NpcEvents != null &&
+                NpcEvents.Count > _npcDataGridView.CurrentRow.Index)
+            {
+                foreach (var attr in NpcEvents[_npcDataGridView.CurrentRow.Index].Attributes)
+                {
+                    currentAttributes[attr.Key] = attr.Value;
+                }
+            }
+            
+            var attributeForm = new MonsterAttributeForm(currentAttributes, isNpcMode: true);
+
+            if (attributeForm.ShowDialog() == DialogResult.OK)
+            {
+                if (_npcDataGridView.CurrentRow != null &&
+                    NpcEvents != null &&
+                    NpcEvents.Count > _npcDataGridView.CurrentRow.Index)
+                {
+                    var npc = NpcEvents[_npcDataGridView.CurrentRow.Index];
+                    npc.Attributes.Clear();
+                    foreach (var attr in attributeForm.SelectedAttributes)
+                    {
+                        if (attr.Key == "WithMustProtectAura" || attr.Key == "WithFollowPlayer")
+                        {
+                            npc.Attributes[attr.Key] = "";
+                        }
+                        else
+                        {
+                            npc.Attributes[attr.Key] = attr.Value.ToString();
+                        }
+                    }
+                    UpdateNpcAttributeDisplay(_npcDataGridView.CurrentRow.Index);
+                }
+                else
+                {
+                    NpcEvents = NpcEvents ?? new List<Npc>();
+                    var npc = new Npc(MapName);
+                    foreach (var attr in attributeForm.SelectedAttributes)
+                    {
+                        if (attr.Key == "WithMustProtectAura" || attr.Key == "WithFollowPlayer")
+                        {
+                            npc.Attributes[attr.Key] = "";
+                        }
+                        else
+                        {
+                            npc.Attributes[attr.Key] = attr.Value.ToString();
+                        }
+                    }
+                    NpcEvents.Add(npc);
+                    _npcDataGridView.Refresh();
+                    UpdateNpcAttributeDisplay(NpcEvents.Count - 1);
+                }
+                _npcDataGridView.Refresh();
+            }
+        }
+
+        private void UpdateNpcAttributeDisplay(int rowIndex)
+        {
+            if (NpcEvents != null && rowIndex >= 0 && rowIndex < NpcEvents.Count)
+            {
+                var npc = NpcEvents[rowIndex];
+                var attributeCell = _npcDataGridView.Rows[rowIndex].Cells["Attributes"];
+                var attributeText = new StringBuilder();
+
+                foreach (var attr in npc.Attributes)
+                {
+                    if (attr.Key == "WithMustProtectAura" || attr.Key == "WithFollowPlayer")
+                    {
+                        attributeText.Append($"{attr.Key}, ");
+                    }
+                    else
+                    {
+                        attributeText.Append($"{attr.Key}({attr.Value}), ");
+                    }
+                }
+
+                if (attributeText.Length > 2)
+                {
+                    attributeText.Length -= 2;
+                }
+
+                attributeCell.Value = attributeText.ToString();
             }
         }
         private void BtnAddAttribute_Click(object sender, EventArgs e)
@@ -786,8 +905,19 @@ namespace TimeSpace
         {
             var sb = new StringBuilder();
             sb.AppendLine($"local {MapName} = Map.Create().WithMapId({_txtMapVNum.Text}).SetMapCoordinates({_txtMapCoordinates.Text}).WithTask(");
-            sb.AppendLine($"    TimeSpaceTask.Create(TimeSpaceTaskType.{_cboTaskType.SelectedItem}, {_timeForTask.Value}).WithTaskText(\"{_txtTaskText?.Text}\")" +
-                          $"\n)");
+            if (_timeForTask.Value != 0)
+            {
+                sb.AppendLine($"    TimeSpaceTask.Create(TimeSpaceTaskType.{_cboTaskType.SelectedItem}, {_timeForTask.Value})");
+            }
+            else
+            {
+                sb.AppendLine($"    TimeSpaceTask.Create(TimeSpaceTaskType.{_cboTaskType.SelectedItem})");
+            }
+            if (_txtTaskText?.Text != "")
+            {
+                sb.Append($".WithTaskText(\"{_txtTaskText?.Text})");
+            }
+            sb.AppendLine(")");
             return sb.ToString();
         }
         public void AddPortalToMap(string mapName, Portal portal)
@@ -902,11 +1032,6 @@ namespace TimeSpace
                         }
                     }
                 }
-            }
-
-            foreach (var mapObject in Objects)
-            {
-                mapObject.UpdatePortalComboboxes(_lockedPortalsList);
             }
 
             foreach (var portal in Portals)
@@ -1112,7 +1237,7 @@ namespace TimeSpace
                 MessageBox.Show("You dont need more than 4 Objects.");
                 return;
             }
-            var Object = new MapObject(MapName, "Object", 0, 0, _allPortalsList);
+            var Object = new MapObject(MapName, "Object", 0, 0, _allPortalsList, this);
             Objects.Add(Object);
             this._objectivePanel.Controls.Add(Object.CreateObject());
         }
@@ -1141,34 +1266,35 @@ namespace TimeSpace
             this._txtMapCoordinates.Text = coords;
         }
         public void SetTaskType(string taskType) => _cboTaskType.SelectedItem = taskType;
-        public void AddMonster(int vnum, int x, int y ,bool asTarget, Dictionary<string, string> attributes, int Wave = -1)
+        public void SetTaskText(string taskText) => _txtTaskText.Text = taskText;
+        public void AddMonster(int vnum, int x, int y, bool asTarget, Dictionary<string, string> attributes, int wave = -1)
         {
-            var monster = new Monster(MapName)
-            {
-                Vnum = vnum,
-                X = x,
-                Y = y,
-                Wave = Wave,
-                AsTarget = asTarget,
-                Attributes = attributes
-            };
-
-            int currentWave = 1;
-            if (_useWavesCheckbox?.Checked == true && _waveCountInput?.Enabled == true)
-            {
-                currentWave = (int)_waveCountInput.Value;
-            }
-
             try
             {
                 _monsterDataGridView.SuspendLayout();
+
+                // Enable waves checkbox if this is a wave monster
+                if (wave > 0 && _useWavesCheckbox != null)
+                {
+                    _useWavesCheckbox.Checked = true;
+                }
+
+                var monster = new Monster(MapName)
+                {
+                    Vnum = vnum,
+                    X = x,
+                    Y = y,
+                    Wave = wave,
+                    AsTarget = asTarget,
+                    Attributes = attributes
+                };
 
                 object[] rowValues = new object[]
                 {
             monster.Vnum.ToString(),
             monster.X.ToString(),
             monster.Y.ToString(),
-            monster.Wave.ToString(),
+            wave > 0 ? wave.ToString() : "",  // Only show wave number if it's part of a wave
             monster.AsTarget,
             string.Join(", ", monster.Attributes.Select(a => $"{a.Key}={a.Value}"))
                 };
@@ -1176,13 +1302,14 @@ namespace TimeSpace
                 int rowIndex = _monsterDataGridView.Rows.Add(rowValues);
                 var row = _monsterDataGridView.Rows[rowIndex];
 
-                // Immediately apply styling
+                // Apply styling
                 row.DefaultCellStyle = _monsterDataGridView.DefaultCellStyle.Clone();
                 foreach (DataGridViewCell cell in row.Cells)
                 {
                     cell.Style = _monsterDataGridView.DefaultCellStyle.Clone();
                 }
 
+                // Initialize monster events list if needed
                 MonsterEvents ??= new List<Monster>();
                 MonsterEvents.Add(monster);
 
@@ -1194,15 +1321,18 @@ namespace TimeSpace
                 MessageBox.Show($"Error adding monster: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-        public void AddMapObject(string objectType, int x, int y, List<string> linkedPortals = null)
+        public void AddNpc(Npc npc)
         {
-            var mapObject = new MapObject(MapName, objectType, x, y, linkedPortals ?? new List<string>());
-
+            NpcEvents.Add(npc);
+            _npcDataGridView.Rows.Add(npc.Vnum, npc.X, npc.Y, string.Join(", ", npc.Attributes.Select(a => $"{a.Key}={a.Value}")));
+        }
+        public void AddMapObject(string objectType, int x, int y, List<string> events = null)
+        {
+            var mapObject = new MapObject(MapName, objectType, x, y, _lockedPortalsList, this);
             Objects.Add(mapObject);
-
             this._objectivePanel.Controls.Add(mapObject.CreateObject());
             mapObject.SetPosition(x, y);
-            mapObject.SetObjectivesAndPortals(objectType, Portals);
+            mapObject.SetObjectivesAndPortals(objectType, events);
             mapObject.ObjectType = objectType;
         }
     }

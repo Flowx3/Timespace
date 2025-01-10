@@ -5,19 +5,23 @@ using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Text;
 using System.Windows.Forms;
+using TimeSpace;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace TimeSpace
 {
 
-    struct Config {
+    public struct Config {
         public string GameDataPath { get; set; }
         public string GameMapsPath { get; set; }
         public string TimespacesFilePath { get; set; }
+        public string TimeSpaceConfigPath { get; set; }
+        public string GameTranslationPath { get; set; }
     }
-    public partial class TimeSpaceTool : MaterialForm
+    public partial class TimeSpaceTool : Form
     {
         public static List<CustomTabPage> mapTabs = new List<CustomTabPage>();
         public Func<List<string>> getMapNames;
@@ -27,18 +31,19 @@ namespace TimeSpace
         private Dictionary<string, string> timespacesData;
         private MapResourceFileLoader mapResourceFileLoader;
         private System.Windows.Forms.Timer updateTimer;
+        private ItemSearchManager _itemSearchManager;
+        private bool _isInitialized;
 
         private CustomTabPage _CustomTabPage;
         public TimeSpaceTool()
         {
+            //.WithOnStartDialog(6194) TO GET PARTNER PUT INTO TIMESPACE CONFIG TAB
             Name = "TimeSpace Tool";
             var materialSkinManager = MaterialSkinManager.Instance;
-            materialSkinManager.AddFormToManage(this);
             materialSkinManager.Theme = MaterialSkinManager.Themes.DARK;
             materialSkinManager.ColorScheme = new ColorScheme(Primary.Grey900, Primary.Grey900, Primary.Grey900, Accent.Amber700, TextShade.WHITE);
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            InitializeComponent();
-            _CustomTabPage = new CustomTabPage($"spaceholder l0l", this, getMapNames);
+            _CustomTabPage = new CustomTabPage($"spaceholder", this, getMapNames);
             mapCount++;
             if (!File.Exists("./config.json"))
             {
@@ -74,6 +79,21 @@ namespace TimeSpace
                         throw new InvalidOperationException("A required path was not provided.");
                     }
                 }
+                string translationPath = "";
+                using (var openFileDialog = new FolderBrowserDialog())
+                {
+                    openFileDialog.Description = "Select Translation Path";
+                    var result = openFileDialog.ShowDialog();
+                    if (result == DialogResult.OK)
+                    {
+                        translationPath = openFileDialog.SelectedPath;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("A required path was not provided.");
+                    }
+                }
+                MessageBox.Show("Please select the Timespaces Translations.yaml file.", "select .YAML file");
                 string timespaceTranslation = "";
                 using (OpenFileDialog openFileDialog = new OpenFileDialog())
                 {
@@ -83,11 +103,23 @@ namespace TimeSpace
                         timespaceTranslation = openFileDialog.FileName;
                     }
                 }
+                string timespaceConfig = "";
+                MessageBox.Show("Please select the Timespaces Config.yaml file.", "select .YAML file");
+                using (OpenFileDialog openFileDialog = new OpenFileDialog())
+                {
+                    openFileDialog.Filter = "YAML files (*.yaml)|*.yaml|All files (*.*)|*.*";
+                    if (openFileDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        timespaceConfig = openFileDialog.FileName;
+                    }
+                }
                 config = new()
                 {
                     GameDataPath = DatPath,
                     GameMapsPath = mapsPath,
                     TimespacesFilePath = timespaceTranslation,
+                    TimeSpaceConfigPath = timespaceConfig,
+                    GameTranslationPath = translationPath
                 };
                 File.WriteAllText("./config.json", JsonConvert.SerializeObject(config, Formatting.Indented));
             }
@@ -95,9 +127,12 @@ namespace TimeSpace
             {
                 config = JsonConvert.DeserializeObject<Config>(File.ReadAllText("./config.json"));
             }
+            InitializeComponent();
             textBox1.Text = config.TimespacesFilePath;
             textBox11.Text = config.GameMapsPath;
             textBox12.Text = config.GameDataPath;
+            textBox13.Text = config.TimeSpaceConfigPath;
+            modernTextBox2.Text = config.GameTranslationPath;
             var deserializer = new DeserializerBuilder()
                     .WithNamingConvention(CamelCaseNamingConvention.Instance)
                     .Build();
@@ -141,37 +176,6 @@ namespace TimeSpace
                 .Build();
                 File.WriteAllText(config.TimespacesFilePath, serializer.Serialize(timespacesData));
                 MessageBox.Show("TS data saved successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-        }
-
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            label9.Visible = false;
-            label10.Visible = false;
-            textBox9.Visible = false;
-            textBox10.Visible = false;
-            switch (comboBox1.SelectedIndex)
-            {
-                case 1:
-                case 2:
-                case 3:
-                    {
-                        label9.Text = "VNUM";
-                        label9.Visible = true;
-                        label10.Text = "Amount";
-                        label10.Visible = true;
-                        textBox9.Visible = true;
-                        textBox10.Visible = true;
-
-                    }
-                    break;
-                case 4:
-                    {
-                        label9.Visible = true;
-                        label9.Text = "Conversation ID";
-                        textBox9.Visible = true;
-                    }
-                    break;
             }
         }
         private void button5_Click(object sender, EventArgs e)
@@ -218,7 +222,7 @@ namespace TimeSpace
                 selectedTab.Dispose();
             }
         }
-        private void button9_Click(object sender, EventArgs e)
+        private void MaterialButton1_Click(object sender, EventArgs e)
         {
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
@@ -231,8 +235,27 @@ namespace TimeSpace
                 }
             }
         }
+        private void materialButton2_Click(object sender, EventArgs e)
+        {
+            using (var openFileDialog = new FolderBrowserDialog())
+            {
+                openFileDialog.Description = "Select lang folder";
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    modernTextBox2.Text = openFileDialog.SelectedPath;
+                }
+            }
+            config.GameTranslationPath = modernTextBox2.Text;
+        }
         private void LoadTimeSpaceScript(string filePath)
         {
+            foreach (var customTabPage in mapTabs)
+            {
+                customTabPage.CleanupCoordinates();
+                customTabPage.Dispose();
+            }
+            tabControl2.TabPages.Clear();
+            mapTabs.Clear();
             var parser = new TimeSpaceParser(this, filePath, GetMapNames);
             parser.PopulateFromFile();
         }
@@ -245,10 +268,14 @@ namespace TimeSpace
         {
             if (mapTabs.Count <= 0)
             {
-                MessageBox.Show("You need atleast 1 Map to create a TimeSpace.", "Can't generate Script.", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("You need at least 1 Map to create a TimeSpace.", "Can't generate Script.", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            _CustomTabPage.SaveAllValues(sender, e);
+
+            foreach (var tabpage in mapTabs)
+            {
+                tabpage.SaveAllValues(sender, e);
+            }
             var luaScript = new StringBuilder();
 
             // Add the initial required imports  
@@ -270,7 +297,7 @@ namespace TimeSpace
             luaScript.AppendLine();
 
             // Generate objective script  
-            luaScript.AppendLine($"local objectives = {GenerateObjectiveScript()}");
+            luaScript.AppendLine(GetObjectivesScript());
             luaScript.AppendLine();
 
             // Generate map scripts  
@@ -294,9 +321,16 @@ namespace TimeSpace
             luaScript.AppendLine(addPortalScript);
             luaScript.AppendLine();
 
-            // Generate event handling scripts  
+            // Load and combine individual event files
             var eventHandlingScripts = new StringBuilder();
-            eventHandlingScripts.AppendLine(File.ReadAllText("CombinedEvents.lua"));
+            foreach (var tab in mapTabs)
+            {
+                var eventFile = $"Events_{tab.MapName}.lua";
+                if (File.Exists(eventFile))
+                {
+                    eventHandlingScripts.AppendLine(File.ReadAllText(eventFile));
+                }
+            }
 
             // Append the event handling scripts to the main script  
             luaScript.AppendLine(eventHandlingScripts.ToString());
@@ -379,46 +413,168 @@ namespace TimeSpace
             config.GameDataPath = DatPath;
             textBox12.Text = config.GameDataPath;
         }
-        private string GenerateObjectiveScript()
+        private void button9_Click(object sender, EventArgs e)
         {
-            var objective = comboBox1.SelectedItem?.ToString();
-            var script = new StringBuilder($"TimeSpaceObjective.Create().With{objective}()");
-            switch (objective)
+            string timespaceConfig = "";
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.Filter = "YAML files (*.yaml)|*.yaml|All files (*.*)|*.*";
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    timespaceConfig = openFileDialog.FileName;
+                }
+                else
+                {
+                    if (config.TimeSpaceConfigPath != null)
+                        timespaceConfig = config.TimeSpaceConfigPath;
+                    else
+                        throw new InvalidOperationException("A required path was not provided.");
+                }
+            }
+            config.TimeSpaceConfigPath = timespaceConfig;
+            textBox13.Text = config.TimeSpaceConfigPath;
+        }
+        private void ObjectiveTypeComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            objectiveValuesPanel.Controls.Clear();
+            string selectedType = objectiveTypeComboBox.SelectedItem.ToString();
+
+            switch (selectedType)
             {
                 case "KillMonsterVnum":
-                case "CollectItemVnum":
-                case "InteractObjectsVnum":
-                    var vnum = textBox9.Text;
-                    var amount = textBox10.Text;
-                    if (!string.IsNullOrEmpty(vnum))
-                    {
-                        script.Append(vnum);
-                        if (!string.IsNullOrEmpty(amount))
-                        {
-                            script.Append($", {amount}");
-                        }
-                    }
-                    if (checkBox1.Checked)
-                        script.Append(".WithProtectNPC()");
+                    CreateValueInputs("Vnum:", "Amount:");
+                    break;
+                case "CollectItem":
+                    CreateValueInputs("Item Vnum:", "Amount:");
+                    break;
+                case "InteractObjects":
+                    CreateValueInputs("Object Vnum:", "Amount:");
                     break;
                 case "Conversation":
-                    script.Append($"{textBox9.Text}");
-                    break;
-                case "GoToExit":
-                    if (checkBox1.Checked)
-                        script.Append(".WithProtectNPC()");
-                    break;
-                case "KillAllMonster":
-                    if (checkBox1.Checked)
-                        script.Append(".WithProtectNPC()");
+                    CreateValueInputs("Conversation ID:", null);
                     break;
             }
-            return script.ToString();
         }
-
-        private void textBox8_TextChanged(object sender, EventArgs e)
+        private void CreateValueInputs(string label1, string label2)
         {
+            // Clear existing controls
+            objectiveValuesPanel.Controls.Clear();
+            objectiveValueControls.Clear();
 
+            int yPos = 10;
+
+            // Create first value input
+            if (label1 != null)
+            {
+                Label lbl1 = new Label
+                {
+                    Text = label1,
+                    Location = new Point(0, yPos),
+                    ForeColor = Color.White,
+                    AutoSize = true
+                };
+
+                ModernTextBox txt1 = new ModernTextBox
+                {
+                    Location = new Point(100, yPos),
+                    Size = new Size(80, 20),
+                    BackColor = Color.FromArgb(28, 28, 28),
+                    ForeColor = Color.White,
+                    BorderStyle = BorderStyle.None
+                };
+
+                objectiveValuesPanel.Controls.Add(lbl1);
+                objectiveValuesPanel.Controls.Add(txt1);
+
+                // Create second value input if needed
+                if (label2 != null)
+                {
+                    Label lbl2 = new Label
+                    {
+                        Text = label2,
+                        Location = new Point(0, yPos + 30),
+                        ForeColor = Color.White,
+                        AutoSize = true
+                    };
+
+                    ModernTextBox txt2 = new ModernTextBox
+                    {
+                        Location = new Point(100, yPos + 30),
+                        Size = new Size(80, 20),
+                        BackColor = Color.FromArgb(28, 28, 28),
+                        ForeColor = Color.White,
+                        BorderStyle = BorderStyle.None
+                    };
+
+                    objectiveValuesPanel.Controls.Add(lbl2);
+                    objectiveValuesPanel.Controls.Add(txt2);
+
+                    objectiveValueControls[objectiveTypeComboBox.SelectedItem.ToString()] = (txt1, txt2);
+                }
+                else
+                {
+                    objectiveValueControls[objectiveTypeComboBox.SelectedItem.ToString()] = (txt1, null);
+                }
+            }
+        }
+        private void AddObjectiveButton_Click(object sender, EventArgs e)
+        {
+            string selectedType = objectiveTypeComboBox.SelectedItem?.ToString();
+            if (string.IsNullOrEmpty(selectedType)) return;
+
+            string objective = "";
+            switch (selectedType)
+            {
+                case "KillMonsterVnum":
+                case "CollectItem":
+                case "InteractObjects":
+                    if (objectiveValueControls.TryGetValue(selectedType, out var controls))
+                    {
+                        objective = $".With{selectedType}({controls.Item1.Text}, {controls.Item2.Text})";
+                    }
+                    break;
+                case "Conversation":
+                    if (objectiveValueControls.TryGetValue(selectedType, out var convControl))
+                    {
+                        objective = $".WithConversations({convControl.Item1.Text})";
+                    }
+                    break;
+                case "KillAllMonsters":
+                    objective = ".WithKillAllMonsters()";
+                    break;
+                case "GoToExit":
+                    objective = ".WithGoToExit()";
+                    break;
+                case "ProtectNPC":
+                    objective = ".WithProtectNPC()";
+                    break;
+            }
+
+            if (!string.IsNullOrEmpty(objective))
+            {
+                selectedObjectivesListBox.Items.Add(objective);
+            }
+        }
+        private void RemoveObjectiveButton_Click(object sender, EventArgs e)
+        {
+            if (selectedObjectivesListBox.SelectedIndex != -1)
+            {
+                selectedObjectivesListBox.Items.RemoveAt(selectedObjectivesListBox.SelectedIndex);
+            }
+        }
+        public string GetObjectivesScript()
+        {
+            if (selectedObjectivesListBox.Items.Count == 0) return "";
+
+            StringBuilder script = new StringBuilder();
+            script.AppendLine("local objectives = TimeSpaceObjective.Create()");
+
+            foreach (string objective in selectedObjectivesListBox.Items)
+            {
+                script.AppendLine($"    {objective}");
+            }
+
+            return script.ToString();
         }
     }
 }

@@ -76,8 +76,9 @@ namespace TimeSpace
 
         public string GenerateMonsterScript(DataGridViewRow row)
         {
+            int random = new Random().Next(0, 7);
             var script = new StringBuilder();
-            script.Append($"Monster.CreateWithVnum({row.Cells["Vnum"].Value}).At({row.Cells["X"].Value}, {row.Cells["Y"].Value}).Facing(2)");
+            script.Append($"Monster.CreateWithVnum({row.Cells["Vnum"].Value}).At({row.Cells["X"].Value}, {row.Cells["Y"].Value}).Facing({random})");
             bool shouldAddAsTarget = Convert.ToBoolean(row.Cells["AsTarget"].Value);
             if (shouldAddAsTarget) script.Append($".AsTarget()");
             foreach (var attr in Attributes)
