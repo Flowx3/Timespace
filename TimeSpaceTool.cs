@@ -27,14 +27,9 @@ namespace TimeSpace
         public Func<List<string>> getMapNames;
         private int mapCount = 0;
         public List<MapDataDTO> loadedMaps = [];
-        private Config config;
+        public Config config;
         private Dictionary<string, string> timespacesData;
         private MapResourceFileLoader mapResourceFileLoader;
-        private System.Windows.Forms.Timer updateTimer;
-        private ItemSearchManager _itemSearchManager;
-        private bool _isInitialized;
-
-        private CustomTabPage _CustomTabPage;
         public TimeSpaceTool()
         {
             //.WithOnStartDialog(6194) TO GET PARTNER PUT INTO TIMESPACE CONFIG TAB
@@ -43,7 +38,6 @@ namespace TimeSpace
             materialSkinManager.Theme = MaterialSkinManager.Themes.DARK;
             materialSkinManager.ColorScheme = new ColorScheme(Primary.Grey900, Primary.Grey900, Primary.Grey900, Accent.Amber700, TextShade.WHITE);
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            _CustomTabPage = new CustomTabPage($"spaceholder", this, getMapNames);
             mapCount++;
             if (!File.Exists("./config.json"))
             {
@@ -168,8 +162,8 @@ namespace TimeSpace
             {
                 var tsNameKey = $"{textBox2.Text}_NAME";
                 var tsDescriptionKey = $"{textBox2.Text}_DESCRIPTION";
-                timespacesData[tsNameKey] = textBox4.Text;
-                timespacesData[tsDescriptionKey] = textBox6.Text;
+                timespacesData[tsNameKey] = modernTextBox3.Text;
+                timespacesData[tsDescriptionKey] = textBox15.Text;
 
                 var serializer = new SerializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -256,7 +250,7 @@ namespace TimeSpace
             }
             tabControl2.TabPages.Clear();
             mapTabs.Clear();
-            var parser = new TimeSpaceParser(this, filePath, GetMapNames);
+            var parser = new TimeSpaceParser(this, filePath, GetMapNames, config);
             parser.PopulateFromFile();
         }
         private void Form1_Load(object sender, EventArgs e)
@@ -340,7 +334,7 @@ namespace TimeSpace
             luaScript.AppendLine($"local ts = TimeSpace.Create({textBox2.Text})  -- TimeSpace ID");
             luaScript.AppendLine($"    .SetMaps({{{mapNames}}})");
             luaScript.AppendLine($"    .SetSpawn(Location.InMap({mapTabs[0].MapName}).At({textBox3.Text}, {textBox5.Text}))");
-            luaScript.AppendLine($"    .SetLives({numericUpDown1.Value})");
+            luaScript.AppendLine($"    .SetLives({textBox4.Text})");
             luaScript.AppendLine($"    .SetObjectives(objectives)");
             luaScript.AppendLine($"    .SetDurationInSeconds({textBox7.Text})");
             luaScript.AppendLine($"    .SetBonusPointItemDropChance({textBox8.Text})");

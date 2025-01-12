@@ -2,6 +2,8 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using TimeSpace;
+using YamlDotNet.Serialization.NamingConventions;
+using YamlDotNet.Serialization;
 
 public class TimeSpaceParser
 {
@@ -12,14 +14,30 @@ public class TimeSpaceParser
     private List<CustomTabPage> mapTabs = TimeSpaceTool.mapTabs;
     private readonly Dictionary<string, List<string>> _eventScripts;
     private int currentLineIndex = 0;
-
-    public TimeSpaceParser(TimeSpaceTool mainForm, string filePath, Func<List<string>> getMapNames)
+    private Config _config;
+    private ItemSearchManager _searchManager;
+    private int _tsNumber;
+    public TimeSpaceParser(TimeSpaceTool mainForm, string filePath, Func<List<string>> getMapNames, Config config)
     {
         _mainForm = mainForm;
         _filePath = filePath;
         _mapPages = new Dictionary<string, CustomTabPage>();
         _getMapNames = getMapNames;
         _eventScripts = new Dictionary<string, List<string>>();
+        _config = config;
+        _searchManager = new ItemSearchManager(config);
+
+        // Extract the number from the file name
+        string fileName = Path.GetFileName(_filePath);
+        var match = Regex.Match(fileName, @"_(\d+)\.lua$");
+        if (match.Success)
+        {
+            _tsNumber = int.Parse(match.Groups[1].Value);
+        }
+        else
+        {
+            _tsNumber = -1;
+        }
     }
 
     public async void PopulateFromFile()
@@ -30,6 +48,7 @@ public class TimeSpaceParser
         bool isProcessingWaves = false;
         StringBuilder eventBuilder = null;
         List<string> allLines = new List<string>(lines);
+        ParseTimeSpaceConfig(_tsNumber);
 
         while (currentLineIndex < lines.Length)
         {
@@ -530,7 +549,147 @@ public class TimeSpaceParser
 
         return events;
     }
+    private void ParseTimeSpaceConfig(int tsId)
+    {
+        try
+        {
+            var deserializer = new DeserializerBuilder()
+                .WithNamingConvention(new UnderscoredNamingConvention())
+                .IgnoreUnmatchedProperties()
+                .Build();
 
+            var yaml = File.ReadAllText(_config.TimeSpaceConfigPath);
+            var timeSpaces = deserializer.Deserialize<List<TimeSpaceConfig>>(yaml);
+
+            var timeSpace = timeSpaces.FirstOrDefault(ts => ts.TsId == tsId);
+            if (timeSpace == null) return;
+
+            // Set basic information
+            _mainForm.textBox10.Text = timeSpace.SeedsOfPowerRequired.ToString();
+            _mainForm.textBox14.Text = timeSpace.MinLevel.ToString();
+            _mainForm.textBox9.Text = timeSpace.MaxLevel.ToString();
+
+            // Set special properties
+            _mainForm.isHeroCheckBox.Checked = timeSpace.IsHero;
+            _mainForm.isSpecialCheckBox.Checked = timeSpace.IsSpecial;
+            _mainForm.isHiddenCheckBox.Checked = timeSpace.IsHidden;
+
+            // Load and set translations
+            var translations = LoadTimeSpaceTranslations();
+
+            // Construct the exact keys we're looking for
+            string nameKey = $"TS_{tsId}_NAME";
+            string descKey = $"TS_{tsId}_DESCRIPTION";
+
+            // Set name if found
+            if (translations.TryGetValue(nameKey, out string name))
+            {
+                _mainForm.modernTextBox3.Text = name;
+            }
+            else
+            {
+                _mainForm.modernTextBox3.Text = $"TS {tsId}"; // Fallback name
+                Debug.WriteLine($"Translation not found for key: {nameKey}");
+            }
+
+            // Set description if found
+            if (translations.TryGetValue(descKey, out string description))
+            {
+                _mainForm.textBox15.Text = description;
+            }
+            else
+            {
+                _mainForm.textBox15.Text = "No description available"; // Fallback description
+                Debug.WriteLine($"Translation not found for key: {descKey}");
+            }
+
+            // Set placement information
+            if (timeSpace.Placement?.Any() == true)
+            {
+                var placement = timeSpace.Placement[0];
+                _mainForm.textBox11.Text = placement.MapId.ToString();
+                _mainForm.textBox12.Text = placement.MapX.ToString();
+                _mainForm.textBox13.Text = placement.MapY.ToString();
+            }
+
+            // Set rewards
+            SetRewards(timeSpace.Rewards);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error parsing TimeSpace config: {ex}");
+            MessageBox.Show("Error parsing TimeSpace configuration.", "Error",
+                          MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+    private void SetRewards(TimeSpaceRewards rewards)
+    {
+        // Set Draw rewards
+        if (rewards.Draw?.Count > 0)
+        {
+            SetItemSlot(_mainForm.pictureBox8, rewards.Draw.ElementAtOrDefault(0));
+            SetItemSlot(_mainForm.pictureBox6, rewards.Draw.ElementAtOrDefault(1));
+            SetItemSlot(_mainForm.pictureBox7, rewards.Draw.ElementAtOrDefault(2));
+            SetItemSlot(_mainForm.pictureBox9, rewards.Draw.ElementAtOrDefault(3));
+            SetItemSlot(_mainForm.pictureBox10, rewards.Draw.ElementAtOrDefault(4));
+        }
+
+        // Set Special rewards
+        if (rewards.Special?.Count > 0)
+        {
+            SetItemSlot(_mainForm.pictureBox11, rewards.Special.ElementAtOrDefault(0));
+            SetItemSlot(_mainForm.pictureBox12, rewards.Special.ElementAtOrDefault(1));
+        }
+
+        // Set Bonus rewards
+        if (rewards.Bonus?.Count > 0)
+        {
+            SetItemSlot(_mainForm.pictureBox13, rewards.Bonus.ElementAtOrDefault(0));
+            SetItemSlot(_mainForm.pictureBox14, rewards.Bonus.ElementAtOrDefault(1));
+            SetItemSlot(_mainForm.pictureBox15, rewards.Bonus.ElementAtOrDefault(2));
+        }
+    }
+    private void SetItemSlot(ItemSlot slot, TimeSpaceReward? reward)
+    {
+        if (reward != null)
+        {
+            var itemData = _searchManager.GetAllItems()
+                .FirstOrDefault(item => item.Vnum == reward.ItemVnum);
+            if (itemData != null)
+            {
+                slot.SetItem(itemData, reward.Amount);
+            }
+        }
+        else
+        {
+            slot.SetItem(null);
+        }
+    }
+    private Dictionary<string, string> LoadTimeSpaceTranslations()
+    {
+        var translations = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // Make key comparison case-insensitive
+        var translationPath = _config.TimespacesFilePath;
+
+        if (File.Exists(translationPath))
+        {
+            var lines = File.ReadAllLines(translationPath);
+            foreach (var line in lines)
+            {
+                if (string.IsNullOrWhiteSpace(line) || !line.Contains(':')) continue;
+
+                // Split on first occurrence of ':' to handle potential colons in the translation text
+                var parts = line.Split(new[] { ':' }, 2);
+                if (parts.Length == 2)
+                {
+                    string key = parts[0].Trim();
+                    string value = parts[1].Trim();
+                    translations[key] = value.Replace("[n]", Environment.NewLine);
+                }
+            }
+        }
+
+        return translations;
+    }
     // Optional: Helper method to get portal trigger lines (was used now it reads the Events instead)
     private List<string> GetPortalTriggerLines(string line)
     {

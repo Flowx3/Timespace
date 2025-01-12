@@ -3,6 +3,8 @@ public class ModernTextBox : TextBox
     private readonly Color defaultBackColor = Color.FromArgb(28, 28, 28);
     private readonly Color defaultForeColor = Color.White;
     private readonly Font defaultFont;
+    private bool isCustomFont = false;
+    private bool isCustomBackColor = false;
 
     public ModernTextBox()
     {
@@ -17,7 +19,12 @@ public class ModernTextBox : TextBox
 
     protected override void OnBackColorChanged(EventArgs e)
     {
-        if (this.BackColor != defaultBackColor)
+        if (!isCustomBackColor && this.BackColor != defaultBackColor)
+        {
+            isCustomBackColor = true;
+        }
+
+        if (!isCustomBackColor && this.BackColor != defaultBackColor)
         {
             this.BackColor = defaultBackColor;
             return;
@@ -37,7 +44,12 @@ public class ModernTextBox : TextBox
 
     protected override void OnFontChanged(EventArgs e)
     {
-        if (this.Font != defaultFont)
+        if (!isCustomFont && this.Font != defaultFont)
+        {
+            isCustomFont = true;
+        }
+
+        if (!isCustomFont && this.Font != defaultFont)
         {
             this.Font = defaultFont;
             return;

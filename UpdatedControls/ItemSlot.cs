@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using TimeSpace;
+using TimeSpace.ItemSearchSystem;
 
 public class ItemSlot : PictureBox
 {
@@ -62,12 +63,12 @@ public class ItemSlot : PictureBox
             try
             {
                 var icon = _searchManager.GetCachedIcon(item.IconIndex);
-                this.Image = new Bitmap(icon); // Create a new instance to prevent sharing
+                var scaledIcon = new Bitmap(icon, new Size(icon.Width * 2, icon.Height * 2));
+                this.Image = scaledIcon;
 
                 quantityLabel.Text = quantity > 1 ? quantity.ToString() : "";
                 quantityLabel.Visible = quantity > 1;
 
-                // Update label position after text is set to ensure correct width calculation
                 this.BeginInvoke(new Action(() =>
                 {
                     quantityLabel.Location = new Point(
@@ -95,7 +96,6 @@ public class ItemSlot : PictureBox
         {
             Debug.WriteLine("ItemSlot_Click started");
 
-            // Since we're already on the UI thread, we don't need to create a new thread
             if (this.IsDisposed || !this.IsHandleCreated)
             {
                 Debug.WriteLine("Control is disposed or handle not created");

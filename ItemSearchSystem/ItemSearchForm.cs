@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using MaterialSkin.Controls;
 
-namespace TimeSpace
+namespace TimeSpace.ItemSearchSystem
 {
     public partial class ItemSearchForm : Form
     {
@@ -23,7 +23,7 @@ namespace TimeSpace
         private const int ICON_SIZE = 32;
         private static ImageList itemImageList = new ImageList { ImageSize = new Size(ICON_SIZE, ICON_SIZE), ColorDepth = ColorDepth.Depth32Bit };
         private System.Windows.Forms.Timer searchTimer;
-        private const int SEARCH_DELAY = 500; // milliseconds  
+        private const int SEARCH_DELAY = 500;
         private bool isFirstLoad = true;
         private static List<ListViewItem>? cachedListViewItems;
         private CancellationTokenSource? loadingCancellation;
@@ -155,7 +155,6 @@ namespace TimeSpace
                 LoadCachedItems();
             }
 
-            // Start background loading if not complete  
             if (!isBackgroundLoadingComplete && !isLoading)
             {
                 StartBackgroundLoading();
@@ -246,7 +245,7 @@ namespace TimeSpace
 
             try
             {
-                await this.InvokeAsync(() =>
+                await InvokeAsync(() =>
                 {
                     foreach (var kvp in iconBatch)
                     {
@@ -286,7 +285,6 @@ namespace TimeSpace
                     return;
                 }
 
-                // Create ListViewItems on a background thread  
                 await Task.Run(() =>
                 {
                     var newItems = new List<ListViewItem>();
@@ -301,7 +299,7 @@ namespace TimeSpace
                     }
                     cachedListViewItems = newItems;
 
-                    this.InvokeAsync(() =>
+                    InvokeAsync(() =>
                     {
                         itemListView.BeginUpdate();
                         try
@@ -332,29 +330,6 @@ namespace TimeSpace
         {
             loadingCancellation?.Cancel();
             loadingCancellation?.Dispose();
-        }
-
-        private void PopulateListView(List<ItemData> items)
-        {
-            itemListView.BeginUpdate();
-            try
-            {
-                itemListView.Items.Clear();
-
-                foreach (var item in items)
-                {
-                    string imageKey = item.Vnum.ToString();
-                    var lvi = new ListViewItem("") { ImageKey = imageKey };
-                    lvi.SubItems.Add(item.Vnum.ToString());
-                    lvi.SubItems.Add(item.TranslatedName ?? item.Name);
-                    lvi.Tag = item;
-                    itemListView.Items.Add(lvi);
-                }
-            }
-            finally
-            {
-                itemListView.EndUpdate();
-            }
         }
 
         private void SearchBox_TextChanged_Delayed(object sender, EventArgs e)
@@ -459,12 +434,12 @@ namespace TimeSpace
         {
             try
             {
-                if (this.IsDisposed) return;
-                if (this.InvokeRequired)
+                if (IsDisposed) return;
+                if (InvokeRequired)
                 {
                     await Task.Factory.FromAsync(
-                        this.BeginInvoke(action),
-                        this.EndInvoke);
+                        BeginInvoke(action),
+                        EndInvoke);
                 }
                 else
                 {

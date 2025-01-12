@@ -1,4 +1,4 @@
-﻿namespace TimeSpace
+﻿namespace TimeSpace.ItemSearchSystem
 {
     public class ItemData
     {
