@@ -16,20 +16,45 @@ namespace TimeSpace
         private byte _draggedElementType = 0;
         private CustomTabPage _parentTab;
         private Point _lastMousePosition;
-        private readonly Stack<ICommand> _undoStack = new Stack<ICommand>();
-        private readonly Stack<ICommand> _redoStack = new Stack<ICommand>();
+        private readonly Stack<IPanelCommand> _undoStack = new Stack<IPanelCommand>();
+        private readonly Stack<IPanelCommand> _redoStack = new Stack<IPanelCommand>();
 
         private const int FixedPanelWidth = 790;
         private const int FixedPanelHeight = 450;
 
-        public event EventHandler<CellClickedEventArgs> CellClicked;
 
-        private interface ICommand
+        public interface IPanelCommand
         {
             void Execute();
             void Undo();
         }
+        public class MoveElementCommand : IPanelCommand
+        {
+            private readonly MapGridPanel _panel;
+            private readonly int _fromX, _fromY, _toX, _toY;
+            private readonly byte _elementType;
 
+            public MoveElementCommand(MapGridPanel panel, int fromX, int fromY, int toX, int toY, byte elementType)
+            {
+                _panel = panel;
+                _fromX = fromX;
+                _fromY = fromY;
+                _toX = toX;
+                _toY = toY;
+                _elementType = elementType;
+            }
+
+            public void Execute()
+            {
+                _panel.UpdateElementPosition(_fromX, _fromY, _toX, _toY);
+            }
+
+            public void Undo()
+            {
+                _panel.UpdateElementPosition(_toX, _toY, _fromX, _fromY);
+            }
+
+        }
         public MapGridPanel()
         {
             // Set fixed panel size
@@ -45,7 +70,6 @@ namespace TimeSpace
             DoubleBuffered = true;
             BorderStyle = BorderStyle.FixedSingle;
 
-            MouseClick += MapGridPanel_MouseClick; // Subscribe to mouse click event
         }
         public void InitializeDragAndDrop(CustomTabPage parentTab)
         {
@@ -53,7 +77,6 @@ namespace TimeSpace
             this.MouseDown += MapGridPanel_MouseDown;
             this.MouseMove += MapGridPanel_MouseMove;
             this.MouseUp += MapGridPanel_MouseUp;
-            this.Paint += MapGridPanel_Paint;
         }
 
         public void SetGrid(string mapId, int width, int height, byte[] grid)
@@ -159,25 +182,47 @@ namespace TimeSpace
         }
         protected override void OnPaint(PaintEventArgs e)
         {
-            base.OnPaint(e);
-            if (_grid == null) return;
+            // Clear the background
+            e.Graphics.Clear(this.BackColor);
 
-            var graphics = e.Graphics;
-
-            for (int y = 0; y < _height; y++)
+            // Draw the grid
+            if (_grid != null)
             {
-                for (int x = 0; x < _width; x++)
+                for (int y = 0; y < _height; y++)
                 {
-                    var color = GetColor(_grid[y * _width + x]);
-                    using (var brush = new SolidBrush(color))
+                    for (int x = 0; x < _width; x++)
                     {
-                        graphics.FillRectangle(brush, x * _cellSize, y * _cellSize, _cellSize, _cellSize);
-                    }
+                        var color = GetColor(_grid[y * _width + x]);
+                        using (var brush = new SolidBrush(color))
+                        {
+                            e.Graphics.FillRectangle(brush, x * _cellSize, y * _cellSize, _cellSize, _cellSize);
+                        }
 
-                    // Draw the cell border
-                    using (var pen = new Pen(Color.Black))
+                        using (var pen = new Pen(Color.Black))
+                        {
+                            e.Graphics.DrawRectangle(pen, x * _cellSize, y * _cellSize, _cellSize, _cellSize);
+                        }
+                    }
+                }
+
+                // Draw ghost image while dragging
+                if (_isDragging && _dragStart.HasValue)
+                {
+                    int cellX = _lastMousePosition.X / _cellSize;
+                    int cellY = _lastMousePosition.Y / _cellSize;
+
+                    if (IsValidPosition(cellX, cellY))
                     {
-                        graphics.DrawRectangle(pen, x * _cellSize, y * _cellSize, _cellSize, _cellSize);
+                        Color ghostColor = GetColor(_draggedElementType);
+                        using (var brush = new SolidBrush(Color.FromArgb(128, ghostColor)))
+                        {
+                            e.Graphics.FillRectangle(brush, cellX * _cellSize, cellY * _cellSize, _cellSize, _cellSize);
+                        }
+
+                        using (var pen = new Pen(Color.Black) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash })
+                        {
+                            e.Graphics.DrawRectangle(pen, cellX * _cellSize, cellY * _cellSize, _cellSize, _cellSize);
+                        }
                     }
                 }
             }
@@ -350,24 +395,8 @@ namespace TimeSpace
             return Color.White; // Default color for undefined flags
         }
 
-        private void MapGridPanel_MouseClick(object sender, MouseEventArgs e)
-        {
-            // Calculate cell coordinates based on mouse click position
-            int cellX = e.X / _cellSize;
-            int cellY = e.Y / _cellSize;
-
-            // Ensure the click is within bounds
-            if (cellX >= 0 && cellX < _width && cellY >= 0 && cellY < _height)
-            {
-                OnCellClicked(new CellClickedEventArgs(cellX, cellY));
-            }
-        }
-
-        protected virtual void OnCellClicked(CellClickedEventArgs e)
-        {
-            CellClicked?.Invoke(this, e);
-        }
         #region MapGridMover
+
         private void MapGridPanel_MouseDown(object sender, MouseEventArgs e)
         {
             int cellX = e.X / _cellSize;
@@ -378,7 +407,6 @@ namespace TimeSpace
 
             byte currentElement = GetMarking(cellX, cellY);
 
-            // Check if clicked on a moveable element
             if (currentElement == 0x40 || // Portal
                 currentElement == 0x30 || // Objective
                 currentElement == 0x80 || // Monster
@@ -388,6 +416,7 @@ namespace TimeSpace
                 _dragStart = (cellX, cellY);
                 _draggedElementType = currentElement;
                 _lastMousePosition = e.Location;
+                Invalidate();
             }
         }
 
@@ -397,13 +426,6 @@ namespace TimeSpace
                 return;
 
             _lastMousePosition = e.Location;
-            int cellX = e.X / _cellSize;
-            int cellY = e.Y / _cellSize;
-
-            if (!IsValidPosition(cellX, cellY))
-                return;
-
-            // Force a repaint to show the ghost image
             Invalidate();
         }
 
@@ -440,7 +462,6 @@ namespace TimeSpace
 
             ExecuteCommand(command);
             ResetDragState();
-            Invalidate();
         }
         private void MapGridPanel_Paint(object sender, PaintEventArgs e)
         {
@@ -548,6 +569,13 @@ namespace TimeSpace
                 }
             }
         }
+        private void ResetDragState()
+        {
+            _isDragging = false;
+            _dragStart = null;
+            _draggedElementType = 0;
+            Invalidate();
+        }
 
         public void Undo()
         {
@@ -571,20 +599,13 @@ namespace TimeSpace
             }
         }
 
-        private void ExecuteCommand(ICommand command)
+        private void ExecuteCommand(IPanelCommand command)
         {
             command.Execute();
             _undoStack.Push(command);
             _redoStack.Clear(); // Clear redo stack when new command is executed
         }
 
-        private void ResetDragState()
-        {
-            _isDragging = false;
-            _dragStart = null;
-            _draggedElementType = 0;
-            Invalidate();
-        }
         #endregion
     }
 }

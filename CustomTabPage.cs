@@ -8,18 +8,6 @@ using System.Windows.Forms;
 
 namespace TimeSpace
 {
-    public class CellClickedEventArgs : EventArgs
-    {
-        public int CellX { get; }
-        public int CellY { get; }
-
-        public CellClickedEventArgs(int cellX, int cellY)
-        {
-            CellX = cellX;
-            CellY = cellY;
-        }
-    }
-
     public class CustomTabPage : TabPage
     {
         // Constants
@@ -275,7 +263,6 @@ namespace TimeSpace
         {
             var rightPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(50, 50, 50) };
             var mapGridPanel = new MapGridPanel();
-            mapGridPanel.CellClicked += MapGridPanel_CellClicked;
 
             _objectivePanel = new FlowLayoutPanel
             {
@@ -552,6 +539,7 @@ namespace TimeSpace
                     DisplayMapGrid(mapData);
                     mapGridPanel.RecalculateCellSize(); 
                     mapGridPanel.UpdateMapMarkings(this, MapName, _originalGrid);
+                    mapGridPanel.InitializeDragAndDrop(this);
                 }
             }
             catch (Exception ex)
@@ -566,12 +554,6 @@ namespace TimeSpace
             mapGridPanel.ResetGrid();
             mapGridPanel.SetGrid(MapName, mapData.Width, mapData.Height, mapData.Grid);
         }
-
-        private void MapGridPanel_CellClicked(object sender, CellClickedEventArgs e)
-        {
-            MessageBox.Show($"Cell clicked at ({e.CellX}, {e.CellY})");
-        }
-
         private void MonsterDataGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0 && _monsterDataGridView.Columns[e.ColumnIndex].Name == "Attributes")
