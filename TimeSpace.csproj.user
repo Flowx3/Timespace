@@ -4,6 +4,12 @@
     <Compile Update="ItemSearchSystem\ItemSearchForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="MapGridPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="ObjectivesPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Update="TimeSpaceTool.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -18,9 +24,6 @@
     </Compile>
     <Compile Update="Gridselector.cs">
       <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="MapGridPanel.cs">
-      <SubType>Component</SubType>
     </Compile>
     <Compile Update="UpdatedControls\Modernbutton.cs">
       <SubType>Component</SubType>

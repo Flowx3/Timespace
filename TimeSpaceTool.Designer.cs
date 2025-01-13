@@ -30,36 +30,6 @@ namespace TimeSpace
         ///  Required method for Designer support - do not modify  
         ///  the contents of this method with the code editor.  
         /// </summary>  
-        //private void InitializeItemSearch()
-        //{
-        //    itemSearchManager = new ItemSearchManager();
-        //    itemSearchManager.LoadItems(
-        //        config.GameDataPath,
-        //        config.GameTranslationPath,
-        //        Path.Combine(Application.StartupPath, "icons")
-        //    );
-
-        //    // Modify the itemVnumNumeric to be read-only and add a search button
-        //    var searchButton = new MaterialButton
-        //    {
-        //        Text = "Search",
-        //        Location = new Point(itemVnumNumeric.Right + 5, itemVnumNumeric.Top),
-        //        Size = new Size(60, itemVnumNumeric.Height),
-        //        UseAccentColor = false
-        //    };
-
-        //    searchButton.Click += (s, e) =>
-        //    {
-        //        var dialog = new ItemSearchDialog(itemSearchManager, (vnum, amount) =>
-        //        {
-        //            itemVnumNumeric.Value = vnum;
-        //            itemAmountNumeric.Value = amount;
-        //        });
-        //        dialog.ShowDialog(this);
-        //    };
-
-        //    rewardsPanel.Controls.Add(searchButton);
-        //}
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TimeSpaceTool));
@@ -89,6 +59,9 @@ namespace TimeSpace
             materialButton2 = new MaterialButton();
             tabControl1 = new ModernTabControl();
             tabPage2 = new TabPage();
+            textBox2 = new TextBox();
+            label9 = new Label();
+            label6 = new Label();
             modernTextBox6 = new ModernTextBox();
             modernTextBox4 = new ModernTextBox();
             modernTextBox5 = new ModernTextBox();
@@ -96,8 +69,6 @@ namespace TimeSpace
             textBox4 = new TextBox();
             modernTextBox3 = new TextBox();
             pictureBox2 = new PictureBox();
-            pictureBox4 = new PictureBox();
-            pictureBox1 = new PictureBox();
             textBox15 = new ModernTextBox();
             label4 = new Label();
             textBox9 = new TextBox();
@@ -112,35 +83,129 @@ namespace TimeSpace
             label7 = new Label();
             label3 = new Label();
             label2 = new Label();
-            objectivesPanel = new Panel();
-            objectiveTypeComboBox = new MaterialComboBox();
-            objectiveValuesPanel = new Panel();
-            selectedObjectivesListBox = new ListBox();
-            addObjectiveButton = new MaterialButton();
-            removeObjectiveButton = new MaterialButton();
+            objectivesPanel = new CollapsibleObjectivesPanel();
             headerLabel = new Label();
             isHeroCheckBox = new CheckBox();
             isSpecialCheckBox = new CheckBox();
             isHiddenCheckBox = new CheckBox();
             pictureBox3 = new PictureBox();
+            pictureBox1 = new PictureBox();
+            pictureBox4 = new PictureBox();
             minPlayersLabel = new Label();
             maxPlayersLabel = new Label();
-            label6 = new Label();
-            label9 = new Label();
-            textBox2 = new TextBox();
-            objectiveValueControls = new Dictionary<string, (ModernTextBox, ModernTextBox?)>();
+            label1 = new Label();
             tabPage3.SuspendLayout();
             panelButtons.SuspendLayout();
             tabPage1.SuspendLayout();
             tabControl1.SuspendLayout();
             tabPage2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox2).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBox4).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox5).BeginInit();
             objectivesPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox3).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox4).BeginInit();
             SuspendLayout();
+            DrawItemSlot1 = new ItemSlot(config);
+            DrawItemSlot2 = new ItemSlot(config);
+            DrawItemSlot3 = new ItemSlot(config);
+            DrawItemSlot4 = new ItemSlot(config);
+            DrawItemSlot5 = new ItemSlot(config);
+            SpecialItemSlot1 = new ItemSlot(config);
+            SpecialItemSlot2 = new ItemSlot(config);
+            BonusItemSlot1 = new ItemSlot(config);
+            BonusItemSlot2 = new ItemSlot(config);
+            BonusItemSlot3 = new ItemSlot(config);
+            // 
+            // DrawItemSlot1
+            // 
+            DrawItemSlot1.Location = new Point(299, 501);
+            DrawItemSlot1.Name = "DrawItemSlot1";
+            DrawItemSlot1.Size = new Size(105, 88);
+            DrawItemSlot1.TabIndex = 111;
+            DrawItemSlot1.TabStop = false;
+            // 
+            // DrawItemSlot2
+            // 
+            DrawItemSlot2.Location = new Point(431, 500);
+            DrawItemSlot2.Name = "DrawItemSlot2";
+            DrawItemSlot2.Size = new Size(105, 88);
+            DrawItemSlot2.TabIndex = 112;
+            DrawItemSlot2.TabStop = false;
+            // 
+            // DrawItemSlot3
+            // 
+            DrawItemSlot3.Location = new Point(563, 500);
+            DrawItemSlot3.Name = "DrawItemSlot3";
+            DrawItemSlot3.Size = new Size(105, 88);
+            DrawItemSlot3.TabIndex = 113;
+            DrawItemSlot3.TabStop = false;
+            // 
+            // DrawItemSlot4
+            // 
+            DrawItemSlot4.Location = new Point(695, 500);
+            DrawItemSlot4.Name = "DrawItemSlot4";
+            DrawItemSlot4.Size = new Size(105, 88);
+            DrawItemSlot4.TabIndex = 114;
+            DrawItemSlot4.TabStop = false;
+            // 
+            // DrawItemSlot5
+            // 
+            DrawItemSlot5.Location = new Point(827, 500);
+            DrawItemSlot5.Name = "DrawItemSlot5";
+            DrawItemSlot5.Size = new Size(105, 88);
+            DrawItemSlot5.TabIndex = 115;
+            DrawItemSlot5.TabStop = false;
+            // 
+            // SpecialItemSlot1
+            // 
+            SpecialItemSlot1.Location = new Point(209, 623);
+            SpecialItemSlot1.Name = "SpecialItemSlot1";
+            SpecialItemSlot1.Size = new Size(105, 88);
+            SpecialItemSlot1.TabIndex = 116;
+            SpecialItemSlot1.TabStop = false;
+            // 
+            // SpecialItemSlot2
+            // 
+            SpecialItemSlot2.Location = new Point(342, 623);
+            SpecialItemSlot2.Name = "SpecialItemSlot2";
+            SpecialItemSlot2.Size = new Size(105, 88);
+            SpecialItemSlot2.TabIndex = 117;
+            SpecialItemSlot2.TabStop = false;
+            // 
+            // BonusItemSlot1
+            // 
+            BonusItemSlot1.Location = new Point(677, 623);
+            BonusItemSlot1.Name = "BonusItemSlot1";
+            BonusItemSlot1.Size = new Size(105, 88);
+            BonusItemSlot1.TabIndex = 118;
+            BonusItemSlot1.TabStop = false;
+            // 
+            // BonusItemSlot2
+            // 
+            BonusItemSlot2.Location = new Point(809, 623);
+            BonusItemSlot2.Name = "BonusItemSlot2";
+            BonusItemSlot2.Size = new Size(105, 88);
+            BonusItemSlot2.TabIndex = 119;
+            BonusItemSlot2.TabStop = false;
+            // 
+            // BonusItemSlot3
+            // 
+            BonusItemSlot3.Location = new Point(941, 623);
+            BonusItemSlot3.Name = "BonusItemSlot3";
+            BonusItemSlot3.Size = new Size(105, 88);
+            BonusItemSlot3.TabIndex = 120;
+            BonusItemSlot3.TabStop = false;
+            tabPage2.Controls.Add(BonusItemSlot3);
+            tabPage2.Controls.Add(BonusItemSlot2);
+            tabPage2.Controls.Add(BonusItemSlot1);
+            tabPage2.Controls.Add(SpecialItemSlot2);
+            tabPage2.Controls.Add(SpecialItemSlot1);
+            tabPage2.Controls.Add(DrawItemSlot5);
+            tabPage2.Controls.Add(DrawItemSlot4);
+            tabPage2.Controls.Add(DrawItemSlot3);
+            tabPage2.Controls.Add(DrawItemSlot2);
+            tabPage2.Controls.Add(DrawItemSlot1);
             // 
             // openFileDialog1
             // 
@@ -536,6 +601,10 @@ namespace TimeSpace
             materialButton2.UseVisualStyleBackColor = false;
             materialButton2.Click += materialButton2_Click;
             // 
+            // objectivePanel
+            // 
+            objectivesPanel.Margin = new Padding(16);
+            // 
             // tabControl1
             // 
             tabControl1.Controls.Add(tabPage1);
@@ -556,6 +625,7 @@ namespace TimeSpace
             // 
             tabPage2.AutoScroll = true;
             tabPage2.BackColor = Color.FromArgb(45, 45, 48);
+            tabPage2.Controls.Add(label1);
             tabPage2.Controls.Add(textBox2);
             tabPage2.Controls.Add(label9);
             tabPage2.Controls.Add(label6);
@@ -566,8 +636,6 @@ namespace TimeSpace
             tabPage2.Controls.Add(textBox4);
             tabPage2.Controls.Add(modernTextBox3);
             tabPage2.Controls.Add(pictureBox2);
-            tabPage2.Controls.Add(pictureBox4);
-            tabPage2.Controls.Add(pictureBox1);
             tabPage2.Controls.Add(textBox15);
             tabPage2.Controls.Add(label4);
             tabPage2.Controls.Add(textBox9);
@@ -587,6 +655,8 @@ namespace TimeSpace
             tabPage2.Controls.Add(isSpecialCheckBox);
             tabPage2.Controls.Add(isHiddenCheckBox);
             tabPage2.Controls.Add(pictureBox3);
+            tabPage2.Controls.Add(pictureBox1);
+            tabPage2.Controls.Add(pictureBox4);
             tabPage2.ForeColor = Color.White;
             tabPage2.Location = new Point(4, 29);
             tabPage2.Name = "tabPage2";
@@ -594,6 +664,40 @@ namespace TimeSpace
             tabPage2.Size = new Size(1823, 825);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "TimeSpace Configuration";
+            // 
+            // textBox2
+            // 
+            textBox2.BackColor = Color.Black;
+            textBox2.BorderStyle = BorderStyle.None;
+            textBox2.Font = new Font("Segoe UI", 15.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            textBox2.ForeColor = Color.White;
+            textBox2.Location = new Point(1020, 10);
+            textBox2.Multiline = true;
+            textBox2.Name = "textBox2";
+            textBox2.Size = new Size(55, 37);
+            textBox2.TabIndex = 110;
+            // 
+            // label9
+            // 
+            label9.AutoSize = true;
+            label9.BackColor = Color.FromArgb(23, 23, 25);
+            label9.ForeColor = Color.White;
+            label9.Location = new Point(704, 452);
+            label9.Name = "label9";
+            label9.Size = new Size(41, 15);
+            label9.TabIndex = 109;
+            label9.Text = "Map Y";
+            // 
+            // label6
+            // 
+            label6.AutoSize = true;
+            label6.BackColor = Color.FromArgb(23, 23, 25);
+            label6.ForeColor = Color.White;
+            label6.Location = new Point(704, 425);
+            label6.Name = "label6";
+            label6.Size = new Size(41, 15);
+            label6.TabIndex = 108;
+            label6.Text = "Map X";
             // 
             // modernTextBox6
             // 
@@ -678,24 +782,6 @@ namespace TimeSpace
             pictureBox2.Size = new Size(356, 480);
             pictureBox2.TabIndex = 36;
             pictureBox2.TabStop = false;
-            // 
-            // pictureBox4
-            // 
-            pictureBox4.Image = (Image)resources.GetObject("pictureBox4.Image");
-            pictureBox4.Location = new Point(3, 607);
-            pictureBox4.Name = "pictureBox4";
-            pictureBox4.Size = new Size(1086, 120);
-            pictureBox4.TabIndex = 47;
-            pictureBox4.TabStop = false;
-            // 
-            // pictureBox1
-            // 
-            pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
-            pictureBox1.Location = new Point(3, 484);
-            pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(1086, 120);
-            pictureBox1.TabIndex = 46;
-            pictureBox1.TabStop = false;
             // 
             // textBox15
             // 
@@ -861,116 +947,6 @@ namespace TimeSpace
             label2.TabIndex = 2;
             label2.Text = "Spawn Point";
             // 
-            // objectivesPanel
-            // 
-            objectivesPanel.BackColor = Color.FromArgb(45, 45, 48);
-            objectivesPanel.Controls.Add(objectiveTypeComboBox);
-            objectivesPanel.Controls.Add(objectiveValuesPanel);
-            objectivesPanel.Controls.Add(selectedObjectivesListBox);
-            objectivesPanel.Controls.Add(addObjectiveButton);
-            objectivesPanel.Controls.Add(removeObjectiveButton);
-            objectivesPanel.Controls.Add(headerLabel);
-            objectivesPanel.Location = new Point(1164, 9);
-            objectivesPanel.Name = "objectivesPanel";
-            objectivesPanel.Size = new Size(300, 400);
-            objectivesPanel.TabIndex = 26;
-            // 
-            // objectiveTypeComboBox
-            // 
-            objectiveTypeComboBox.AutoResize = false;
-            objectiveTypeComboBox.BackColor = Color.FromArgb(28, 28, 28);
-            objectiveTypeComboBox.Depth = 0;
-            objectiveTypeComboBox.DrawMode = DrawMode.OwnerDrawVariable;
-            objectiveTypeComboBox.DropDownHeight = 118;
-            objectiveTypeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-            objectiveTypeComboBox.DropDownWidth = 121;
-            objectiveTypeComboBox.Font = new Font("Microsoft Sans Serif", 14F, FontStyle.Bold, GraphicsUnit.Pixel);
-            objectiveTypeComboBox.ForeColor = Color.White;
-            objectiveTypeComboBox.IntegralHeight = false;
-            objectiveTypeComboBox.ItemHeight = 29;
-            objectiveTypeComboBox.Items.AddRange(new object[] { "KillAllMonsters", "GoToExit", "KillMonsterVnum", "CollectItem", "Conversation", "InteractObjects", "ProtectNPC" });
-            objectiveTypeComboBox.Location = new Point(0, 32);
-            objectiveTypeComboBox.MaxDropDownItems = 4;
-            objectiveTypeComboBox.MouseState = MaterialSkin.MouseState.OUT;
-            objectiveTypeComboBox.Name = "objectiveTypeComboBox";
-            objectiveTypeComboBox.Size = new Size(180, 35);
-            objectiveTypeComboBox.StartIndex = 0;
-            objectiveTypeComboBox.TabIndex = 0;
-            objectiveTypeComboBox.UseTallSize = false;
-            objectiveTypeComboBox.SelectedIndexChanged += ObjectiveTypeComboBox_SelectedIndexChanged;
-            // 
-            // objectiveValuesPanel
-            // 
-            objectiveValuesPanel.BackColor = Color.FromArgb(45, 45, 48);
-            objectiveValuesPanel.Location = new Point(0, 65);
-            objectiveValuesPanel.Name = "objectiveValuesPanel";
-            objectiveValuesPanel.Size = new Size(300, 80);
-            objectiveValuesPanel.TabIndex = 1;
-            // 
-            // selectedObjectivesListBox
-            // 
-            selectedObjectivesListBox.BackColor = Color.FromArgb(28, 28, 28);
-            selectedObjectivesListBox.ItemHeight = 15;
-            selectedObjectivesListBox.Location = new Point(0, 155);
-            selectedObjectivesListBox.Name = "selectedObjectivesListBox";
-            selectedObjectivesListBox.Size = new Size(300, 184);
-            selectedObjectivesListBox.TabIndex = 2;
-            // 
-            // addObjectiveButton
-            // 
-            addObjectiveButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            addObjectiveButton.BackColor = Color.FromArgb(28, 28, 28);
-            addObjectiveButton.Density = MaterialButton.MaterialButtonDensity.Default;
-            addObjectiveButton.Depth = 0;
-            addObjectiveButton.ForeColor = Color.White;
-            addObjectiveButton.HighEmphasis = true;
-            addObjectiveButton.Icon = null;
-            addObjectiveButton.Location = new Point(0, 355);
-            addObjectiveButton.Margin = new Padding(4, 6, 4, 6);
-            addObjectiveButton.MouseState = MaterialSkin.MouseState.HOVER;
-            addObjectiveButton.Name = "addObjectiveButton";
-            addObjectiveButton.NoAccentTextColor = Color.Empty;
-            addObjectiveButton.Size = new Size(131, 36);
-            addObjectiveButton.TabIndex = 3;
-            addObjectiveButton.Text = "Add Objective";
-            addObjectiveButton.Type = MaterialButton.MaterialButtonType.Contained;
-            addObjectiveButton.UseAccentColor = false;
-            addObjectiveButton.UseVisualStyleBackColor = false;
-            addObjectiveButton.Click += AddObjectiveButton_Click;
-            // 
-            // removeObjectiveButton
-            // 
-            removeObjectiveButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            removeObjectiveButton.BackColor = Color.FromArgb(28, 28, 28);
-            removeObjectiveButton.Density = MaterialButton.MaterialButtonDensity.Default;
-            removeObjectiveButton.Depth = 0;
-            removeObjectiveButton.ForeColor = Color.White;
-            removeObjectiveButton.HighEmphasis = true;
-            removeObjectiveButton.Icon = null;
-            removeObjectiveButton.Location = new Point(145, 355);
-            removeObjectiveButton.Margin = new Padding(4, 6, 4, 6);
-            removeObjectiveButton.MouseState = MaterialSkin.MouseState.HOVER;
-            removeObjectiveButton.Name = "removeObjectiveButton";
-            removeObjectiveButton.NoAccentTextColor = Color.Empty;
-            removeObjectiveButton.Size = new Size(160, 36);
-            removeObjectiveButton.TabIndex = 4;
-            removeObjectiveButton.Text = "Remove Objective";
-            removeObjectiveButton.Type = MaterialButton.MaterialButtonType.Contained;
-            removeObjectiveButton.UseAccentColor = false;
-            removeObjectiveButton.UseVisualStyleBackColor = false;
-            removeObjectiveButton.Click += RemoveObjectiveButton_Click;
-            // 
-            // headerLabel
-            // 
-            headerLabel.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            headerLabel.ForeColor = Color.White;
-            headerLabel.Location = new Point(0, 0);
-            headerLabel.Name = "headerLabel";
-            headerLabel.Size = new Size(300, 25);
-            headerLabel.TabIndex = 5;
-            headerLabel.Text = "TimeSpace Objectives";
-            headerLabel.TextAlign = ContentAlignment.MiddleLeft;
-            // 
             // isHeroCheckBox
             // 
             isHeroCheckBox.BackColor = Color.FromArgb(23, 23, 25);
@@ -1013,6 +989,24 @@ namespace TimeSpace
             pictureBox3.TabIndex = 37;
             pictureBox3.TabStop = false;
             // 
+            // pictureBox1
+            // 
+            pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
+            pictureBox1.Location = new Point(3, 484);
+            pictureBox1.Name = "pictureBox1";
+            pictureBox1.Size = new Size(1086, 120);
+            pictureBox1.TabIndex = 46;
+            pictureBox1.TabStop = false;
+            // 
+            // pictureBox4
+            // 
+            pictureBox4.Image = (Image)resources.GetObject("pictureBox4.Image");
+            pictureBox4.Location = new Point(3, 607);
+            pictureBox4.Name = "pictureBox4";
+            pictureBox4.Size = new Size(1086, 120);
+            pictureBox4.TabIndex = 47;
+            pictureBox4.TabStop = false;
+            // 
             // minPlayersLabel
             // 
             minPlayersLabel.ForeColor = Color.White;
@@ -1031,41 +1025,16 @@ namespace TimeSpace
             maxPlayersLabel.TabIndex = 0;
             maxPlayersLabel.Text = "Max Players";
             // 
-            // label6
+            // label1
             // 
-            label6.AutoSize = true;
-            label6.BackColor = Color.FromArgb(23, 23, 25);
-            label6.ForeColor = Color.White;
-            label6.Location = new Point(704, 425);
-            label6.Name = "label6";
-            label6.Size = new Size(41, 15);
-            label6.TabIndex = 108;
-            label6.Text = "Map X";
-            // 
-            // label9
-            // 
-            label9.AutoSize = true;
-            label9.BackColor = Color.FromArgb(23, 23, 25);
-            label9.ForeColor = Color.White;
-            label9.Location = new Point(704, 452);
-            label9.Name = "label9";
-            label9.Size = new Size(41, 15);
-            label9.TabIndex = 109;
-            label9.Text = "Map Y";
-            // 
-            // textBox2
-            // 
-            textBox2.BackColor = Color.Black;
-            textBox2.BorderStyle = BorderStyle.None;
-            textBox2.Font = new Font("Segoe UI", 15.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            textBox2.ForeColor = Color.White;
-            textBox2.Location = new Point(958, 9);
-            textBox2.Multiline = true;
-            textBox2.Name = "textBox2";
-            textBox2.PlaceholderText = "TS ID";
-            textBox2.Size = new Size(117, 37);
-            textBox2.TabIndex = 110;
-            textBox2.Text = "TS ID: 5021";
+            label1.AutoSize = true;
+            label1.BackColor = Color.Black;
+            label1.Font = new Font("Segoe UI", 15.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            label1.Location = new Point(958, 11);
+            label1.Name = "label1";
+            label1.Size = new Size(67, 30);
+            label1.TabIndex = 111;
+            label1.Text = "TS ID:";
             // 
             // TimeSpaceTool
             // 
@@ -1085,12 +1054,12 @@ namespace TimeSpace
             tabPage2.ResumeLayout(false);
             tabPage2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox2).EndInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBox4).EndInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox5).EndInit();
             objectivesPanel.ResumeLayout(false);
             objectivesPanel.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox3).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox4).EndInit();
             ResumeLayout(false);
         }
 
@@ -1123,12 +1092,6 @@ namespace TimeSpace
         public ModernTextBox modernTextBox1;
         public ModernTextBox modernTextBox2;
         public MaterialButton materialButton2;
-        public ItemSlot pictureBox7;
-        public ItemSlot pictureBox6;
-        public ItemSlot pictureBox11;
-        public ItemSlot pictureBox10;
-        public ItemSlot pictureBox9;
-        public ItemSlot pictureBox8;
         public ItemSlot pictureBox15;
         public ItemSlot pictureBox14;
         public ItemSlot pictureBox13;
@@ -1153,12 +1116,7 @@ namespace TimeSpace
         public Label label7;
         public Label label3;
         public Label label2;
-        public Panel objectivesPanel;
-        public MaterialComboBox objectiveTypeComboBox;
-        public Panel objectiveValuesPanel;
-        public ListBox selectedObjectivesListBox;
-        public MaterialButton addObjectiveButton;
-        public MaterialButton removeObjectiveButton;
+        public CollapsibleObjectivesPanel objectivesPanel;
         public Label headerLabel;
         public CheckBox isHeroCheckBox;
         public CheckBox isSpecialCheckBox;
@@ -1171,5 +1129,16 @@ namespace TimeSpace
         public TextBox textBox2;
         public Label label9;
         public Label label6;
+        public ItemSlot DrawItemSlot4;
+        public ItemSlot DrawItemSlot3;
+        public ItemSlot DrawItemSlot2;
+        public ItemSlot DrawItemSlot1;
+        public ItemSlot SpecialItemSlot1;
+        public ItemSlot DrawItemSlot5;
+        public ItemSlot BonusItemSlot3;
+        public ItemSlot BonusItemSlot2;
+        public ItemSlot BonusItemSlot1;
+        public ItemSlot SpecialItemSlot2;
+        private Label label1;
     }
 }

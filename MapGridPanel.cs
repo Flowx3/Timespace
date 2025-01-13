@@ -1,4 +1,6 @@
-﻿namespace TimeSpace
+﻿using System.Windows.Input;
+
+namespace TimeSpace
 {
     public class MapGridPanel : Panel
     {
@@ -9,11 +11,24 @@
         private string _currentMapId;
         private (int x, int y)? _highlightedPosition = null;
         private byte _originalHighlightValue = 0;
+        private bool _isDragging = false;
+        private (int x, int y)? _dragStart = null;
+        private byte _draggedElementType = 0;
+        private CustomTabPage _parentTab;
+        private Point _lastMousePosition;
+        private readonly Stack<ICommand> _undoStack = new Stack<ICommand>();
+        private readonly Stack<ICommand> _redoStack = new Stack<ICommand>();
 
         private const int FixedPanelWidth = 790;
         private const int FixedPanelHeight = 450;
 
         public event EventHandler<CellClickedEventArgs> CellClicked;
+
+        private interface ICommand
+        {
+            void Execute();
+            void Undo();
+        }
 
         public MapGridPanel()
         {
@@ -32,6 +47,15 @@
 
             MouseClick += MapGridPanel_MouseClick; // Subscribe to mouse click event
         }
+        public void InitializeDragAndDrop(CustomTabPage parentTab)
+        {
+            _parentTab = parentTab;
+            this.MouseDown += MapGridPanel_MouseDown;
+            this.MouseMove += MapGridPanel_MouseMove;
+            this.MouseUp += MapGridPanel_MouseUp;
+            this.Paint += MapGridPanel_Paint;
+        }
+
         public void SetGrid(string mapId, int width, int height, byte[] grid)
         {
             // Validate input parameters  
@@ -343,5 +367,224 @@
         {
             CellClicked?.Invoke(this, e);
         }
+        #region MapGridMover
+        private void MapGridPanel_MouseDown(object sender, MouseEventArgs e)
+        {
+            int cellX = e.X / _cellSize;
+            int cellY = e.Y / _cellSize;
+
+            if (!IsValidPosition(cellX, cellY))
+                return;
+
+            byte currentElement = GetMarking(cellX, cellY);
+
+            // Check if clicked on a moveable element
+            if (currentElement == 0x40 || // Portal
+                currentElement == 0x30 || // Objective
+                currentElement == 0x80 || // Monster
+                currentElement == 0x90)   // Target Monster
+            {
+                _isDragging = true;
+                _dragStart = (cellX, cellY);
+                _draggedElementType = currentElement;
+                _lastMousePosition = e.Location;
+            }
+        }
+
+        private void MapGridPanel_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_isDragging || !_dragStart.HasValue)
+                return;
+
+            _lastMousePosition = e.Location;
+            int cellX = e.X / _cellSize;
+            int cellY = e.Y / _cellSize;
+
+            if (!IsValidPosition(cellX, cellY))
+                return;
+
+            // Force a repaint to show the ghost image
+            Invalidate();
+        }
+
+        private void MapGridPanel_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (!_isDragging || !_dragStart.HasValue || _parentTab == null)
+                return;
+
+            int targetX = e.X / _cellSize;
+            int targetY = e.Y / _cellSize;
+
+            if (!IsValidPosition(targetX, targetY))
+            {
+                ResetDragState();
+                return;
+            }
+
+            // Don't allow dropping on other elements
+            if (GetMarking(targetX, targetY) != 0 && GetMarking(targetX, targetY) != _draggedElementType)
+            {
+                ResetDragState();
+                return;
+            }
+
+            // Create and execute the move command
+            var command = new MoveElementCommand(
+                this,
+                _dragStart.Value.x,
+                _dragStart.Value.y,
+                targetX,
+                targetY,
+                _draggedElementType
+            );
+
+            ExecuteCommand(command);
+            ResetDragState();
+            Invalidate();
+        }
+        private void MapGridPanel_Paint(object sender, PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            if (_grid == null) return;
+
+            // Draw the normal grid
+            DrawGrid(e.Graphics);
+
+            // Draw ghost image while dragging
+            if (_isDragging && _dragStart.HasValue)
+            {
+                int cellX = _lastMousePosition.X / _cellSize;
+                int cellY = _lastMousePosition.Y / _cellSize;
+
+                if (IsValidPosition(cellX, cellY))
+                {
+                    Color ghostColor = GetColor(_draggedElementType);
+                    using (var brush = new SolidBrush(Color.FromArgb(128, ghostColor)))
+                    {
+                        e.Graphics.FillRectangle(brush, cellX * _cellSize, cellY * _cellSize, _cellSize, _cellSize);
+                    }
+
+                    // Draw a dashed border around the ghost image
+                    using (var pen = new Pen(Color.Black) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash })
+                    {
+                        e.Graphics.DrawRectangle(pen, cellX * _cellSize, cellY * _cellSize, _cellSize, _cellSize);
+                    }
+                }
+            }
+        }
+
+        public void UpdateElementPosition(int fromX, int fromY, int toX, int toY)
+        {
+            switch (_draggedElementType)
+            {
+                case 0x40: // Portal
+                    UpdatePortalPosition(fromX, fromY, toX, toY);
+                    break;
+                case 0x30: // Objective
+                    UpdateObjectivePosition(fromX, fromY, toX, toY);
+                    break;
+                case 0x80: // Monster
+                case 0x90: // Target Monster
+                    UpdateMonsterPosition(fromX, fromY, toX, toY);
+                    break;
+            }
+
+            // Update the grid marking
+            ClearMarking(fromX, fromY);
+            _grid[toY * _width + toX] = _draggedElementType;
+            Invalidate();
+        }
+
+        private void UpdatePortalPosition(int fromX, int fromY, int toX, int toY)
+        {
+            var portal = _parentTab.Portals.FirstOrDefault(p => p.FromX == fromX && p.FromY == fromY);
+            if (portal != null)
+            {
+                portal.FromX = toX;
+                portal.FromY = toY;
+            }
+        }
+
+        private void UpdateObjectivePosition(int fromX, int fromY, int toX, int toY)
+        {
+            var objective = _parentTab.Objects.FirstOrDefault(o => o.GetX() == fromX && o.GetY() == fromY);
+            if (objective != null)
+            {
+                objective.SetPosition(toX, toY);
+            }
+        }
+
+        private void UpdateMonsterPosition(int fromX, int fromY, int toX, int toY)
+        {
+            foreach (DataGridViewRow row in _parentTab.MonsterDataGridView.Rows)
+            {
+                if (row.IsNewRow) continue;
+
+                if (Convert.ToInt32(row.Cells["X"].Value) == fromX &&
+                    Convert.ToInt32(row.Cells["Y"].Value) == fromY)
+                {
+                    row.Cells["X"].Value = toX;
+                    row.Cells["Y"].Value = toY;
+                    break;
+                }
+            }
+        }
+        private void DrawGrid(Graphics graphics)
+        {
+            for (int y = 0; y < _height; y++)
+            {
+                for (int x = 0; x < _width; x++)
+                {
+                    var color = GetColor(_grid[y * _width + x]);
+                    using (var brush = new SolidBrush(color))
+                    {
+                        graphics.FillRectangle(brush, x * _cellSize, y * _cellSize, _cellSize, _cellSize);
+                    }
+
+                    using (var pen = new Pen(Color.Black))
+                    {
+                        graphics.DrawRectangle(pen, x * _cellSize, y * _cellSize, _cellSize, _cellSize);
+                    }
+                }
+            }
+        }
+
+        public void Undo()
+        {
+            if (_undoStack.Count > 0)
+            {
+                var command = _undoStack.Pop();
+                command.Undo();
+                _redoStack.Push(command);
+                Invalidate();
+            }
+        }
+
+        public void Redo()
+        {
+            if (_redoStack.Count > 0)
+            {
+                var command = _redoStack.Pop();
+                command.Execute();
+                _undoStack.Push(command);
+                Invalidate();
+            }
+        }
+
+        private void ExecuteCommand(ICommand command)
+        {
+            command.Execute();
+            _undoStack.Push(command);
+            _redoStack.Clear(); // Clear redo stack when new command is executed
+        }
+
+        private void ResetDragState()
+        {
+            _isDragging = false;
+            _dragStart = null;
+            _draggedElementType = 0;
+            Invalidate();
+        }
+        #endregion
     }
 }

@@ -26,18 +26,6 @@ public class TimeSpaceParser
         _eventScripts = new Dictionary<string, List<string>>();
         _config = config;
         _searchManager = new ItemSearchManager(config);
-
-        // Extract the number from the file name
-        string fileName = Path.GetFileName(_filePath);
-        var match = Regex.Match(fileName, @"_(\d+)\.lua$");
-        if (match.Success)
-        {
-            _tsNumber = int.Parse(match.Groups[1].Value);
-        }
-        else
-        {
-            _tsNumber = -1;
-        }
     }
 
     public async void PopulateFromFile()
@@ -48,7 +36,7 @@ public class TimeSpaceParser
         bool isProcessingWaves = false;
         StringBuilder eventBuilder = null;
         List<string> allLines = new List<string>(lines);
-        ParseTimeSpaceConfig(_tsNumber);
+
 
         while (currentLineIndex < lines.Length)
         {
@@ -123,12 +111,58 @@ public class TimeSpaceParser
             {
                 ParseMapObjectDefinition(trimmedLine, currentPage, allLines);
             }
-
+            if (currentPage != null && trimmedLine.Contains("TimeSpace.Create"))
+            {
+                var tsMatch = Regex.Match(trimmedLine, @"TimeSpace\.Create\((\d+)\)");
+                if (tsMatch.Success)
+                {
+                    _tsNumber = int.Parse(tsMatch.Groups[1].Value);
+                    _mainForm.textBox2.Text = _tsNumber.ToString();
+                }
+            }
+            if (currentPage != null && trimmedLine.Contains("SetLives("))
+            {
+                var livesMatch = Regex.Match(trimmedLine, @"SetLives\((\d+)\)");
+                if (livesMatch.Success)
+                {
+                    int lives = int.Parse(livesMatch.Groups[1].Value);
+                    _mainForm.textBox4.Text = lives.ToString();
+                }
+            }
+            if (currentPage != null && trimmedLine.Contains("SetDurationInSeconds"))
+            {
+                var durationMatch = Regex.Match(trimmedLine, @"SetDurationInSeconds\((\d+)\)");
+                if (durationMatch.Success)
+                {
+                    int duration = int.Parse(durationMatch.Groups[1].Value);
+                    _mainForm.numericUpDown2.Value = duration;
+                }
+            }
+            if (currentPage != null && trimmedLine.Contains("SetBonusPointItemDropChance"))
+            {
+                var bonusPointMatch = Regex.Match(trimmedLine, @"SetBonusPointItemDropChance\((\d+)\)");
+                if (bonusPointMatch.Success)
+                {
+                    int bonusPoint = int.Parse(bonusPointMatch.Groups[1].Value);
+                    _mainForm.textBox8.Text = bonusPoint.ToString();
+                }
+            }
+            if (currentPage != null && trimmedLine.Contains("SetSpawn"))
+            {
+                var spawnMatch = Regex.Match(trimmedLine, @"SetSpawn\(Location\.InMap\(map_\d+_\d+\)\.At\((\d+),\s*(\d+)\)\)");
+                if (spawnMatch.Success)
+                {
+                    int x = int.Parse(spawnMatch.Groups[1].Value);
+                    int y = int.Parse(spawnMatch.Groups[2].Value);
+                    _mainForm.textBox3.Text = x.ToString();
+                    _mainForm.textBox5.Text = y.ToString();
+                }
+            }
             if (currentPage != null && (
-                        trimmedLine.Contains(".OnTaskFinish({") ||
-                        trimmedLine.Contains(".OnTaskFail({") ||
-                        trimmedLine.Contains(".OnAllTargetMobsDead({")
-                    ))
+                trimmedLine.Contains(".OnTaskFinish({") ||
+                trimmedLine.Contains(".OnTaskFail({") ||
+                trimmedLine.Contains(".OnAllTargetMobsDead({")
+            ))
             {
                 eventBuilder = new StringBuilder();
                 eventBuilder.AppendLine(trimmedLine);
@@ -178,6 +212,7 @@ public class TimeSpaceParser
         {
             tab.SaveAllValues(null, EventArgs.Empty);
         }
+        ParseTimeSpaceConfig(_tsNumber);
     }
 
     private void ParseMapDefinition(string line, List<string> allLines)
@@ -607,9 +642,9 @@ public class TimeSpaceParser
             if (timeSpace.Placement?.Any() == true)
             {
                 var placement = timeSpace.Placement[0];
-                _mainForm.textBox11.Text = placement.MapId.ToString();
-                _mainForm.textBox12.Text = placement.MapX.ToString();
-                _mainForm.textBox13.Text = placement.MapY.ToString();
+                _mainForm.modernTextBox6.Text = placement.MapId.ToString();
+                _mainForm.modernTextBox5.Text = placement.MapX.ToString();
+                _mainForm.modernTextBox4.Text = placement.MapY.ToString();
             }
 
             // Set rewards
@@ -627,26 +662,26 @@ public class TimeSpaceParser
         // Set Draw rewards
         if (rewards.Draw?.Count > 0)
         {
-            SetItemSlot(_mainForm.pictureBox8, rewards.Draw.ElementAtOrDefault(0));
-            SetItemSlot(_mainForm.pictureBox6, rewards.Draw.ElementAtOrDefault(1));
-            SetItemSlot(_mainForm.pictureBox7, rewards.Draw.ElementAtOrDefault(2));
-            SetItemSlot(_mainForm.pictureBox9, rewards.Draw.ElementAtOrDefault(3));
-            SetItemSlot(_mainForm.pictureBox10, rewards.Draw.ElementAtOrDefault(4));
+            SetItemSlot(_mainForm.DrawItemSlot1, rewards.Draw.ElementAtOrDefault(0));
+            SetItemSlot(_mainForm.DrawItemSlot2, rewards.Draw.ElementAtOrDefault(1));
+            SetItemSlot(_mainForm.DrawItemSlot3, rewards.Draw.ElementAtOrDefault(2));
+            SetItemSlot(_mainForm.DrawItemSlot4, rewards.Draw.ElementAtOrDefault(3));
+            SetItemSlot(_mainForm.DrawItemSlot5, rewards.Draw.ElementAtOrDefault(4));
         }
 
         // Set Special rewards
         if (rewards.Special?.Count > 0)
         {
-            SetItemSlot(_mainForm.pictureBox11, rewards.Special.ElementAtOrDefault(0));
-            SetItemSlot(_mainForm.pictureBox12, rewards.Special.ElementAtOrDefault(1));
+            SetItemSlot(_mainForm.SpecialItemSlot1, rewards.Special.ElementAtOrDefault(0));
+            SetItemSlot(_mainForm.SpecialItemSlot2, rewards.Special.ElementAtOrDefault(1));
         }
 
         // Set Bonus rewards
         if (rewards.Bonus?.Count > 0)
         {
-            SetItemSlot(_mainForm.pictureBox13, rewards.Bonus.ElementAtOrDefault(0));
-            SetItemSlot(_mainForm.pictureBox14, rewards.Bonus.ElementAtOrDefault(1));
-            SetItemSlot(_mainForm.pictureBox15, rewards.Bonus.ElementAtOrDefault(2));
+            SetItemSlot(_mainForm.BonusItemSlot1, rewards.Bonus.ElementAtOrDefault(0));
+            SetItemSlot(_mainForm.BonusItemSlot2, rewards.Bonus.ElementAtOrDefault(1));
+            SetItemSlot(_mainForm.BonusItemSlot3, rewards.Bonus.ElementAtOrDefault(2));
         }
     }
     private void SetItemSlot(ItemSlot slot, TimeSpaceReward? reward)
