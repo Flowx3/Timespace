@@ -59,6 +59,7 @@ namespace TimeSpace
             materialButton2 = new MaterialButton();
             tabControl1 = new ModernTabControl();
             tabPage2 = new TabPage();
+            label1 = new Label();
             textBox2 = new TextBox();
             label9 = new Label();
             label6 = new Label();
@@ -84,16 +85,16 @@ namespace TimeSpace
             label3 = new Label();
             label2 = new Label();
             objectivesPanel = new CollapsibleObjectivesPanel();
-            headerLabel = new Label();
             isHeroCheckBox = new CheckBox();
             isSpecialCheckBox = new CheckBox();
             isHiddenCheckBox = new CheckBox();
             pictureBox3 = new PictureBox();
             pictureBox1 = new PictureBox();
             pictureBox4 = new PictureBox();
+            headerLabel = new Label();
             minPlayersLabel = new Label();
             maxPlayersLabel = new Label();
-            label1 = new Label();
+            button2 = new Button();
             tabPage3.SuspendLayout();
             panelButtons.SuspendLayout();
             tabPage1.SuspendLayout();
@@ -101,7 +102,6 @@ namespace TimeSpace
             tabPage2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox5).BeginInit();
-            objectivesPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox3).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox4).BeginInit();
@@ -601,10 +601,6 @@ namespace TimeSpace
             materialButton2.UseVisualStyleBackColor = false;
             materialButton2.Click += materialButton2_Click;
             // 
-            // objectivePanel
-            // 
-            objectivesPanel.Margin = new Padding(16);
-            // 
             // tabControl1
             // 
             tabControl1.Controls.Add(tabPage1);
@@ -625,6 +621,7 @@ namespace TimeSpace
             // 
             tabPage2.AutoScroll = true;
             tabPage2.BackColor = Color.FromArgb(45, 45, 48);
+            tabPage2.Controls.Add(button2);
             tabPage2.Controls.Add(label1);
             tabPage2.Controls.Add(textBox2);
             tabPage2.Controls.Add(label9);
@@ -664,6 +661,17 @@ namespace TimeSpace
             tabPage2.Size = new Size(1823, 825);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "TimeSpace Configuration";
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.BackColor = Color.Black;
+            label1.Font = new Font("Segoe UI", 15.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            label1.Location = new Point(958, 11);
+            label1.Name = "label1";
+            label1.Size = new Size(67, 30);
+            label1.TabIndex = 111;
+            label1.Text = "TS ID:";
             // 
             // textBox2
             // 
@@ -947,6 +955,17 @@ namespace TimeSpace
             label2.TabIndex = 2;
             label2.Text = "Spawn Point";
             // 
+            // objectivesPanel
+            // 
+            objectivesPanel.BackColor = Color.FromArgb(45, 45, 48);
+            objectivesPanel.Location = new Point(1100, 16);
+            objectivesPanel.Margin = new Padding(16);
+            objectivesPanel.MaximumSize = new Size(400, 400);
+            objectivesPanel.MinimumSize = new Size(400, 40);
+            objectivesPanel.Name = "objectivesPanel";
+            objectivesPanel.Size = new Size(400, 40);
+            objectivesPanel.TabIndex = 112;
+            // 
             // isHeroCheckBox
             // 
             isHeroCheckBox.BackColor = Color.FromArgb(23, 23, 25);
@@ -1007,6 +1026,13 @@ namespace TimeSpace
             pictureBox4.TabIndex = 47;
             pictureBox4.TabStop = false;
             // 
+            // headerLabel
+            // 
+            headerLabel.Location = new Point(0, 0);
+            headerLabel.Name = "headerLabel";
+            headerLabel.Size = new Size(100, 23);
+            headerLabel.TabIndex = 0;
+            // 
             // minPlayersLabel
             // 
             minPlayersLabel.ForeColor = Color.White;
@@ -1025,16 +1051,15 @@ namespace TimeSpace
             maxPlayersLabel.TabIndex = 0;
             maxPlayersLabel.Text = "Max Players";
             // 
-            // label1
+            // button2
             // 
-            label1.AutoSize = true;
-            label1.BackColor = Color.Black;
-            label1.Font = new Font("Segoe UI", 15.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            label1.Location = new Point(958, 11);
-            label1.Name = "label1";
-            label1.Size = new Size(67, 30);
-            label1.TabIndex = 111;
-            label1.Text = "TS ID:";
+            button2.Location = new Point(1138, 514);
+            button2.Name = "button2";
+            button2.Size = new Size(75, 23);
+            button2.TabIndex = 113;
+            button2.Text = "button2";
+            button2.UseVisualStyleBackColor = true;
+            button2.Click += button2_Click_1;
             // 
             // TimeSpaceTool
             // 
@@ -1055,8 +1080,6 @@ namespace TimeSpace
             tabPage2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox2).EndInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox5).EndInit();
-            objectivesPanel.ResumeLayout(false);
-            objectivesPanel.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox3).EndInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox4).EndInit();
@@ -1140,5 +1163,6 @@ namespace TimeSpace
         public ItemSlot BonusItemSlot1;
         public ItemSlot SpecialItemSlot2;
         private Label label1;
+        private Button button2;
     }
 }

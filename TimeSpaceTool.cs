@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Text;
 using System.Windows.Forms;
-using TimeSpace;
+using TimeSpace.MapgridPanel;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -132,6 +132,11 @@ namespace TimeSpace
                     .Build();
             timespacesData = deserializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(config.TimespacesFilePath));
             mapResourceFileLoader = new(new ResourceLoadingConfiguration() { GameDataPath = config.GameDataPath, GameMapsPath = config.GameMapsPath });
+        }
+        private void ShowMapOverview()
+        {
+            var overviewForm = new MapOverviewForm(tabControl2);
+            overviewForm.ShowDialog();
         }
         protected override bool ProcessDialogKey(Keys keyData)
         {
@@ -449,6 +454,11 @@ namespace TimeSpace
             }
             config.TimeSpaceConfigPath = timespaceConfig;
             textBox13.Text = config.TimeSpaceConfigPath;
+        }
+
+        private void button2_Click_1(object sender, EventArgs e)
+        {
+            ShowMapOverview();
         }
     }
 }

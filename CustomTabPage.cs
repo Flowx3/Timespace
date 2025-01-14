@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TimeSpace.MapgridPanel;
 
 namespace TimeSpace
 {
@@ -17,7 +18,7 @@ namespace TimeSpace
         // Private fields
         private readonly TimeSpaceTool _mainForm;
         private readonly MapEventGenerator _eventGenerator;
-        private MapGridPanel _mapGridPanel;
+        public MapGridPanel _mapGridPanel;
         private byte[] _originalGrid;
         private Point? _currentPosition;
         private bool _isDisposed;
@@ -82,7 +83,6 @@ namespace TimeSpace
         {
             onAllTargetMobsDead = events;
         }
-
         public CustomTabPage(string mapName, TimeSpaceTool form, Func<List<string>> getMapNames)
         {
             MapName = mapName;

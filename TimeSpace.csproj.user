@@ -7,10 +7,13 @@
     <Compile Update="ItemSearchSystem\ItemSearchForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="MapGridPanel.cs">
+    <Compile Update="MapgridPanel\MapGridOverviewPanel.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Update="MapOverviewForm.cs">
+    <Compile Update="MapgridPanel\MapGridPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="MapgridPanel\MapOverviewForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="ObjectivesPanel.cs">

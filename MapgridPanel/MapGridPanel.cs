@@ -4,14 +4,14 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace TimeSpace
+namespace TimeSpace.MapgridPanel
 {
     public class MapGridPanel : Panel
     {
-        private byte[] _grid;
-        private int _width;
-        private int _height;
-        private int _cellSize;
+        public byte[] _grid;
+        public int _width;
+        public int _height;
+        public int _cellSize;
         private string _currentMapId;
         private (int x, int y)? _highlightedPosition;
         private byte _originalHighlightValue;
@@ -33,6 +33,24 @@ namespace TimeSpace
         private const string SOUTH = "South";
         private const string EAST = "East";
         private const string WEST = "West";
+
+        #region Flag Colors
+        public readonly Dictionary<int, Color> _flagColors = new()
+        {
+            { 0x1, Color.Gray },         // IsWalkingDisabled
+            { 0x2, Color.Blue },         // IsAttackDisabledThrough
+            { 0x4, Color.Blue },         // UnknownYet
+            { 0x8, Color.MediumVioletRed }, // IsMonsterAggroDisabled
+            { 0x10, Color.Purple },      // IsPvpDisabled
+            { 0x20, Color.Orange },      // MateDoll
+            { 0x30, Color.Gold },        // Objective
+            { 0x40, Color.LightBlue },   // Portal
+            { 0x50, Color.Green },       // NPC
+            { 0x60, Color.Cyan },        // HIGHLIGHT
+            { 0x80, Color.Red },         // Monster
+            { 0x90, Color.Purple },      // Target Monster
+        };
+        #endregion
         #region IPanelCommand Interface
 
         public interface IPanelCommand
@@ -77,6 +95,242 @@ namespace TimeSpace
             MouseLeave += MapGridPanel_MouseLeave;
         }
 
+        public void InitializeDragAndDrop(CustomTabPage parentTab)
+        {
+            _parentTab = parentTab;
+            MouseDown += MapGridPanel_MouseDown;
+            MouseMove += MapGridPanel_MouseMove;
+            MouseUp += MapGridPanel_MouseUp;
+        }
+
+        public void SetGrid(string mapId, int width, int height, byte[] grid)
+        {
+            if (width <= 0 || height <= 0)
+                throw new ArgumentException($"Invalid grid dimensions: width={width}, height={height}");
+
+            _grid = grid ?? throw new ArgumentNullException(nameof(grid));
+            _width = width;
+            _height = height;
+            _currentMapId = mapId;
+
+            int maxCellWidth = Math.Max(1, FixedPanelWidth / _width);
+            int maxCellHeight = Math.Max(1, FixedPanelHeight / _height);
+            _cellSize = Math.Min(maxCellWidth, maxCellHeight);
+
+            Width = Math.Max(FixedPanelWidth, _width * _cellSize);
+            Height = Math.Max(FixedPanelHeight, _height * _cellSize);
+
+            AutoScroll = true;
+            Invalidate();
+        }
+
+        public void RecalculateCellSize()
+        {
+            if (_width <= 0 || _height <= 0)
+                throw new InvalidOperationException("Cannot recalculate cell size: invalid grid dimensions");
+
+            SetGrid(_currentMapId, _width, _height, _grid);
+        }
+
+        public bool IsWalkable(int x, int y) => !IsBlockingZone(x, y, out _);
+
+        public (int x, int y) GenerateWalkablePosition()
+        {
+            if (_grid == null || _grid.Length == 0)
+                return (0, 0);
+
+            Random random = new();
+            int maxAttempts = _width * _height;
+
+            for (int attempts = 0; attempts < maxAttempts; attempts++)
+            {
+                int x = random.Next(0, _width);
+                int y = random.Next(0, _height);
+
+                if (IsWalkable(x, y))
+                    return (x, y);
+            }
+
+            throw new InvalidOperationException("Could not find a walkable position in the grid after maximum attempts.");
+        }
+
+        public bool IsBlockingZone(int x, int y, out string errorMessage)
+        {
+            errorMessage = string.Empty;
+
+            if (!IsValidPosition(x, y))
+            {
+                errorMessage = $"Position ({x}, {y}) is out of bounds. Grid size is {_width}x{_height}.";
+                return true;
+            }
+
+            byte value = _grid[y * _width + x];
+            Color positionColor = GetColor(value);
+
+            if (positionColor != Color.White && positionColor != Color.Red && positionColor != Color.Purple)
+            {
+                errorMessage = $"Position ({x}, {y}) is invalid. It contains a blocking flag (Color: {positionColor}).";
+                return true;
+            }
+
+            return false;
+        }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            e.Graphics.Clear(BackColor);
+
+            if (_grid == null)
+                return;
+
+            for (int y = 0; y < _height; y++)
+            {
+                for (int x = 0; x < _width; x++)
+                {
+                    var color = GetColor(_grid[y * _width + x]);
+                    using var brush = new SolidBrush(color);
+                    e.Graphics.FillRectangle(brush, x * _cellSize, y * _cellSize, _cellSize, _cellSize);
+
+                    using var pen = new Pen(Color.Black);
+                    e.Graphics.DrawRectangle(pen, x * _cellSize, y * _cellSize, _cellSize, _cellSize);
+                }
+            }
+
+            // Draw ghost image while dragging
+            if (_isDragging && _dragStart.HasValue)
+            {
+                int cellX = _lastMousePosition.X / _cellSize;
+                int cellY = _lastMousePosition.Y / _cellSize;
+
+                if (IsValidPosition(cellX, cellY))
+                {
+                    Color ghostColor = GetColor(_draggedElementType);
+                    using var brush = new SolidBrush(Color.FromArgb(128, ghostColor));
+                    e.Graphics.FillRectangle(brush, cellX * _cellSize, cellY * _cellSize, _cellSize, _cellSize);
+
+                    using var pen = new Pen(Color.Black) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash };
+                    e.Graphics.DrawRectangle(pen, cellX * _cellSize, cellY * _cellSize, _cellSize, _cellSize);
+                }
+            }
+        }
+
+        public void ResetGrid()
+        {
+            if (_grid != null)
+            {
+                _grid = new byte[_width * _height];
+                Invalidate();
+            }
+        }
+
+        public void HighlightPosition(int x, int y)
+        {
+            if (!IsValidPosition(x, y))
+                return;
+
+            if (_highlightedPosition.HasValue)
+            {
+                int prevIdx = _highlightedPosition.Value.y * _width + _highlightedPosition.Value.x;
+                _grid[prevIdx] = _originalHighlightValue;
+            }
+
+            _highlightedPosition = (x, y);
+            int idx = y * _width + x;
+            _originalHighlightValue = _grid[idx];
+
+            _grid[idx] = 0x60; // Green highlight flag
+            Invalidate();
+        }
+
+        public void ClearHighlight()
+        {
+            if (_highlightedPosition.HasValue)
+            {
+                int idx = _highlightedPosition.Value.y * _width + _highlightedPosition.Value.x;
+                _grid[idx] = _originalHighlightValue;
+                _highlightedPosition = null;
+                Invalidate();
+            }
+        }
+
+        public void UpdateMapMarkings(CustomTabPage currentMapTab, string mapId, byte[] originalGrid)
+        {
+            if (currentMapTab == null || _grid == null || _currentMapId != mapId)
+                return;
+
+            ResetGrid();
+            Array.Copy(originalGrid, _grid, _grid.Length);
+
+            foreach (var portal in currentMapTab.Portals)
+            {
+                if (IsValidPosition(portal.FromX, portal.FromY))
+                    _grid[portal.FromY.Value * _width + portal.FromX.Value] = 0x40;
+            }
+
+            foreach (DataGridViewRow row in currentMapTab.MonsterDataGridView.Rows)
+            {
+                if (row.IsNewRow)
+                    continue;
+
+                int x = Convert.ToInt32(row.Cells["X"].Value);
+                int y = Convert.ToInt32(row.Cells["Y"].Value);
+                bool isTarget = Convert.ToBoolean(row.Cells["AsTarget"].Value);
+
+                if (IsValidPosition(x, y))
+                    _grid[y * _width + x] = isTarget ? (byte)0x90 : (byte)0x80;
+            }
+
+            foreach (DataGridViewRow row in currentMapTab.NpcDataGridview.Rows)
+            {
+                if (row.IsNewRow)
+                    continue;
+
+                int x = Convert.ToInt32(row.Cells["X"].Value);
+                int y = Convert.ToInt32(row.Cells["Y"].Value);
+
+                if (IsValidPosition(x, y))
+                    _grid[y * _width + x] = 0x50;
+            }
+
+            foreach (var obj in currentMapTab.Objects)
+            {
+                int x = obj.GetX();
+                int y = obj.GetY();
+
+                if (x != 1500 && y != 1500 && IsValidPosition(x, y))
+                    _grid[y * _width + x] = 0x30;
+            }
+
+            for (int i = 0; i < _grid.Length; i++)
+            {
+                if (_grid[i] == 0)
+                    _grid[i] = originalGrid[i];
+            }
+
+            Refresh();
+        }
+        private bool IsValidPosition(int? x, int? y)
+        {
+            return x >= 0 && x < _width && y >= 0 && y < _height && _grid != null;
+        }
+
+        public void ClearMarking(int x, int y)
+        {
+            if (IsValidPosition(x, y))
+            {
+                _grid[y * _width + x] = 0;
+                Refresh();
+            }
+        }
+
+        public byte GetMarking(int x, int y)
+        {
+            return IsValidPosition(x, y) ? _grid[y * _width + x] : (byte)0;
+        }
+
+        private Color GetColor(byte value)
+        {
+            return _flagColors.TryGetValue(value, out var color) ? color : Color.White;
+        }
         #region Position Label
 
         private void InitializePositionLabel()
@@ -366,294 +620,6 @@ namespace TimeSpace
             }
         }
         #endregion
-        public void InitializeDragAndDrop(CustomTabPage parentTab)
-        {
-            _parentTab = parentTab;
-            MouseDown += MapGridPanel_MouseDown;
-            MouseMove += MapGridPanel_MouseMove;
-            MouseUp += MapGridPanel_MouseUp;
-        }
-
-        public void SetGrid(string mapId, int width, int height, byte[] grid)
-        {
-            if (width <= 0 || height <= 0)
-                throw new ArgumentException($"Invalid grid dimensions: width={width}, height={height}");
-
-            _grid = grid ?? throw new ArgumentNullException(nameof(grid));
-            _width = width;
-            _height = height;
-            _currentMapId = mapId;
-
-            int maxCellWidth = Math.Max(1, FixedPanelWidth / _width);
-            int maxCellHeight = Math.Max(1, FixedPanelHeight / _height);
-            _cellSize = Math.Min(maxCellWidth, maxCellHeight);
-
-            Width = Math.Max(FixedPanelWidth, _width * _cellSize);
-            Height = Math.Max(FixedPanelHeight, _height * _cellSize);
-
-            AutoScroll = true;
-            Invalidate();
-        }
-
-        public void RecalculateCellSize()
-        {
-            if (_width <= 0 || _height <= 0)
-                throw new InvalidOperationException("Cannot recalculate cell size: invalid grid dimensions");
-
-            SetGrid(_currentMapId, _width, _height, _grid);
-        }
-
-        public bool IsWalkable(int x, int y) => !IsBlockingZone(x, y, out _);
-
-        public (int x, int y) GenerateWalkablePosition()
-        {
-            if (_grid == null || _grid.Length == 0)
-                return (0, 0);
-
-            Random random = new();
-            int maxAttempts = _width * _height;
-
-            for (int attempts = 0; attempts < maxAttempts; attempts++)
-            {
-                int x = random.Next(0, _width);
-                int y = random.Next(0, _height);
-
-                if (IsWalkable(x, y))
-                    return (x, y);
-            }
-
-            throw new InvalidOperationException("Could not find a walkable position in the grid after maximum attempts.");
-        }
-
-        public bool IsBlockingZone(int x, int y, out string errorMessage)
-        {
-            errorMessage = string.Empty;
-
-            if (!IsValidPosition(x, y))
-            {
-                errorMessage = $"Position ({x}, {y}) is out of bounds. Grid size is {_width}x{_height}.";
-                return true;
-            }
-
-            byte value = _grid[y * _width + x];
-            Color positionColor = GetColor(value);
-
-            if (positionColor != Color.White && positionColor != Color.Red && positionColor != Color.Purple)
-            {
-                errorMessage = $"Position ({x}, {y}) is invalid. It contains a blocking flag (Color: {positionColor}).";
-                return true;
-            }
-
-            return false;
-        }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            e.Graphics.Clear(BackColor);
-
-            if (_grid == null)
-                return;
-
-            for (int y = 0; y < _height; y++)
-            {
-                for (int x = 0; x < _width; x++)
-                {
-                    var color = GetColor(_grid[y * _width + x]);
-                    using var brush = new SolidBrush(color);
-                    e.Graphics.FillRectangle(brush, x * _cellSize, y * _cellSize, _cellSize, _cellSize);
-
-                    using var pen = new Pen(Color.Black);
-                    e.Graphics.DrawRectangle(pen, x * _cellSize, y * _cellSize, _cellSize, _cellSize);
-                }
-            }
-
-            // Draw ghost image while dragging
-            if (_isDragging && _dragStart.HasValue)
-            {
-                int cellX = _lastMousePosition.X / _cellSize;
-                int cellY = _lastMousePosition.Y / _cellSize;
-
-                if (IsValidPosition(cellX, cellY))
-                {
-                    Color ghostColor = GetColor(_draggedElementType);
-                    using var brush = new SolidBrush(Color.FromArgb(128, ghostColor));
-                    e.Graphics.FillRectangle(brush, cellX * _cellSize, cellY * _cellSize, _cellSize, _cellSize);
-
-                    using var pen = new Pen(Color.Black) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash };
-                    e.Graphics.DrawRectangle(pen, cellX * _cellSize, cellY * _cellSize, _cellSize, _cellSize);
-                }
-            }
-        }
-
-        private readonly Dictionary<int, Color> _flagColors = new()
-        {
-            { 0x1, Color.Gray },         // IsWalkingDisabled
-            { 0x2, Color.Blue },         // IsAttackDisabledThrough
-            { 0x4, Color.Blue },         // UnknownYet
-            { 0x8, Color.MediumVioletRed }, // IsMonsterAggroDisabled
-            { 0x10, Color.Purple },      // IsPvpDisabled
-            { 0x20, Color.Orange },      // MateDoll
-            { 0x30, Color.Gold },        // Objective
-            { 0x40, Color.LightBlue },   // Portal
-            { 0x50, Color.Green },       // NPC
-            { 0x60, Color.Cyan },        // HIGHLIGHT
-            { 0x80, Color.Red },         // Monster
-            { 0x90, Color.Purple },      // Target Monster
-        };
-
-        public void ResetGrid()
-        {
-            if (_grid != null)
-            {
-                _grid = new byte[_width * _height];
-                Invalidate();
-            }
-        }
-
-        public void HighlightPosition(int x, int y)
-        {
-            if (!IsValidPosition(x, y))
-                return;
-
-            if (_highlightedPosition.HasValue)
-            {
-                int prevIdx = _highlightedPosition.Value.y * _width + _highlightedPosition.Value.x;
-                _grid[prevIdx] = _originalHighlightValue;
-            }
-
-            _highlightedPosition = (x, y);
-            int idx = y * _width + x;
-            _originalHighlightValue = _grid[idx];
-
-            _grid[idx] = 0x60; // Green highlight flag
-            Invalidate();
-        }
-
-        public void ClearHighlight()
-        {
-            if (_highlightedPosition.HasValue)
-            {
-                int idx = _highlightedPosition.Value.y * _width + _highlightedPosition.Value.x;
-                _grid[idx] = _originalHighlightValue;
-                _highlightedPosition = null;
-                Invalidate();
-            }
-        }
-
-        public void UpdateMapMarkings(CustomTabPage currentMapTab, string mapId, byte[] originalGrid)
-        {
-            if (currentMapTab == null || _grid == null || _currentMapId != mapId)
-                return;
-
-            ResetGrid();
-            Array.Copy(originalGrid, _grid, _grid.Length);
-
-            foreach (var portal in currentMapTab.Portals)
-            {
-                if (IsValidPosition(portal.FromX, portal.FromY))
-                    _grid[portal.FromY.Value * _width + portal.FromX.Value] = 0x40;
-            }
-
-            foreach (DataGridViewRow row in currentMapTab.MonsterDataGridView.Rows)
-            {
-                if (row.IsNewRow)
-                    continue;
-
-                int x = Convert.ToInt32(row.Cells["X"].Value);
-                int y = Convert.ToInt32(row.Cells["Y"].Value);
-                bool isTarget = Convert.ToBoolean(row.Cells["AsTarget"].Value);
-
-                if (IsValidPosition(x, y))
-                    _grid[y * _width + x] = isTarget ? (byte)0x90 : (byte)0x80;
-            }
-
-            foreach(DataGridViewRow row in currentMapTab.NpcDataGridview.Rows)
-            {
-                if (row.IsNewRow)
-                    continue;
-
-                int x = Convert.ToInt32(row.Cells["X"].Value);
-                int y = Convert.ToInt32(row.Cells["Y"].Value);
-
-                if (IsValidPosition(x,y))
-                    _grid[y * _width + x] = 0x50;
-            }
-
-            foreach (var obj in currentMapTab.Objects)
-            {
-                int x = obj.GetX();
-                int y = obj.GetY();
-
-                if (x != 1500 && y != 1500 && IsValidPosition(x, y))
-                    _grid[y * _width + x] = 0x30;
-            }
-
-            for (int i = 0; i < _grid.Length; i++)
-            {
-                if (_grid[i] == 0)
-                    _grid[i] = originalGrid[i];
-            }
-
-            Refresh();
-        }
-        private void MarkPortal(int? x, int? y)
-        {
-            if (x.HasValue && y.HasValue && IsValidPosition(x.Value, y.Value))
-            {
-                _grid[y.Value * _width + x.Value] = 0x40;
-                Refresh();
-            }
-        }
-
-        private void MarkMonster(int x, int y, bool isTarget)
-        {
-            if (IsValidPosition(x, y))
-            {
-                _grid[y * _width + x] = isTarget ? (byte)0x90 : (byte)0x80;
-                Refresh();
-            }
-        }
-        private void MarkNpc(int x, int y)
-        {
-            if (IsValidPosition(x, y))
-            {
-                _grid[y * _width + x] = 0x50;
-                Refresh();
-            }
-        }
-        private void MarkObjective(int x, int y)
-        {
-            if (IsValidPosition(x, y))
-            {
-                _grid[y * _width + x] = 0x30;
-                Refresh();
-            }
-        }
-
-        private bool IsValidPosition(int? x, int? y)
-        {
-            return x >= 0 && x < _width && y >= 0 && y < _height && _grid != null;
-        }
-
-        public void ClearMarking(int x, int y)
-        {
-            if (IsValidPosition(x, y))
-            {
-                _grid[y * _width + x] = 0;
-                Refresh();
-            }
-        }
-
-        public byte GetMarking(int x, int y)
-        {
-            return IsValidPosition(x, y) ? _grid[y * _width + x] : (byte)0;
-        }
-
-        private Color GetColor(byte value)
-        {
-            return _flagColors.TryGetValue(value, out var color) ? color : Color.White;
-        }
-
         #region MapGridMover
 
         private void MapGridPanel_MouseDown(object sender, MouseEventArgs e)
@@ -693,7 +659,7 @@ namespace TimeSpace
             int targetX = e.X / _cellSize;
             int targetY = e.Y / _cellSize;
 
-            if (!IsValidPosition(targetX, targetY) || (GetMarking(targetX, targetY) != 0 && GetMarking(targetX, targetY) != _draggedElementType))
+            if (!IsValidPosition(targetX, targetY) || GetMarking(targetX, targetY) != 0 && GetMarking(targetX, targetY) != _draggedElementType)
             {
                 ResetDragState();
                 return;
