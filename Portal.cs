@@ -180,7 +180,23 @@ namespace TimeSpace
                     cboMapTo.SelectedItem = currentMapTo;
             }
         }
-
+        public void SetPosition(int fromX, int fromY, bool IStoXORY = false)
+        {
+            if (IStoXORY == true)
+            {
+                ToX = fromX;
+                ToY = fromY;
+                txtToX.Text = fromX.ToString();
+                txtToY.Text = fromY.ToString();
+            }
+            else
+            {
+                FromX = fromX;
+                FromY = fromY;
+                txtFromX.Text = fromX.ToString();
+                txtFromY.Text = fromY.ToString();
+            }
+        }
         public string GenerateLocalPortalScript()
         {
             MapFrom = MapFrom.Replace("map_", "");

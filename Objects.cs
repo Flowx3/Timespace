@@ -12,7 +12,7 @@ namespace TimeSpace
     {
         public string MapName { get; set; }
         public string ObjectType { get; set; }
-        public int X { get; private set; }
+        public int? X { get; private set; }
         public int Y { get; private set; }
         public Panel Panel { get; private set; }
         private CustomMaterialStyleComboBox cboObjectiveType;
@@ -44,9 +44,10 @@ namespace TimeSpace
 
             var lblX = new Label { Text = "X:", Location = new System.Drawing.Point(0, 35), AutoSize = true };
             txtX = new ModernTextBox { Location = new System.Drawing.Point(25, 30), Width = 50 };
+            txtX.Text = X.ToString();
             var lblY = new Label { Text = "Y:", Location = new System.Drawing.Point(90, 35), AutoSize = true };
             txtY = new ModernTextBox { Location = new System.Drawing.Point(110, 30), Width = 50 };
-
+            txtY.Text = Y.ToString();
 
             btnConfigurePortals = new ModernButton { Text = "Configure Portals", Location = new System.Drawing.Point(175, 30), Visible = false, Width = 150 };
             btnConfigurePortals.Click += BtnConfigurePortals_Click;
@@ -104,6 +105,8 @@ namespace TimeSpace
         {
             txtX.Text = x.ToString();
             txtY.Text = y.ToString();
+            X = x;
+            Y = y;
         }
 
         public int GetX()

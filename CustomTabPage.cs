@@ -11,8 +11,8 @@ namespace TimeSpace
     public class CustomTabPage : TabPage
     {
         // Constants
-        private const int MAX_PORTALS = 4;
-        private const int MAX_OBJECTS = 4;
+        public const int MAX_PORTALS = 4;
+        public const int MAX_OBJECTS = 4;
 
         // Private fields
         private readonly TimeSpaceTool _mainForm;
@@ -26,10 +26,10 @@ namespace TimeSpace
         private ModernTabControl _mainTabControl;
         private TabPage _monsterTabPage;
         private TabPage _npcTabPage;
-        private FlowLayoutPanel _portalPanel;
-        private FlowLayoutPanel _objectivePanel;
-        private ModernDataGridView _monsterDataGridView;
-        private ModernDataGridView _npcDataGridView;
+        public FlowLayoutPanel _portalPanel;
+        public FlowLayoutPanel _objectivePanel;
+        public ModernDataGridView _monsterDataGridView;
+        public ModernDataGridView _npcDataGridView;
         private ModernTextBox _txtMapVNum;
         private ModernTextBox _txtMapCoordinates;
         private ModernTextBox _txtTaskText;
@@ -47,7 +47,7 @@ namespace TimeSpace
         // Collections
         private static readonly object _positionsLock = new object();
         private static readonly List<Point> _sharedTakenPositions = new List<Point>();
-        private readonly List<string> _allPortalsList = new List<string>();
+        public readonly List<string> _allPortalsList = new List<string>();
         private readonly List<string> _lockedPortalsList = new List<string>();
         private readonly List<CustomTabPage> _mapTabs;
         private List<string> taskFinishEvents = new List<string>();
@@ -105,6 +105,31 @@ namespace TimeSpace
             containerPanel.Controls.Add(rightPanel);
             containerPanel.Controls.Add(leftPanel);
             Controls.Add(containerPanel);
+        }
+        protected override bool ProcessDialogKey(Keys keyData)
+        {
+            if (HandleKeyInput(keyData))
+            {
+                return true;
+            }
+            return base.ProcessDialogKey(keyData);
+        }
+        public bool HandleKeyInput(Keys keyData)
+        {
+            // Handle Ctrl+Z for Undo
+            if (keyData == (Keys.Control | Keys.Z) && _mapGridPanel.CanUndo)
+            {
+                _mapGridPanel.Undo();
+                return true;
+            }
+            // Handle Ctrl+Y for Redo
+            else if (keyData == (Keys.Control | Keys.Y) && _mapGridPanel.CanRedo)
+            {
+                _mapGridPanel.Redo();
+                return true;
+            }
+
+            return false;
         }
         private Panel CreateContainerPanel() =>
             new Panel
@@ -531,6 +556,15 @@ namespace TimeSpace
 
                 MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).FirstOrDefault();
                 _mapGridPanel = mapGridPanel;
+                _mapGridPanel.TabStop = true;
+                _mapGridPanel.Click += (s,e) => _mapGridPanel.Focus();
+                _mapGridPanel.PreviewKeyDown += (s, e) => 
+                {
+                    if (e.KeyData == (Keys.Control | Keys.Z) || e.KeyData == (Keys.Control | Keys.Y))
+                    {
+                        e.IsInputKey = true;
+                    }
+                };
 
                 if (mapGridPanel != null)
                 {

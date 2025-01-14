@@ -133,7 +133,29 @@ namespace TimeSpace
             timespacesData = deserializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(config.TimespacesFilePath));
             mapResourceFileLoader = new(new ResourceLoadingConfiguration() { GameDataPath = config.GameDataPath, GameMapsPath = config.GameMapsPath });
         }
+        protected override bool ProcessDialogKey(Keys keyData)
+        {
+            // If the active control is a MapGridPanel or within a CustomTabPage
+            if (ActiveControl is MapGridPanel mapPanel)
+            {
+                if (keyData == (Keys.Control | Keys.Z) && mapPanel.CanUndo)
+                {
+                    mapPanel.Undo();
+                    return true;
+                }
+                else if (keyData == (Keys.Control | Keys.Y) && mapPanel.CanRedo)
+                {
+                    mapPanel.Redo();
+                    return true;
+                }
+            }
+            else if (ActiveControl?.Parent is CustomTabPage customTab)
+            {
+                return customTab.HandleKeyInput(keyData);
+            }
 
+            return base.ProcessDialogKey(keyData);
+        }
         private void button1_Click(object sender, EventArgs e)
         {
             string timespaceTranslation = "";
