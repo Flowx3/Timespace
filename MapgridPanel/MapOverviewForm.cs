@@ -5,34 +5,31 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using TimeSpace;
+using TimeSpace.MapgridPanel;
 
 public class MapOverviewForm : Form
 {
-    private const int PADDING = 40;
+    private const int PADDING = 15;
     private const int GRID_SIZE = 11;
-    private const int BASE_CELL_SIZE = 40; // Matched to GridSelector
+    private const int BASE_CELL_SIZE = 40;
     private const float MIN_ZOOM = 0.1f;
     private const float MAX_ZOOM = 5.0f;
-    private Dictionary<string, MapGridOverviewPanel> gridPanels;
+    private Dictionary<CustomTabPage, MapGridPanel> gridPanels;
     private Panel viewportPanel;
-    private float currentZoom = 1.0f;
+    public float currentZoom = 1.0f;
     private Point lastMousePosition;
     private bool isDragging;
-    private Portal selectedPortal;
-    private CustomTabPage selectedTabPage;
-    private bool isConnectingPortals;
-
+    private TabControl _mapTabControl;
+    private List<CustomTabPage> _tabPages;
+    private const int MAX_PANEL_SIZE = 300; 
     public MapOverviewForm(TabControl mapTabControl)
     {
+        _mapTabControl = mapTabControl;
+        _tabPages = new List<CustomTabPage>();
         InitializeComponent();
         InitializeGridPanels(mapTabControl);
         PositionPanelsInGrid();
-
-        if (gridPanels.Any())
-        {
-            CenterViewport();
-        }
-        else
+        if (!gridPanels.Any())
         {
             ShowNoMapsMessage();
         }
@@ -45,183 +42,124 @@ public class MapOverviewForm : Form
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(50, 50, 50);
 
-        // Create viewport panel with double buffering
         viewportPanel = new DoubleBufferedPanel
         {
             AutoScroll = true,
             Dock = DockStyle.Fill,
-            BackColor = Color.FromArgb(40, 40, 40)
+            BackColor = Color.FromArgb(40, 40, 40),
+            Visible = true
         };
-
         viewportPanel.MouseDown += ViewportPanel_MouseDown;
         viewportPanel.MouseMove += ViewportPanel_MouseMove;
         viewportPanel.MouseUp += ViewportPanel_MouseUp;
         viewportPanel.MouseWheel += ViewportPanel_MouseWheel;
-
+        viewportPanel.Paint += ViewportPanel_Paint;
         Controls.Add(viewportPanel);
-        gridPanels = new Dictionary<string, MapGridOverviewPanel>();
+        gridPanels = new Dictionary<CustomTabPage, MapGridPanel>();
     }
 
-    private void DrawArrowLine(Graphics g, Pen pen, Point start, Point end)
-    {
-        g.DrawLine(pen, start, end);
-
-        float arrowSize = 10f * currentZoom;
-        float angle = (float)Math.Atan2(end.Y - start.Y, end.X - start.X);
-
-        PointF[] arrowHead = new PointF[] {
-                end,
-                new PointF(
-                    end.X - arrowSize * (float)Math.Cos(angle - Math.PI / 6),
-                    end.Y - arrowSize * (float)Math.Sin(angle - Math.PI / 6)
-                ),
-                new PointF(
-                    end.X - arrowSize * (float)Math.Cos(angle + Math.PI / 6),
-                    end.Y - arrowSize * (float)Math.Sin(angle + Math.PI / 6)
-                )
-            };
-
-        g.FillPolygon(new SolidBrush(pen.Color), arrowHead);
-    }
     private void PositionPanelsInGrid()
     {
-        var positioned = new HashSet<string>();
-        var coordinates = new Dictionary<string, Point>();
-
         if (!gridPanels.Any()) return;
 
-        // Start with first panel at (0,0)
-        var firstPanel = gridPanels.First();
-        coordinates[firstPanel.Key] = new Point(0, 0);
-        positioned.Add(firstPanel.Key);
+        int totalPanels = gridPanels.Count;
+        int numberOfColumns = (int)Math.Ceiling(Math.Sqrt(totalPanels));
+        int numberOfRows = (int)Math.Ceiling((double)totalPanels / numberOfColumns);
 
-        // Position connected panels
-        PositionConnectedPanels(firstPanel.Key, coordinates, positioned);
+        int maxPanelWidth = gridPanels.Values.Max(p => p.Width);
+        int maxPanelHeight = gridPanels.Values.Max(p => p.Height);
 
-        // Calculate grid bounds
-        int minX = coordinates.Values.Min(p => p.X);
-        int minY = coordinates.Values.Min(p => p.Y);
-        int maxX = coordinates.Values.Max(p => p.X);
-        int maxY = coordinates.Values.Max(p => p.Y);
-
-        // Position panels based on coordinates
-        int panelSpacing = GRID_SIZE * BASE_CELL_SIZE + PADDING;
-        foreach (var kvp in gridPanels)
-        {
-            if (coordinates.TryGetValue(kvp.Key, out Point pos))
-            {
-                kvp.Value.Location = new Point(
-                    (pos.X - minX) * panelSpacing + PADDING,
-                    (pos.Y - minY) * panelSpacing + PADDING
-                );
-            }
-        }
-
-        // Set viewport size
-        viewportPanel.AutoScrollMinSize = new Size(
-            (maxX - minX + 1) * panelSpacing + PADDING * 3,
-            (maxY - minY + 1) * panelSpacing + PADDING * 3
-        );
-    }
-    private void CenterViewport()
-    {
-        // Calculate the total bounds of all panels
-        int minX = int.MaxValue, minY = int.MaxValue;
-        int maxX = int.MinValue, maxY = int.MinValue;
-
+        int i = 0;
         foreach (var panel in gridPanels.Values)
         {
-            minX = Math.Min(minX, panel.Left);
-            minY = Math.Min(minY, panel.Top);
-            maxX = Math.Max(maxX, panel.Right);
-            maxY = Math.Max(maxY, panel.Bottom);
+            int row = i / numberOfColumns;
+            int col = i % numberOfColumns;
+
+            int x = col * (maxPanelWidth + PADDING * 2) + PADDING;
+            int y = row * (maxPanelHeight + PADDING * 2) + PADDING;
+
+            panel.Location = new Point(x, y);
+            i++;
         }
 
-        // Calculate center point
-        int centerX = (maxX + minX) / 2;
-        int centerY = (maxY + minY) / 2;
-
-        // Set scroll position to center
-        viewportPanel.AutoScrollPosition = new Point(
-            centerX - viewportPanel.Width / 2,
-            centerY - viewportPanel.Height / 2
+        // Update viewport scroll size
+        viewportPanel.AutoScrollMinSize = new Size(
+            numberOfColumns * (maxPanelWidth + PADDING * 2) + PADDING,
+            numberOfRows * (maxPanelHeight + PADDING * 2) + PADDING
         );
     }
+
     private void InitializeGridPanels(TabControl mapTabControl)
     {
         foreach (CustomTabPage tabPage in mapTabControl.Controls.OfType<CustomTabPage>())
         {
             if (tabPage._mapGridPanel == null) continue;
+            _tabPages.Add(tabPage);
 
-            var overviewPanel = new MapGridOverviewPanel(tabPage._mapGridPanel, 1.0f)
+            var mapGridPanel = new MapGridPanel
             {
-                Tag = tabPage,
-                BorderStyle = BorderStyle.FixedSingle,
                 BackColor = Color.FromArgb(30, 30, 30),
-                Size = new Size(GRID_SIZE * BASE_CELL_SIZE, GRID_SIZE * BASE_CELL_SIZE)
+                Visible = true,
+                AutoScroll = false // Disable scrolling for overview panels
             };
 
-            var nameLabel = new Label
+            // Calculate the appropriate cell size to fit the panel within MAX_PANEL_SIZE
+            int maxDimension = Math.Max(tabPage._mapGridPanel._width, tabPage._mapGridPanel._height);
+            int cellSize = Math.Min(BASE_CELL_SIZE, MAX_PANEL_SIZE / maxDimension);
+
+            mapGridPanel._cellSize = cellSize; // Set the cell size directly
+            mapGridPanel.SetGrid(tabPage.MapName, tabPage._mapGridPanel._width, tabPage._mapGridPanel._height, tabPage._mapGridPanel._grid);
+
+            // Calculate the actual panel size based on the grid dimensions and cell size
+            int panelWidth = tabPage._mapGridPanel._width * cellSize;
+            int panelHeight = tabPage._mapGridPanel._height * cellSize;
+
+            // Ensure the panel size doesn't exceed MAX_PANEL_SIZE
+            if (panelWidth > MAX_PANEL_SIZE || panelHeight > MAX_PANEL_SIZE)
             {
-                Text = tabPage.Text,
-                AutoSize = true,
-                BackColor = Color.FromArgb(30, 30, 30),
-                ForeColor = Color.White,
-                Location = new Point(0, -20)
-            };
-            overviewPanel.Controls.Add(nameLabel);
-
-            gridPanels.Add(tabPage.Text, overviewPanel);
-            viewportPanel.Controls.Add(overviewPanel);
-        }
-    }
-
-    private void LayoutGridPanels()
-    {
-        if (!gridPanels.Any()) return;
-
-        var positioned = new HashSet<string>();
-        var coordinates = new Dictionary<string, Point>();
-        var centralPanel = gridPanels.First();
-
-        coordinates[centralPanel.Key] = new Point(0, 0);
-        positioned.Add(centralPanel.Key);
-
-        PositionConnectedPanels(centralPanel.Key, coordinates, positioned);
-
-        int minX = coordinates.Values.Min(p => p.X);
-        int minY = coordinates.Values.Min(p => p.Y);
-        int maxX = coordinates.Values.Max(p => p.X);
-        int maxY = coordinates.Values.Max(p => p.Y);
-
-        // Calculate spacing between panels
-        int spacing = BASE_CELL_SIZE * GRID_SIZE + 40; // Added more space between panels
-
-        // Position panels and adjust viewport
-        foreach (var kvp in gridPanels)
-        {
-            if (coordinates.TryGetValue(kvp.Key, out Point pos))
-            {
-                kvp.Value.Location = new Point(
-                    (pos.X - minX) * spacing + PADDING,
-                    (pos.Y - minY) * spacing + PADDING
-                );
+                float scale = Math.Min((float)MAX_PANEL_SIZE / panelWidth, (float)MAX_PANEL_SIZE / panelHeight);
+                panelWidth = (int)(panelWidth * scale);
+                panelHeight = (int)(panelHeight * scale);
+                mapGridPanel._cellSize = (int)(cellSize * scale);
             }
+
+            mapGridPanel.Size = new Size(panelWidth, panelHeight);
+            mapGridPanel.Scale(new SizeF(currentZoom, currentZoom));
+
+            gridPanels.Add(tabPage, mapGridPanel);
+            viewportPanel.Controls.Add(mapGridPanel);
         }
-
-        // Set minimum size for scrolling
-        viewportPanel.AutoScrollMinSize = new Size(
-            (maxX - minX + 1) * spacing + PADDING * 2,
-            (maxY - minY + 1) * spacing + PADDING * 2
-        );
+        ScrollToFirstPanel();
     }
-
+    private void ScrollToFirstPanel()
+    {
+        if (gridPanels.Any())
+        {
+            var firstPanel = gridPanels.Values.First();
+            int scrollX = Math.Max(0, firstPanel.Location.X - (viewportPanel.ClientSize.Width - firstPanel.Width) / 2);
+            int scrollY = Math.Max(0, firstPanel.Location.Y - (viewportPanel.ClientSize.Height - firstPanel.Height) / 2);
+            viewportPanel.AutoScrollPosition = new Point(scrollX, scrollY);
+        }
+    }
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);
         DrawPortalConnections(e.Graphics);
     }
+    private void OverviewPanel_Paint(object sender, PaintEventArgs e)
+    {
+        var panel = (MapGridOverviewPanel)sender;
 
+        // Set up graphics for smooth rendering
+        e.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+        e.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+
+        // Apply zoom transform
+        e.Graphics.ScaleTransform(currentZoom, currentZoom);
+
+        // Let the panel draw its content
+        panel.DrawContent(e.Graphics);
+    }
     private void DrawPortalConnections(Graphics g)
     {
         g.SmoothingMode = SmoothingMode.AntiAlias;
@@ -229,42 +167,89 @@ public class MapOverviewForm : Form
 
         foreach (var sourcePanel in gridPanels.Values)
         {
-            var sourceTabPage = (CustomTabPage)sourcePanel.Tag;
+            var sourceTabPage = _tabPages.FirstOrDefault(x => x.Text == sourcePanel._currentMapId);
+
+            if (sourceTabPage == null) continue;
+
             foreach (var portal in sourceTabPage.Portals)
             {
-                if (string.IsNullOrEmpty(portal.MapTo) || !gridPanels.TryGetValue(portal.MapTo, out var targetPanel))
-                    continue;
+                if (string.IsNullOrEmpty(portal.MapTo)) continue;
 
-                Point startPoint = GetPortalConnectionPoint(sourcePanel, portal);
+                var targetTabPage = _tabPages.FirstOrDefault(x => x.Text == portal.MapTo);
+                if (targetTabPage == null) continue;
 
-                // Get the target tab page
-                var targetTabPage = (CustomTabPage)targetPanel.Tag;
+                if (!gridPanels.TryGetValue(targetTabPage, out var targetPanel)) continue;
 
-                // Find the matching portal in the target map
                 var targetPortal = targetTabPage.Portals.FirstOrDefault(p =>
-                    p.MapTo == sourceTabPage.Text &&
-                    p.ToX == portal.FromX &&
-                    p.ToY == portal.FromY);
+                    p.MapTo == sourceTabPage.Text && p.ToX == portal.FromX && p.ToY == portal.FromY);
 
                 if (targetPortal == null) continue;
 
+                Point startPoint = GetPortalConnectionPoint(sourcePanel, portal);
                 Point endPoint = GetPortalConnectionPoint(targetPanel, targetPortal);
                 DrawArrowLine(g, pen, startPoint, endPoint);
             }
         }
     }
-    private Point GetPortalPoint(MapGridOverviewPanel panel, Portal portal)
+
+    private Point GetPortalConnectionPoint(MapGridPanel panel, Portal portal)
+    {
+        // Calculate the center point of the cell  
+        float cellCenterX = panel.Location.X + (portal.FromX.Value * BASE_CELL_SIZE + BASE_CELL_SIZE / 2) * currentZoom;
+        float cellCenterY = panel.Location.Y + (portal.FromY.Value * BASE_CELL_SIZE + BASE_CELL_SIZE / 2) * currentZoom;
+
+        // Adjust the connection point based on the portal's orientation  
+        float offset = BASE_CELL_SIZE * currentZoom / 2;
+        return portal.MinimapOrientation switch
+        {
+            "North" => new Point((int)cellCenterX, (int)(cellCenterY - offset)),
+            "South" => new Point((int)cellCenterX, (int)(cellCenterY + offset)),
+            "East" => new Point((int)(cellCenterX + offset), (int)cellCenterY),
+            "West" => new Point((int)(cellCenterX - offset), (int)cellCenterY),
+            _ => new Point((int)cellCenterX, (int)cellCenterY)
+        };
+    }
+
+    private void DrawArrowLine(Graphics g, Pen pen, Point start, Point end)
+    {
+        // Calculate the vector between points  
+        float dx = end.X - start.X;
+        float dy = end.Y - start.Y;
+        float length = (float)Math.Sqrt(dx * dx + dy * dy);
+
+        // Calculate unit vector  
+        float ux = dx / length;
+        float uy = dy / length;
+
+        // Calculate arrow head size based on zoom level  
+        float arrowSize = 10f * currentZoom;
+
+        // Draw the main line  
+        g.DrawLine(pen, start, end);
+
+        // Calculate arrow head points  
+        PointF[] arrowHead = new PointF[]
+        {
+        end,
+        new PointF(
+            end.X - arrowSize * (float)(Math.Cos(Math.Atan2(dy, dx) + Math.PI / 6)),
+            end.Y - arrowSize * (float)(Math.Sin(Math.Atan2(dy, dx) + Math.PI / 6))
+        ),
+        new PointF(
+            end.X - arrowSize * (float)(Math.Cos(Math.Atan2(dy, dx) - Math.PI / 6)),
+            end.Y - arrowSize * (float)(Math.Sin(Math.Atan2(dy, dx) - Math.PI / 6))
+        )
+        };
+
+        // Draw the arrow head  
+        g.FillPolygon(new SolidBrush(pen.Color), arrowHead);
+    }
+    private Point GetPortalPoint(MapGridPanel panel, Portal portal)
     {
         return new Point(
             (int)((portal.FromX.Value * BASE_CELL_SIZE + BASE_CELL_SIZE / 2) * currentZoom),
             (int)((portal.FromY.Value * BASE_CELL_SIZE + BASE_CELL_SIZE / 2) * currentZoom)
         );
-    }
-    private Point GetPortalConnectionPoint(MapGridOverviewPanel panel, Portal portal)
-    {
-        int x = panel.Location.X + (int)(portal.FromX.Value * BASE_CELL_SIZE * currentZoom) + (int)(BASE_CELL_SIZE * currentZoom / 2);
-        int y = panel.Location.Y + (int)(portal.FromY.Value * BASE_CELL_SIZE * currentZoom) + (int)(BASE_CELL_SIZE * currentZoom / 2);
-        return new Point(x, y);
     }
     private void ViewportPanel_Paint(object sender, PaintEventArgs e)
     {
@@ -274,28 +259,32 @@ public class MapOverviewForm : Form
         foreach (var panelKvp in gridPanels)
         {
             var panel = panelKvp.Value;
-            var tabPage = (CustomTabPage)panel.Tag;
+            var tabPage = _tabPages.FirstOrDefault(x => x.Text == panel._currentMapId);
+            if (tabPage == null) continue;
 
             foreach (var portal in tabPage.Portals)
             {
-                if (string.IsNullOrEmpty(portal.MapTo) || !gridPanels.TryGetValue(portal.MapTo, out var targetPanel))
-                    continue;
+                if (string.IsNullOrEmpty(portal.MapTo)) continue;
 
-                var targetTabPage = (CustomTabPage)targetPanel.Tag;
+                var targetTabPage = _tabPages.FirstOrDefault(x => x.Text == portal.MapTo);
+                if (targetTabPage == null) continue;
+
+                if (!gridPanels.TryGetValue(targetTabPage, out var targetPanel)) continue;
+
                 var targetPortal = targetTabPage.Portals.FirstOrDefault(p =>
                     p.MapTo == tabPage.Text && p.ToX == portal.FromX && p.ToY == portal.FromY);
 
                 if (targetPortal == null) continue;
 
-                // Calculate connection points in panel coordinates
-                Point startPoint = GetPortalPoint(panel, portal);
-                Point endPoint = GetPortalPoint(targetPanel, targetPortal);
+                // Calculate connection points in panel coordinates  
+                Point startPoint = GetPortalConnectionPoint(panel, portal);
+                Point endPoint = GetPortalConnectionPoint(targetPanel, targetPortal);
 
-                // Convert to viewport coordinates
+                // Convert to viewport coordinates  
                 startPoint = panel.Parent.PointToClient(panel.PointToScreen(startPoint));
                 endPoint = targetPanel.Parent.PointToClient(targetPanel.PointToScreen(endPoint));
 
-                // Draw connection line with arrow
+                // Draw connection line with arrow  
                 DrawArrowLine(e.Graphics, pen, startPoint, endPoint);
             }
         }
@@ -325,77 +314,58 @@ public class MapOverviewForm : Form
     {
         if (isDragging)
         {
-            int deltaX = e.X - lastMousePosition.X;
-            int deltaY = e.Y - lastMousePosition.Y;
-
-            viewportPanel.AutoScrollPosition = new Point(
-                -viewportPanel.AutoScrollPosition.X - deltaX,
-                -viewportPanel.AutoScrollPosition.Y - deltaY
-            );
-
+            int deltaX = lastMousePosition.X - e.X;
+            int deltaY = lastMousePosition.Y - e.Y;
+            viewportPanel.AutoScrollPosition = new Point(-viewportPanel.AutoScrollPosition.X + deltaX, -viewportPanel.AutoScrollPosition.Y + deltaY);
             lastMousePosition = e.Location;
         }
     }
-    private void ViewportPanel_MouseWheel(object sender, MouseEventArgs e)
-    {
-        // Get mouse position relative to viewport
-        Point mousePos = viewportPanel.PointToClient(Cursor.Position);
 
-        // Calculate zoom factor
-        float zoomDelta = (e.Delta > 0) ? 1.1f : 0.9f;
-        float newZoom = currentZoom * zoomDelta;
-        newZoom = Math.Max(MIN_ZOOM, Math.Min(MAX_ZOOM, newZoom));
-
-        if (newZoom != currentZoom)
-        {
-            // Calculate zoom center point
-            Point scrollPos = new Point(
-                -viewportPanel.AutoScrollPosition.X,
-                -viewportPanel.AutoScrollPosition.Y
-            );
-
-            // Apply zoom
-            foreach (var panel in gridPanels.Values)
-            {
-                // Store original position relative to mouse
-                float relativeX = (panel.Left - scrollPos.X - mousePos.X) / currentZoom;
-                float relativeY = (panel.Top - scrollPos.Y - mousePos.Y) / currentZoom;
-
-                // Calculate new position
-                panel.Left = (int)(mousePos.X + relativeX * newZoom) + scrollPos.X;
-                panel.Top = (int)(mousePos.Y + relativeY * newZoom) + scrollPos.Y;
-
-                // Apply scale transform
-                panel.Scale(new SizeF(newZoom / currentZoom, newZoom / currentZoom));
-            }
-
-            currentZoom = newZoom;
-            viewportPanel.Refresh();
-        }
-    }
     private void ViewportPanel_MouseUp(object sender, MouseEventArgs e)
     {
         isDragging = false;
         viewportPanel.Cursor = Cursors.Default;
     }
+
+    private void ViewportPanel_MouseWheel(object sender, MouseEventArgs e)
+    {
+        if (ModifierKeys != Keys.Shift) return;
+        float zoomDelta = e.Delta > 0 ? 1.1f : 0.9f;
+        float newZoom = currentZoom * zoomDelta;
+        newZoom = Math.Max(MIN_ZOOM, Math.Min(MAX_ZOOM, newZoom));
+        if (newZoom != currentZoom)
+        {
+            Point mousePos = viewportPanel.PointToClient(Cursor.Position);
+            Point scrollPos = new Point(-viewportPanel.AutoScrollPosition.X, -viewportPanel.AutoScrollPosition.Y);
+            int newScrollX = (int)((mousePos.X + scrollPos.X) * (newZoom / currentZoom) - mousePos.X);
+            int newScrollY = (int)((mousePos.Y + scrollPos.Y) * (newZoom / currentZoom) - mousePos.Y);
+            currentZoom = newZoom;
+            foreach (var panel in gridPanels.Values)
+            {
+                panel.Scale(new SizeF(currentZoom, currentZoom));
+                panel.Invalidate();
+            }
+            viewportPanel.AutoScrollPosition = new Point(newScrollX, newScrollY);
+            viewportPanel.Invalidate();
+        }
+    }
+
     private class DoubleBufferedPanel : Panel
     {
         public DoubleBufferedPanel()
         {
             DoubleBuffered = true;
-            SetStyle(ControlStyles.OptimizedDoubleBuffer |
-                    ControlStyles.AllPaintingInWmPaint |
-                    ControlStyles.UserPaint, true);
+            SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
         }
     }
 
     private void PositionConnectedPanels(string currentMapId, Dictionary<string, Point> coordinates, HashSet<string> positioned)
     {
-        var tabPage = (CustomTabPage)gridPanels[currentMapId].Tag;
+        var tabPage = _tabPages.FirstOrDefault(x => x.Text == currentMapId);
 
         foreach (var portal in tabPage.Portals)
         {
-            if (string.IsNullOrEmpty(portal.MapTo) || !gridPanels.ContainsKey(portal.MapTo) || positioned.Contains(portal.MapTo))
+            if (string.IsNullOrEmpty(portal.MapTo) || !gridPanels.ContainsKey(_tabPages.FirstOrDefault(x => x.Text == portal.MapTo)) || positioned.Contains(portal.MapTo))
                 continue;
 
             // Determine relative position based on portal orientation
@@ -412,36 +382,6 @@ public class MapOverviewForm : Form
             coordinates[portal.MapTo] = newPos;
             positioned.Add(portal.MapTo);
             PositionConnectedPanels(portal.MapTo, coordinates, positioned);
-        }
-    }
-
-    private void OverviewPanel_PortalClicked(object sender, PortalClickEventArgs e)
-    {
-        if (!isConnectingPortals) return;
-
-        var clickedPanel = (MapGridOverviewPanel)sender;
-        var clickedTabPage = (CustomTabPage)clickedPanel.Tag;
-
-        if (selectedPortal == null)
-        {
-            selectedPortal = e.Portal;
-            selectedTabPage = clickedTabPage;
-            clickedPanel.HighlightPortal(selectedPortal);
-        }
-        else
-        {
-            if (selectedTabPage != clickedTabPage)
-            {
-                ConnectPortals(selectedTabPage, selectedPortal, clickedTabPage, e.Portal);
-            }
-
-            foreach (var panel in gridPanels.Values)
-            {
-                panel.ClearPortalHighlight();
-            }
-            selectedPortal = null;
-            selectedTabPage = null;
-            Refresh(); // Redraw connections
         }
     }
 

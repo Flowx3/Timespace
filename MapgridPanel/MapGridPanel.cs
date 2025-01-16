@@ -12,13 +12,13 @@ namespace TimeSpace.MapgridPanel
         public int _width;
         public int _height;
         public int _cellSize;
-        private string _currentMapId;
+        public string _currentMapId;
         private (int x, int y)? _highlightedPosition;
         private byte _originalHighlightValue;
         private bool _isDragging;
         private (int x, int y)? _dragStart;
         private byte _draggedElementType;
-        private CustomTabPage _parentTab;
+        public CustomTabPage _parentTab;
         private ContextMenuStrip _contextMenu;
         private (int x, int y) _contextMenuPosition;
         private Point _lastMousePosition;
@@ -81,8 +81,11 @@ namespace TimeSpace.MapgridPanel
 
         #endregion
 
-        public MapGridPanel()
+        public MapGridPanel() : base()
         {
+            this.SetStyle(ControlStyles.UserPaint, true);
+            this.SetStyle(ControlStyles.AllPaintingInWmPaint, true);
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
             Width = FixedPanelWidth;
             Height = FixedPanelHeight;
             Name = "mapGridPanel";
@@ -94,7 +97,21 @@ namespace TimeSpace.MapgridPanel
             MouseMove += MapGridPanel_PositionUpdate;
             MouseLeave += MapGridPanel_MouseLeave;
         }
+        protected override void OnScroll(ScrollEventArgs se)
+        {
+            this.Invalidate();
 
+            base.OnScroll(se);
+        }
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams cp = base.CreateParams;
+                cp.ExStyle |= 0x02000000; // WS_CLIPCHILDREN
+                return cp;
+            }
+        }
         public void InitializeDragAndDrop(CustomTabPage parentTab)
         {
             _parentTab = parentTab;

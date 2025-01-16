@@ -6,30 +6,88 @@ public class MapGridOverviewPanel : Panel
     private readonly MapGridPanel originalPanel;
     private readonly float scaleFactor;
     private Portal highlightedPortal;
-
+    private Bitmap cacheBitmap;
+    private readonly CustomTabPage _tabPage;
     public event EventHandler<PortalClickEventArgs> PortalClicked;
 
-    public MapGridOverviewPanel(MapGridPanel original, float scale)
+    public MapGridOverviewPanel(MapGridPanel original, float scale, CustomTabPage tab) : base()
     {
+        this.SetStyle(ControlStyles.UserPaint, true);
+        this.SetStyle(ControlStyles.AllPaintingInWmPaint, true);
+        this.SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
         originalPanel = original;
         scaleFactor = scale;
-
-        Width = (int)(original.Width * scale);
-        Height = (int)(original.Height * scale);
+        _tabPage = tab;
         BorderStyle = BorderStyle.FixedSingle;
+        BackColor = Color.FromArgb(30, 30, 30);
 
         SetStyle(ControlStyles.OptimizedDoubleBuffer |
                 ControlStyles.AllPaintingInWmPaint |
                 ControlStyles.UserPaint, true);
 
         MouseClick += MapGridOverviewPanel_MouseClick;
+
+        // Create the cached bitmap
+        UpdateCache();
+    }
+    protected override void OnScroll(ScrollEventArgs se)
+    {
+        this.Invalidate();
+
+        base.OnScroll(se);
+    }
+    protected override CreateParams CreateParams
+    {
+        get
+        {
+            CreateParams cp = base.CreateParams;
+            cp.ExStyle |= 0x02000000; // WS_CLIPCHILDREN
+            return cp;
+        }
+    }
+    public void UpdateCache()
+    {
+        if (Width <= 0 || Height <= 0) return;
+
+        cacheBitmap?.Dispose();
+        cacheBitmap = new Bitmap(Width, Height);
+
+        using (var g = Graphics.FromImage(cacheBitmap))
+        {
+            g.Clear(BackColor);
+            if (scaleFactor > 0)
+            {
+                g.ScaleTransform(scaleFactor, scaleFactor);
+            }
+            DrawContent(g);
+        }
     }
 
     protected override void OnPaint(PaintEventArgs e)
     {
-        e.Graphics.Clear(BackColor);
-        e.Graphics.ScaleTransform(scaleFactor, scaleFactor);
+        base.OnPaint(e);
+        if (cacheBitmap != null)
+        {
+            e.Graphics.DrawImage(cacheBitmap, 0, 0);
+        }
+    }
 
+    protected override void OnSizeChanged(EventArgs e)
+    {
+        base.OnSizeChanged(e);
+        UpdateCache();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            cacheBitmap?.Dispose();
+        }
+        base.Dispose(disposing);
+    }
+    public void DrawContent(Graphics g)
+    {
         // Draw the grid
         int cellSize = originalPanel._cellSize;
         byte[] grid = originalPanel._grid;
@@ -42,31 +100,29 @@ public class MapGridOverviewPanel : Panel
             {
                 var color = GetColor(grid[y * width + x]);
                 using var brush = new SolidBrush(color);
-                e.Graphics.FillRectangle(brush, x * cellSize, y * cellSize, cellSize, cellSize);
+                g.FillRectangle(brush, x * cellSize, y * cellSize, cellSize, cellSize);
 
                 using var pen = new Pen(Color.Black);
-                e.Graphics.DrawRectangle(pen, x * cellSize, y * cellSize, cellSize, cellSize);
+                g.DrawRectangle(pen, x * cellSize, y * cellSize, cellSize, cellSize);
             }
         }
 
         // Draw portal connections
-        DrawPortalConnections(e.Graphics);
+        DrawPortalConnections(g);
 
         // Draw highlighted portal
         if (highlightedPortal != null)
         {
             using var highlightBrush = new SolidBrush(Color.FromArgb(128, Color.Yellow));
-            e.Graphics.FillRectangle(highlightBrush,
+            g.FillRectangle(highlightBrush,
                 highlightedPortal.FromX.Value * cellSize,
                 highlightedPortal.FromY.Value * cellSize,
                 cellSize, cellSize);
         }
     }
-
     private void DrawPortalConnections(Graphics g)
     {
-        var tabPage = (CustomTabPage)Tag;
-        foreach (var portal in tabPage.Portals)
+        foreach (var portal in _tabPage.Portals)
         {
             if (portal.MapTo != null && portal.ToX.HasValue && portal.ToY.HasValue)
             {
@@ -79,7 +135,7 @@ public class MapGridOverviewPanel : Panel
                 );
 
                 // If connected to a portal in the same map
-                if (portal.MapTo == tabPage.MapName)
+                if (portal.MapTo == _tabPage.MapName)
                 {
                     Point end = new Point(
                         portal.ToX.Value * cellSize + cellSize / 2,
@@ -112,12 +168,18 @@ public class MapGridOverviewPanel : Panel
 
     private void MapGridOverviewPanel_MouseClick(object sender, MouseEventArgs e)
     {
-        var tabPage = (CustomTabPage)Tag;
-        int cellSize = (int)(originalPanel._cellSize * scaleFactor);
+        var parentForm = FindForm() as MapOverviewForm;
+        if (parentForm == null) return;
+
+        // Now we can access currentZoom
+        float zoom = parentForm.currentZoom;
+
+        // Adjust for zoom level when calculating clicked cell
+        int cellSize = (int)(originalPanel._cellSize * zoom);
         int clickedX = e.X / cellSize;
         int clickedY = e.Y / cellSize;
 
-        var clickedPortal = tabPage.Portals.FirstOrDefault(p =>
+        var clickedPortal = _tabPage.Portals.FirstOrDefault(p =>
             p.FromX == clickedX && p.FromY == clickedY);
 
         if (clickedPortal != null)
@@ -137,6 +199,6 @@ public class MapGridOverviewPanel : Panel
         highlightedPortal = null;
         Invalidate();
     }
-
-    private Color GetColor(byte value) => originalPanel._flagColors.TryGetValue(value, out var color) ? color : Color.White;
+    private Color GetColor(byte value) =>
+    originalPanel._flagColors.TryGetValue(value, out var color) ? color : Color.White;
 }
