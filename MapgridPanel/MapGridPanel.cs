@@ -27,7 +27,7 @@ namespace TimeSpace.MapgridPanel
         public bool CanUndo => _undoStack.Count > 0;
         public bool CanRedo => _redoStack.Count > 0;
         private Label _positionLabel;
-        private const int FixedPanelWidth = 790;
+        private const int FixedPanelWidth = 450;
         private const int FixedPanelHeight = 450;
         private const string NORTH = "North";
         private const string SOUTH = "South";
@@ -96,12 +96,7 @@ namespace TimeSpace.MapgridPanel
             InitializeContextMenu();
             MouseMove += MapGridPanel_PositionUpdate;
             MouseLeave += MapGridPanel_MouseLeave;
-        }
-        protected override void OnScroll(ScrollEventArgs se)
-        {
-            this.Invalidate();
-
-            base.OnScroll(se);
+            AutoScroll = false;
         }
         protected override CreateParams CreateParams
         {
@@ -137,7 +132,7 @@ namespace TimeSpace.MapgridPanel
             Width = Math.Max(FixedPanelWidth, _width * _cellSize);
             Height = Math.Max(FixedPanelHeight, _height * _cellSize);
 
-            AutoScroll = true;
+
             Invalidate();
         }
 
