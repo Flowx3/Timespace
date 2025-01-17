@@ -17,6 +17,7 @@ namespace TimeSpace.MapgridPanel
         private byte _originalHighlightValue;
         private bool _isDragging;
         private (int x, int y)? _dragStart;
+        public float currentScale = 1.0f;
         private byte _draggedElementType;
         public CustomTabPage _parentTab;
         private ContextMenuStrip _contextMenu;
@@ -143,6 +144,13 @@ namespace TimeSpace.MapgridPanel
 
             SetGrid(_currentMapId, _width, _height, _grid);
         }
+        public void UpdateScale(float newScale)
+        {
+            currentScale = newScale;
+            // Ensure the cell size matches the zoom level
+            _cellSize = (int)(15 * currentScale); // Adjust base cell size if needed
+            Invalidate();
+        }
 
         public bool IsWalkable(int x, int y) => !IsBlockingZone(x, y, out _);
 
@@ -189,6 +197,10 @@ namespace TimeSpace.MapgridPanel
         }
         protected override void OnPaint(PaintEventArgs e)
         {
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            e.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+            e.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+            base.OnPaint(e);
             e.Graphics.Clear(BackColor);
 
             if (_grid == null)
@@ -320,7 +332,7 @@ namespace TimeSpace.MapgridPanel
 
             Refresh();
         }
-        private bool IsValidPosition(int? x, int? y)
+        public bool IsValidPosition(int? x, int? y)
         {
             return x >= 0 && x < _width && y >= 0 && y < _height && _grid != null;
         }
@@ -442,7 +454,7 @@ namespace TimeSpace.MapgridPanel
 
             _contextMenu.Show(this, e.Location);
         }
-        private void AddPortal_Click(object sender, EventArgs e)
+        public void AddPortal_Click(object sender, EventArgs e)
         {
             if (_parentTab.Portals.Count >= CustomTabPage.MAX_PORTALS)
             {
@@ -555,7 +567,7 @@ namespace TimeSpace.MapgridPanel
             Refresh();
         }
 
-        private void RemoveElement_Click(object sender, EventArgs e)
+        public void RemoveElement_Click(object sender, EventArgs e)
         {
             byte elementType = GetMarking(_contextMenuPosition.x, _contextMenuPosition.y);
 
@@ -574,6 +586,8 @@ namespace TimeSpace.MapgridPanel
                 case 0x90: // Target Monster
                     RemoveMonster(_contextMenuPosition.x, _contextMenuPosition.y);
                     break;
+                default:
+                    return;
             }
 
             _grid[_contextMenuPosition.y * _width + _contextMenuPosition.x] = 0;

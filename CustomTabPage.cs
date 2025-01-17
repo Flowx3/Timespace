@@ -32,7 +32,7 @@ namespace TimeSpace
         public ModernDataGridView _monsterDataGridView;
         public ModernDataGridView _npcDataGridView;
         private ModernTextBox _txtMapVNum;
-        private ModernTextBox _txtMapCoordinates;
+        public ModernTextBox _txtMapCoordinates;
         private ModernTextBox _txtTaskText;
         private CustomMaterialStyleComboBox _cboTaskType;
         private ModernNumericUpDown _timeForTask;
