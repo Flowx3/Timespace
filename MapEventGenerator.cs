@@ -11,6 +11,7 @@ namespace TimeSpace
         private readonly Dictionary<string, StringBuilder> mapScripts = new Dictionary<string, StringBuilder>();
         private readonly List<Monster> monsterEvents = new List<Monster>();
         private readonly Dictionary<string, List<string>> eventManagerScripts;
+        private List<CustomTabPage> _maptabs;
 
         public MapEventGenerator(Dictionary<string, List<string>> eventManagerScripts)
         {
@@ -19,6 +20,7 @@ namespace TimeSpace
 
         public void GenerateEvents(List<CustomTabPage> mapTabs)
         {
+            _maptabs = mapTabs;
             mapScripts.Clear();
             monsterEvents.Clear();
 
@@ -98,7 +100,7 @@ namespace TimeSpace
             if (nonWaveMonsters.Any())
             {
                 mapScript.AppendLine($"{mapName}.AddMonsters({{");
-                mapScript.AppendLine(string.Join(", \n", nonWaveMonsters.Select(m => $"    {m}")));
+                mapScript.AppendLine(string.Join(", \n", nonWaveMonsters.Select(m => $"    {m},")));
                 mapScript.AppendLine("})");
             }
 
@@ -134,7 +136,7 @@ namespace TimeSpace
             if (npcs.Any())
             {
                 mapScript.AppendLine($"{mapName}.AddNpcs({{");
-                mapScript.AppendLine(string.Join(", \n", npcs.Select(n => $"    {n}")));
+                mapScript.AppendLine(string.Join(", \n", npcs.Select(n => $"    {n},")));
                 mapScript.AppendLine("})");
             }
         }
@@ -158,18 +160,22 @@ namespace TimeSpace
 
         private void ProcessMapJoinEvents(string mapName, StringBuilder mapScript)
         {
-            mapScript.AppendLine($"{mapName}.OnMapJoin({{");
-            mapScript.AppendLine($"    Event.TryStartTaskForMap({mapName}),");
+            bool containsTryStartTaskForMap = false;
 
-            if (eventManagerScripts.ContainsKey(mapName))
+            var currentTabPage = _maptabs.FirstOrDefault(x => x.MapName == mapName);
+            foreach(MapObject mapObject in currentTabPage.Objects)
             {
-                foreach (var script in eventManagerScripts[mapName])
+                if (mapObject.selectedEvents.FirstOrDefault(x => x.Contains("TryStartTaskForMap")) != null)
                 {
-                    mapScript.AppendLine(script);
+                    containsTryStartTaskForMap = true;
                 }
             }
-
-            mapScript.AppendLine("})");
+            if (!containsTryStartTaskForMap)
+            {
+                mapScript.AppendLine($"{mapName}.OnMapJoin({{");
+                mapScript.AppendLine($"    Event.TryStartTaskForMap({mapName}),");
+                mapScript.AppendLine("})");
+            }
         }
         private void ProcessOnAllTargetMobsDeadEvents(CustomTabPage tab, string mapName, StringBuilder mapScript)
         {

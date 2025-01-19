@@ -45,8 +45,6 @@ namespace TimeSpace
             IsSpecialLabel = new Label();
             textBox7 = new ModernTextBox();
             tabPage1 = new TabPage();
-            materialButton1 = new MaterialButton();
-            modernTextBox1 = new ModernTextBox();
             button9 = new MaterialButton();
             textBox13 = new ModernTextBox();
             button8 = new MaterialButton();
@@ -94,7 +92,7 @@ namespace TimeSpace
             headerLabel = new Label();
             minPlayersLabel = new Label();
             maxPlayersLabel = new Label();
-            button2 = new Button();
+            PartnerCheckBox = new CheckBox();
             tabPage3.SuspendLayout();
             panelButtons.SuspendLayout();
             tabPage1.SuspendLayout();
@@ -358,8 +356,6 @@ namespace TimeSpace
             // 
             tabPage1.AutoScroll = true;
             tabPage1.BackColor = Color.FromArgb(45, 45, 45);
-            tabPage1.Controls.Add(materialButton1);
-            tabPage1.Controls.Add(modernTextBox1);
             tabPage1.Controls.Add(button9);
             tabPage1.Controls.Add(textBox13);
             tabPage1.Controls.Add(button8);
@@ -377,44 +373,6 @@ namespace TimeSpace
             tabPage1.Size = new Size(1823, 825);
             tabPage1.TabIndex = 0;
             tabPage1.Text = "Settings";
-            // 
-            // materialButton1
-            // 
-            materialButton1.AutoSize = false;
-            materialButton1.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            materialButton1.BackColor = Color.FromArgb(28, 28, 28);
-            materialButton1.Density = MaterialButton.MaterialButtonDensity.Default;
-            materialButton1.Depth = 0;
-            materialButton1.Font = new Font("Segoe UI", 9F);
-            materialButton1.ForeColor = Color.White;
-            materialButton1.HighEmphasis = true;
-            materialButton1.Icon = null;
-            materialButton1.Location = new Point(662, 227);
-            materialButton1.Margin = new Padding(4, 6, 4, 6);
-            materialButton1.MouseState = MaterialSkin.MouseState.HOVER;
-            materialButton1.Name = "materialButton1";
-            materialButton1.NoAccentTextColor = Color.Empty;
-            materialButton1.Size = new Size(75, 23);
-            materialButton1.TabIndex = 11;
-            materialButton1.Text = "Browse";
-            materialButton1.Type = MaterialButton.MaterialButtonType.Contained;
-            materialButton1.UseAccentColor = false;
-            materialButton1.UseVisualStyleBackColor = false;
-            materialButton1.Click += MaterialButton1_Click;
-            // 
-            // modernTextBox1
-            // 
-            modernTextBox1.BackColor = Color.FromArgb(28, 28, 28);
-            modernTextBox1.BorderStyle = BorderStyle.None;
-            modernTextBox1.Font = new Font("Segoe UI", 10F);
-            modernTextBox1.ForeColor = Color.White;
-            modernTextBox1.Location = new Point(8, 232);
-            modernTextBox1.MaxLength = 50;
-            modernTextBox1.Name = "modernTextBox1";
-            modernTextBox1.ReadOnly = true;
-            modernTextBox1.Size = new Size(647, 18);
-            modernTextBox1.TabIndex = 10;
-            modernTextBox1.Text = "Choose TimeSpace to Load";
             // 
             // button9
             // 
@@ -621,7 +579,7 @@ namespace TimeSpace
             // 
             tabPage2.AutoScroll = true;
             tabPage2.BackColor = Color.FromArgb(45, 45, 48);
-            tabPage2.Controls.Add(button2);
+            tabPage2.Controls.Add(PartnerCheckBox);
             tabPage2.Controls.Add(label1);
             tabPage2.Controls.Add(textBox2);
             tabPage2.Controls.Add(label9);
@@ -1051,15 +1009,16 @@ namespace TimeSpace
             maxPlayersLabel.TabIndex = 0;
             maxPlayersLabel.Text = "Max Players";
             // 
-            // button2
+            // PartnerCheckBox
             // 
-            button2.Location = new Point(1138, 514);
-            button2.Name = "button2";
-            button2.Size = new Size(75, 23);
-            button2.TabIndex = 113;
-            button2.Text = "button2";
-            button2.UseVisualStyleBackColor = true;
-            button2.Click += button2_Click_1;
+            PartnerCheckBox.BackColor = Color.FromArgb(23, 23, 25);
+            PartnerCheckBox.ForeColor = Color.White;
+            PartnerCheckBox.Location = new Point(923, 421);
+            PartnerCheckBox.Name = "PartnerCheckBox";
+            PartnerCheckBox.Size = new Size(140, 20);
+            PartnerCheckBox.TabIndex = 114;
+            PartnerCheckBox.Text = "Partner as Reward";
+            PartnerCheckBox.UseVisualStyleBackColor = false;
             // 
             // TimeSpaceTool
             // 
@@ -1111,8 +1070,6 @@ namespace TimeSpace
         public ModernTextBox textBox13;
         public Panel panelButtons;
         public Dictionary<string, (ModernTextBox, ModernTextBox)> objectiveValueControls;
-        public MaterialButton materialButton1;
-        public ModernTextBox modernTextBox1;
         public ModernTextBox modernTextBox2;
         public MaterialButton materialButton2;
         public ItemSlot pictureBox15;
@@ -1163,6 +1120,6 @@ namespace TimeSpace
         public ItemSlot BonusItemSlot1;
         public ItemSlot SpecialItemSlot2;
         private Label label1;
-        private Button button2;
+        public CheckBox PartnerCheckBox;
     }
 }

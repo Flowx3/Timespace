@@ -19,7 +19,7 @@ namespace TimeSpace
         private TextBox txtX;
         private TextBox txtY;
         private ModernButton btnConfigurePortals;
-        private List<string> selectedEvents;
+        public List<string> selectedEvents;
         private List<string> lockedPortalsList;
         private CustomTabPage _tabPage;
 
@@ -138,12 +138,12 @@ namespace TimeSpace
                 script.Append(".OnSwitch({ \n");
                 foreach (var evt in selectedEvents)
                 {
-                    script.AppendLine($"        {evt},");
+                    script.AppendLine($"        {evt}");
                 }
                 script.Append("    })");
             }
 
-            script.AppendLine(");");
+            script.Append(",");
             return script.ToString();
         }
     }

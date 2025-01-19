@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
@@ -100,6 +101,20 @@ namespace TimeSpace.MapgridPanel
             MouseMove += MapGridPanel_PositionUpdate;
             MouseLeave += MapGridPanel_MouseLeave;
             AutoScroll = false;
+            this.HandleCreated += (s, e) =>
+            {
+                var parentForm = GetParentForm();
+                if (parentForm != null)
+                {
+                    parentForm.Resize += (s2, e2) =>
+                    {
+                        if (_positionLabel.Visible)
+                        {
+                            _positionLabel.Visible = false;
+                        }
+                    };
+                }
+            };
         }
         protected override CreateParams CreateParams
         {
@@ -118,7 +133,7 @@ namespace TimeSpace.MapgridPanel
             MouseUp += MapGridPanel_MouseUp;
         }
 
-        public void SetGrid(string mapId, int width, int height, byte[] grid)
+        public void SetGrid(string mapId, int width, int height, byte[] grid, bool IsOverView = false)
         {
             if (width <= 0 || height <= 0)
                 throw new ArgumentException($"Invalid grid dimensions: width={width}, height={height}");
@@ -127,14 +142,21 @@ namespace TimeSpace.MapgridPanel
             _width = width;
             _height = height;
             _currentMapId = mapId;
-
-            int maxCellWidth = Math.Max(1, FixedPanelWidth / _width);
-            int maxCellHeight = Math.Max(1, FixedPanelHeight / _height);
-            _cellSize = Math.Min(maxCellWidth, maxCellHeight);
-
-            Width = Math.Max(FixedPanelWidth, _width * _cellSize);
-            Height = Math.Max(FixedPanelHeight, _height * _cellSize);
-
+            int maxDimension = Math.Max(width, height);
+            if (IsOverView)
+            {
+                _cellSize = 300 / maxDimension;
+                Width = Math.Max(300, _width * _cellSize);
+                Height = Math.Max(300, _height * _cellSize);
+            }
+            else
+            {
+                _cellSize = FixedPanelWidth / maxDimension;
+                Width = Math.Max(FixedPanelWidth, _width * _cellSize);
+                Height = Math.Max(FixedPanelHeight, _height * _cellSize);
+            }
+            _cellSize = Math.Clamp(_cellSize, 1, 50);
+            _originalCellSize = _cellSize;
 
             Invalidate();
         }
@@ -146,14 +168,6 @@ namespace TimeSpace.MapgridPanel
 
             SetGrid(_currentMapId, _width, _height, _grid);
         }
-        public void UpdateScale(float newScale)
-        {
-            currentScale = newScale;
-            // Ensure the cell size matches the zoom level
-            _cellSize = (int)(15 * currentScale); // Adjust base cell size if needed
-            Invalidate();
-        }
-
         public bool IsWalkable(int x, int y) => !IsBlockingZone(x, y, out _);
 
         public (int x, int y) GenerateWalkablePosition()
@@ -215,13 +229,12 @@ namespace TimeSpace.MapgridPanel
                     var color = GetColor(_grid[y * _width + x]);
                     bool drawLockIcon = false;
 
-                    // Check for Portal and adjust color
                     var portal = _parentTab?.Portals.FirstOrDefault(p => p.FromX == x && p.FromY == y);
                     if (portal != null)
                     {
                         if (portal.PortalType == "TSEnd" || portal.PortalType == "TSEndClosed")
                         {
-                            color = Color.DarkBlue;
+                            color = Color.DarkCyan;
                         }
 
                         if (portal.PortalType == "TSEndClosed" || portal.PortalType == "Locked")
@@ -236,7 +249,6 @@ namespace TimeSpace.MapgridPanel
                     using var pen = new Pen(Color.Black);
                     e.Graphics.DrawRectangle(pen, x * _cellSize, y * _cellSize, _cellSize, _cellSize);
 
-                    // Draw lock icon if necessary
                     if (drawLockIcon)
                     {
                         DrawLockIcon(e.Graphics, x, y);
@@ -244,7 +256,6 @@ namespace TimeSpace.MapgridPanel
                 }
             }
 
-            // Draw ghost image while dragging (existing code)
             if (_isDragging && _dragStart.HasValue)
             {
                 int cellX = _lastMousePosition.X / _cellSize;
@@ -388,6 +399,16 @@ namespace TimeSpace.MapgridPanel
         }
         #region Position Label
 
+        private Form GetParentForm()
+        {
+            Control current = this;
+            while (current != null && !(current is Form))
+            {
+                current = current.Parent;
+            }
+            return current as Form;
+        }
+
         private void InitializePositionLabel()
         {
             _positionLabel = new Label
@@ -412,6 +433,17 @@ namespace TimeSpace.MapgridPanel
                 return;
             }
 
+            Form parentForm = GetParentForm();
+            if (parentForm == null)
+            {
+                return;
+            }
+
+            if (_positionLabel.Parent != parentForm)
+            {
+                parentForm.Controls.Add(_positionLabel);
+            }
+
             int cellX = e.X / _cellSize;
             int cellY = e.Y / _cellSize;
 
@@ -420,15 +452,29 @@ namespace TimeSpace.MapgridPanel
                 StringBuilder labelText = new StringBuilder();
                 labelText.AppendLine($"X: {cellX}, Y: {cellY}");
 
-                // Check for Portal
-                var portal = _parentTab?.Portals.FirstOrDefault(p => p.FromX == cellX && p.FromY == cellY);
+                Portal? portal = _parentTab?.Portals.FirstOrDefault(p => p.FromX == cellX && p.FromY == cellY);
+                var PortalsInTaskFail = _parentTab?.GetTaskFailEvents();
+                var PortalsInTaskFinish = _parentTab?.GetTaskFinishEvents();
                 if (portal != null)
                 {
-                    labelText.AppendLine($"portal_mapfrom: {portal.MapFrom} ({portal.FromX},{portal.FromY})");
-                    labelText.AppendLine($"portal_mapto: {portal.MapTo} ({portal.ToX},{portal.ToY})");
-                    labelText.AppendLine($"portal type: {portal.PortalType}");
+                    labelText.AppendLine($"Portal MapFrom: {portal.MapFrom} ({portal.FromX},{portal.FromY})");
+                    labelText.AppendLine($"Portal MapTo: {portal.MapTo} ({portal.ToX},{portal.ToY})");
+                    labelText.AppendLine($"Portal Type: {portal.PortalType}");
+                    foreach (var Task in PortalsInTaskFinish)
+                    {
+                        if (Task.Contains(portal.MapFrom) && Task.Contains(portal.MapTo))
+                        {
+                            labelText.AppendLine($"Portal TaskFinish Events: \n{Task}");
+                        }
+                    }
+                    foreach (var Task in PortalsInTaskFail)
+                    {
+                        if (Task.Contains(portal.MapFrom) && Task.Contains(portal.MapTo))
+                        {
+                            labelText.AppendLine($"Portal TaskFail Events: \n{Task}");
+                        }
+                    }
 
-                    // Check if the portal is locked
                     if (portal.PortalType == "TSEndClosed" || portal.PortalType == "Locked")
                     {
                         labelText.AppendLine("Locked: Yes");
@@ -439,48 +485,80 @@ namespace TimeSpace.MapgridPanel
                     }
                 }
 
-                // Check for Monster
                 foreach (DataGridViewRow row in _parentTab?.MonsterDataGridView.Rows)
                 {
                     if (row.IsNewRow) continue;
                     int x = Convert.ToInt32(row.Cells["X"].Value);
                     int y = Convert.ToInt32(row.Cells["Y"].Value);
                     int vnum = Convert.ToInt32(row.Cells["Vnum"].Value);
+                    var Attributes = row.Cells["Attributes"].Value?.ToString();
                     if (x == cellX && y == cellY)
                     {
                         labelText.AppendLine($"Monster VNum: {vnum}");
+                        if (Attributes != null)
+                            labelText.AppendLine($"Attributes: {string.Join(Environment.NewLine, Attributes.Split(','))}");
                         break;
                     }
                 }
 
-                // Check for NPC
                 foreach (DataGridViewRow row in _parentTab?.NpcDataGridview.Rows)
                 {
                     if (row.IsNewRow) continue;
                     int x = Convert.ToInt32(row.Cells["X"].Value);
                     int y = Convert.ToInt32(row.Cells["Y"].Value);
                     int vnum = Convert.ToInt32(row.Cells["Vnum"].Value);
+                    var Attributes = row.Cells["Attributes"].Value?.ToString();
                     if (x == cellX && y == cellY)
                     {
                         labelText.AppendLine($"NPC VNum: {vnum}");
+                        if (Attributes != null)
+                            labelText.AppendLine($"Attributes: {string.Join(Environment.NewLine, Attributes.Split(','))}");
                         break;
                     }
                 }
 
-                // Check for Objective
-                var mapObject = _parentTab?.Objects.FirstOrDefault(o => o.GetX() == cellX && o.GetY() == cellY);
+                MapObject? mapObject = _parentTab?.Objects.FirstOrDefault(o => o.GetX() == cellX && o.GetY() == cellY);
                 if (mapObject != null)
                 {
                     labelText.AppendLine($"Objective Type: {mapObject.ObjectType}");
+                    labelText.AppendLine($"Objective Events: \n{string.Join(", ", mapObject.selectedEvents).Replace(", ", ",\n")}");
                 }
 
                 _positionLabel.Text = labelText.ToString();
 
-                // Adjust label position
-                int labelX = Math.Clamp(e.X + 10, 0, Width - _positionLabel.Width);
-                int labelY = Math.Clamp(e.Y + 10, 0, Height - _positionLabel.Height);
+                Point panelPoint = this.PointToScreen(e.Location);
+                Point formPoint = parentForm.PointToClient(panelPoint);
 
-                _positionLabel.Location = new Point(labelX, labelY);
+                int spaceRight = parentForm.ClientSize.Width - formPoint.X;
+                int spaceBottom = parentForm.ClientSize.Height - formPoint.Y;
+
+                int offsetX = 10;
+                int offsetY = 10;
+
+                Size labelSize = _positionLabel.PreferredSize;
+
+                if (spaceRight < labelSize.Width + offsetX)
+                {
+                    formPoint.X = formPoint.X - labelSize.Width - offsetX;
+                }
+                else
+                {
+                    formPoint.X += offsetX;
+                }
+
+                if (spaceBottom < labelSize.Height + offsetY)
+                {
+                    formPoint.Y = formPoint.Y - labelSize.Height - offsetY;
+                }
+                else
+                {
+                    formPoint.Y += offsetY;
+                }
+
+                formPoint.X = Math.Max(0, Math.Min(formPoint.X, parentForm.ClientSize.Width - labelSize.Width));
+                formPoint.Y = Math.Max(0, Math.Min(formPoint.Y, parentForm.ClientSize.Height - labelSize.Height));
+
+                _positionLabel.Location = formPoint;
                 _positionLabel.Visible = true;
                 _positionLabel.BringToFront();
             }
@@ -489,12 +567,21 @@ namespace TimeSpace.MapgridPanel
                 _positionLabel.Visible = false;
             }
         }
-
         private void MapGridPanel_MouseLeave(object sender, EventArgs e)
         {
             _positionLabel.Visible = false;
         }
+        protected override void OnParentChanged(EventArgs e)
+        {
+            base.OnParentChanged(e);
 
+            var parentForm = GetParentForm();
+            if (parentForm != null && _positionLabel != null && _positionLabel.Parent != parentForm)
+            {
+                parentForm.Controls.Add(_positionLabel);
+                _positionLabel.BringToFront();
+            }
+        }
         #endregion
         #region Context Menu
         private void InitializeContextMenu()
@@ -574,14 +661,10 @@ namespace TimeSpace.MapgridPanel
 
         private string DetermineOrientation(int x, int y)
         {
-            // Calculate position relative to map center
             double centerX = _width / 2.0;
             double centerY = _height / 2.0;
-
-            // Calculate angles from center to point
             double angle = Math.Atan2(y - centerY, x - centerX) * (180 / Math.PI);
 
-            // Convert angle to orientation
             return angle switch
             {
                 <= 45 and > -45 => EAST,
@@ -649,7 +732,6 @@ namespace TimeSpace.MapgridPanel
             _parentTab.Objects.Add(mapObject);
             _parentTab._objectivePanel.Controls.Add(mapObject.CreateObject());
 
-            // Update marking and force refresh
             _grid[_contextMenuPosition.y * _width + _contextMenuPosition.x] = 0x30;
             Refresh();
         }
@@ -879,17 +961,48 @@ namespace TimeSpace.MapgridPanel
         }
         private void DrawLockIcon(Graphics graphics, int cellX, int cellY)
         {
-            int iconSize = _cellSize / 2;
-            int iconX = cellX * _cellSize + (_cellSize - iconSize) / 2;
-            int iconY = cellY * _cellSize + (_cellSize - iconSize) / 2;
+            int cellSize = _cellSize;
 
-            // Draw lock body
-            Rectangle lockBody = new Rectangle(iconX, iconY + iconSize / 3, iconSize, iconSize * 2 / 3);
-            graphics.FillRectangle(Brushes.Black, lockBody);
+            float centerX = cellX * cellSize + (cellSize / 2f);
+            float centerY = cellY * cellSize + (cellSize / 2f) + (cellSize * 0.1f);
 
-            // Draw shackle
-            Rectangle shackle = new Rectangle(iconX + iconSize / 4, iconY, iconSize / 2, iconSize / 3);
-            graphics.DrawArc(new Pen(Color.Black, 2), shackle, 0, 180);
+            float lockWidth = cellSize * 0.7f;  
+            float lockHeight = cellSize * 0.8f; 
+
+            using (GraphicsPath path = new GraphicsPath())
+            {
+                float bodyX = centerX - (lockWidth / 2f);
+                float bodyY = centerY - (lockHeight / 2f) + (lockHeight * 0.2f);
+                float bodyWidth = lockWidth;
+                float bodyHeight = lockHeight * 0.6f;
+
+                float cornerRadius = Math.Max(1, cellSize * 0.15f);
+                RectangleF bodyRect = new RectangleF(bodyX, bodyY, bodyWidth, bodyHeight);
+                path.AddArc(bodyX, bodyY, cornerRadius, cornerRadius, 180, 90);
+                path.AddArc(bodyX + bodyWidth - cornerRadius, bodyY, cornerRadius, cornerRadius, 270, 90);
+                path.AddArc(bodyX + bodyWidth - cornerRadius, bodyY + bodyHeight - cornerRadius, cornerRadius, cornerRadius, 0, 90);
+                path.AddArc(bodyX, bodyY + bodyHeight - cornerRadius, cornerRadius, cornerRadius, 90, 90);
+                path.CloseFigure();
+
+                float shackleWidth = lockWidth * 0.6f;
+                float shackleHeight = lockHeight * 0.4f;
+                float shackleX = centerX - (shackleWidth / 2f);
+                float shackleY = bodyY - shackleHeight * 0.8f;
+
+                using (GraphicsPath shacklePath = new GraphicsPath())
+                {
+                    float shackleThickness = Math.Max(1, cellSize * 0.15f);
+                    shacklePath.AddArc(shackleX, shackleY, shackleWidth, shackleHeight, 180, 180);
+
+                    graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    using (Pen shacklePen = new Pen(Color.Black, shackleThickness))
+                    {
+                        graphics.DrawPath(shacklePen, shacklePath);
+                    }
+                }
+
+                graphics.FillPath(Brushes.Black, path);
+            }
         }
         #endregion
     }

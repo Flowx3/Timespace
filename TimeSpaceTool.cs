@@ -30,6 +30,7 @@ namespace TimeSpace
         public Config config;
         private Dictionary<string, string> timespacesData;
         private MapResourceFileLoader mapResourceFileLoader;
+        private MenuStrip menuStrip;
         public TimeSpaceTool()
         {
             //.WithOnStartDialog(6194) TO GET PARTNER PUT INTO TIMESPACE CONFIG TAB
@@ -132,6 +133,27 @@ namespace TimeSpace
                     .Build();
             timespacesData = deserializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(config.TimespacesFilePath));
             mapResourceFileLoader = new(new ResourceLoadingConfiguration() { GameDataPath = config.GameDataPath, GameMapsPath = config.GameMapsPath });
+            menuStrip = new MenuStrip
+            {
+                BackColor = Color.FromArgb(30, 30, 30),
+                ForeColor = Color.White,
+                Renderer = new CustomToolStripRenderer() 
+            };
+
+            var createMapMenuItem = new ToolStripMenuItem("Open Overview", null, button2_Click_1)
+            {
+                BackColor = Color.FromArgb(30, 30, 30),
+                ForeColor = Color.White
+            };
+            var createMapMenuItem2 = new ToolStripMenuItem("Load Timespace",null, MaterialButton1_Click)
+            {
+                BackColor = Color.FromArgb(30, 30, 30),
+                ForeColor = Color.White
+            };
+            menuStrip.Items.Add(createMapMenuItem);
+            menuStrip.Items.Add(createMapMenuItem2);
+            menuStrip.Dock = DockStyle.Top;
+            Controls.Add(menuStrip);
         }
         private void ShowMapOverview()
         {
@@ -140,7 +162,6 @@ namespace TimeSpace
         }
         protected override bool ProcessDialogKey(Keys keyData)
         {
-            // If the active control is a MapGridPanel or within a CustomTabPage
             if (ActiveControl is MapGridPanel mapPanel)
             {
                 if (keyData == (Keys.Control | Keys.Z) && mapPanel.CanUndo)
@@ -208,7 +229,6 @@ namespace TimeSpace
             mapTabs.Add(newTab);
             mapCount++;
 
-            // Refresh all tabs
             foreach (var tab in mapTabs)
             {
                 tab.SaveAndRefreshPortals(sender, e, false);
@@ -229,17 +249,14 @@ namespace TimeSpace
             var selectedTab = tabControl2.SelectedTab as CustomTabPage;
             if (selectedTab != null)
             {
-                // Clean up the coordinates
                 selectedTab.CleanupCoordinates();
 
-                // Remove from tab control and list
                 tabControl2.TabPages.Remove(selectedTab);
                 if (mapTabs.Contains(selectedTab))
                 {
                     mapTabs.Remove(selectedTab);
                 }
 
-                // Dispose the tab
                 selectedTab.Dispose();
             }
         }
@@ -363,7 +380,7 @@ namespace TimeSpace
             luaScript.AppendLine($"    .SetSpawn(Location.InMap({mapTabs[0].MapName}).At({textBox3.Text}, {textBox5.Text}))");
             luaScript.AppendLine($"    .SetLives({textBox4.Text})");
             luaScript.AppendLine($"    .SetObjectives(objectives)");
-            luaScript.AppendLine($"    .SetDurationInSeconds({textBox7.Text})");
+            luaScript.AppendLine($"    .SetDurationInSeconds({numericUpDown2.Value})");
             luaScript.AppendLine($"    .SetBonusPointItemDropChance({textBox8.Text})");
             luaScript.AppendLine("return ts");
 
@@ -460,5 +477,6 @@ namespace TimeSpace
         {
             ShowMapOverview();
         }
+
     }
 }

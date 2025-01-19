@@ -11,7 +11,6 @@ using TimeSpace.MapgridPanel;
 public class MapOverviewForm : Form
 {
     private const int PADDING = 30;
-    private const int CELL_SIZE = 10;
     private const int GRID_SIZE = 11;
     private const int HEADER_SIZE = 40;
     private const int MAP_SIZE = 300;
@@ -90,11 +89,18 @@ public class MapOverviewForm : Form
         BackColor = Color.FromArgb(50, 50, 50);
 
         // Create MenuStrip
-        menuStrip = new MenuStrip();
-        var fileMenuItem = new ToolStripMenuItem("File");
-        var createMapMenuItem = new ToolStripMenuItem("Create New Map", null, CreateMapMenuItem_Click);
-        fileMenuItem.DropDownItems.Add(createMapMenuItem);
-        menuStrip.Items.Add(fileMenuItem);
+        menuStrip = new MenuStrip
+        {
+            BackColor = Color.FromArgb(30, 30, 30),
+            ForeColor = Color.White,
+            Renderer = new CustomToolStripRenderer()
+        };
+        var createMapMenuItem = new ToolStripMenuItem("Create New Map", null, CreateMapMenuItem_Click)
+        {
+            BackColor = Color.FromArgb(30, 30, 30),
+            ForeColor = Color.White
+        };
+        menuStrip.Items.Add(createMapMenuItem);
         menuStrip.Dock = DockStyle.Top;
 
         // Add the MenuStrip to the form
@@ -119,7 +125,7 @@ public class MapOverviewForm : Form
             {
                 Text = $"[{i}]",
                 Location = new Point(5, HEADER_SIZE + (i * (MAP_SIZE + PADDING))),
-                Size = new Size(30, MAP_SIZE),
+                Size = new Size(MAP_SIZE, MAP_SIZE),
                 TextAlign = ContentAlignment.MiddleRight,
                 ForeColor = Color.White,
                 BackColor = Color.Transparent
@@ -134,7 +140,7 @@ public class MapOverviewForm : Form
             {
                 Text = $"[{j}]",
                 Location = new Point(HEADER_SIZE + (j * (MAP_SIZE + PADDING)), 5),
-                Size = new Size(MAP_SIZE, 30),
+                Size = new Size(MAP_SIZE, MAP_SIZE),
                 TextAlign = ContentAlignment.BottomCenter,
                 ForeColor = Color.White,
                 BackColor = Color.Transparent
@@ -142,7 +148,6 @@ public class MapOverviewForm : Form
             containerPanel.Controls.Add(colLabel);
         }
     }
-
     private void InitializeGridPanels()
     {
         containerPanel.Controls.Clear();
@@ -168,13 +173,16 @@ public class MapOverviewForm : Form
                 Size = new Size(MAP_SIZE, MAP_SIZE),
                 Tag = tabPage
             };
+
             var setStyleMethod = typeof(Control).GetMethod("SetStyle", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
             setStyleMethod.Invoke(mapGridPanel, new object[] { ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true });
+
             mapGridPanel.SetGrid(
                 tabPage.MapName,
                 tabPage._mapGridPanel._width,
                 tabPage._mapGridPanel._height,
-                tabPage._mapGridPanel._grid
+                tabPage._mapGridPanel._grid,
+                true
             );
 
             var contextMenu = new ContextMenuStrip();
@@ -183,10 +191,12 @@ public class MapOverviewForm : Form
             contextMenu.Items.Add("Add NPC", null, (s, e) => AddNpc_Click(tabPage, mapGridPanel, _contextMenuPosition));
             contextMenu.Items.Add("Add Objective", null, (s, e) => AddObjective_Click(tabPage, mapGridPanel, _contextMenuPosition));
             contextMenu.Items.Add("Connect Portal", null, (s, e) => StartConnectingPortals(tabPage, mapGridPanel));
+            contextMenu.Items.Add("Toggle Portal", null, (s, e) => TogglePortal_Click(tabPage, mapGridPanel, _contextMenuPosition));
             contextMenu.Items.Add("Remove Element", null, (s, e) => RemoveElement_Click(tabPage, mapGridPanel, _contextMenuPosition));
 
             mapGridPanel.Tag = (contextMenu, tabPage);
             mapGridPanel.MouseClick += (s, e) => MapGridPanel_MouseClick(mapGridPanel, e);
+            mapGridPanel.DoubleClick += (s, e) => MapGridPanel_DoubleClick(mapGridPanel, e);
             mapGridPanel.InitializeDragAndDrop(tabPage);
             gridPanels.Add(tabPage, mapGridPanel);
             containerPanel.Controls.Add(mapGridPanel);
@@ -202,7 +212,15 @@ public class MapOverviewForm : Form
             ShowNoMapsMessage();
         }
     }
-
+    private void MapGridPanel_DoubleClick(MapGridPanel panel, EventArgs e)
+    {
+        _mainForm.Invoke(new Action(() =>
+        {
+            _mainForm.tabControl1.SelectedTab = _mainForm.tabPage3;
+            _mapTabControl.SelectedTab = panel._parentTab;
+            Close();
+        }));
+    }
     private void InitializePortalConnections()
     {
         foreach (CustomTabPage sourceTab in _tabPages)
@@ -393,8 +411,8 @@ public class MapOverviewForm : Form
                 localPoint.Y >= 0 && localPoint.Y < panel.Height)
             {
                 // Convert to grid coordinates
-                int gridX = localPoint.X / CELL_SIZE;
-                int gridY = localPoint.Y / CELL_SIZE;
+                int gridX = localPoint.X / panel._cellSize;
+                int gridY = localPoint.Y / panel._cellSize;
 
                 // Check if clicked on a portal
                 if (GetMarking(panel, gridX, gridY) == 0x40)
@@ -459,7 +477,29 @@ public class MapOverviewForm : Form
             }
         }
     }
-
+    private void TogglePortal_Click(CustomTabPage tabPage, MapGridPanel panel, (int X, int Y) Location)
+    {
+        var portal = tabPage.Portals.FirstOrDefault(p =>
+            p.FromX == Location.X &&
+            p.FromY == Location.Y);
+        if (portal.PortalType == "Locked")
+        {
+            portal.PortalType = "TsNormal";
+        }
+        else if (portal.PortalType == "TsNormal")
+        {
+            portal.PortalType = "Locked";
+        }
+        else if (portal.PortalType == "TSEnd")
+        {
+            portal.PortalType = "TSEndClosed";
+        }
+        else
+        {
+            portal.PortalType = "TSEnd";
+        }
+        Refresh();
+    }
     private void CancelPortalConnection()
     {
         isConnectingPortals = false;
@@ -581,7 +621,7 @@ public class MapOverviewForm : Form
     {
         if (e.Button == MouseButtons.Left && isConnectingPortals)
         {
-            // Only cancel if we're not clicking on a portal cell
+            // Calculate click position using the panel's cell size
             var clickX = e.X / panel._cellSize;
             var clickY = e.Y / panel._cellSize;
 
@@ -596,6 +636,7 @@ public class MapOverviewForm : Form
         {
             var (contextMenu, tabPage) = ((ContextMenuStrip, CustomTabPage))panel.Tag;
 
+            // Use the panel's cell size for calculation
             int cellX = e.X / panel._cellSize;
             int cellY = e.Y / panel._cellSize;
 
@@ -611,7 +652,7 @@ public class MapOverviewForm : Form
             {
                 if (item.Text == "Remove Element")
                     item.Visible = !isWalkable;
-                else if (item.Text == "Connect Portal")
+                else if (item.Text == "Connect Portal" || item.Text == "Toggle Portal")
                     item.Visible = isPortal;
                 else
                     item.Visible = isWalkable && !isPortal;
@@ -659,7 +700,6 @@ public class MapOverviewForm : Form
                 originalPositions[tabPage] = new Point(xPos, yPos);
                 panel.Location = originalPositions[tabPage];
                 panel.Size = new Size(MAP_SIZE, MAP_SIZE);
-                panel._cellSize = CELL_SIZE;
                 panel.Visible = true;
             }
         }

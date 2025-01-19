@@ -567,11 +567,11 @@ public class TimeSpaceParser
 
         // Now parse the complete definition
         string completeDefinition = fullDefinition.ToString();
-        var onSwitchMatch = Regex.Match(completeDefinition, @"OnSwitch\({([^}]+)}", RegexOptions.Singleline);
+        var onSwitchMatch = Regex.Match(completeDefinition, @"OnSwitch\({([^}]+)}|OnTrigger\({([^}]+)}", RegexOptions.Singleline);
 
         if (onSwitchMatch.Success)
         {
-            var eventSection = onSwitchMatch.Groups[1].Value;
+            var eventSection = onSwitchMatch.Groups[1].Success ? onSwitchMatch.Groups[1].Value : onSwitchMatch.Groups[2].Value;
             var eventMatches = Regex.Matches(eventSection, @"Event\.(\w+)\(([\w_\d]+)\)");
 
             foreach (Match match in eventMatches)
