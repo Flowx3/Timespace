@@ -28,7 +28,7 @@ namespace TimeSpace
         public TextBox txtToX;
         public TextBox txtToY;
         public Func<List<string>> getMapNames;
-        private CustomTabPage customTabPage;
+        public CustomTabPage customTabPage;
 
         public Portal(string mapFrom, string mapTo, string portalType, string minimapOrientation, int? fromX, int? fromY, int? toX, int? toY, Func<List<string>> GetMapNames, CustomTabPage customTabPage)
         {

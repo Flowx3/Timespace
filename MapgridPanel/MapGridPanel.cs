@@ -12,6 +12,7 @@ namespace TimeSpace.MapgridPanel
         public int _width;
         public int _height;
         public int _cellSize;
+        public int _originalCellSize;
         public string _currentMapId;
         private (int x, int y)? _highlightedPosition;
         private byte _originalHighlightValue;
@@ -236,7 +237,13 @@ namespace TimeSpace.MapgridPanel
                 }
             }
         }
-
+        public Point GridToScreenPosition(Point panelLocation)
+        {
+            return new Point(
+                panelLocation.X + (int)(_cellSize * currentScale / 2),
+                panelLocation.Y + (int)(_cellSize * currentScale / 2)
+            );
+        }
         public void ResetGrid()
         {
             if (_grid != null)
