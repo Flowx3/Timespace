@@ -23,7 +23,7 @@ namespace TimeSpace
     }
     public partial class TimeSpaceTool : Form
     {
-        public static List<CustomTabPage> mapTabs = new List<CustomTabPage>();
+        public static List<CustomTabPage> mapTabs = [];
         public Func<List<string>> getMapNames;
         private int mapCount = 0;
         public List<MapDataDTO> loadedMaps = [];
@@ -135,7 +135,7 @@ namespace TimeSpace
         }
         private void ShowMapOverview()
         {
-            var overviewForm = new MapOverviewForm(tabControl2);
+            var overviewForm = new MapOverviewForm(tabControl2, this);
             overviewForm.ShowDialog();
         }
         protected override bool ProcessDialogKey(Keys keyData)

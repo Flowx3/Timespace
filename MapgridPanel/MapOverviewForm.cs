@@ -37,6 +37,8 @@ public class MapOverviewForm : Form
     private MapGridPanel sourcePanel;
     private Point sourcePortalPoint;
     private CustomTabPage sourceTabPage;
+    private MenuStrip menuStrip;
+    private TimeSpaceTool _mainForm;
 
     private class PortalConnection
     {
@@ -45,18 +47,12 @@ public class MapOverviewForm : Form
         public Point StartGrid { get; set; }
         public Point EndGrid { get; set; }
     }
-    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
-    {
-        if (keyData == Keys.Escape && isConnectingPortals)
-        {
-            CancelPortalConnection();
-            return true;
-        }
-        return base.ProcessCmdKey(ref msg, keyData);
-    }
-    public MapOverviewForm(TabControl mapTabControl)
+
+    #region Constructor
+    public MapOverviewForm(TabControl mapTabControl, TimeSpaceTool mainForm)
     {
         _mapTabControl = mapTabControl ?? throw new ArgumentNullException(nameof(mapTabControl));
+        _mainForm = mainForm ?? throw new ArgumentNullException(nameof(mainForm));
         _tabPages = new List<CustomTabPage>();
         gridPanels = new Dictionary<CustomTabPage, MapGridPanel>();
         originalPositions = new Dictionary<CustomTabPage, Point>();
@@ -82,19 +78,27 @@ public class MapOverviewForm : Form
                 System.Diagnostics.Debug.WriteLine($"Error updating connections: {ex}");
             }
         }
-        LogDebug("Initializing MapOverviewForm");
-        CenterViewOnFirstMap();
     }
-    private void LogDebug(string message)
-    {
-        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {message}");
-    }
+    #endregion
+
+    #region Initialization
     private void InitializeComponent()
     {
         Text = "Map Overview";
-        Size = Screen.PrimaryScreen.WorkingArea.Size; 
+        Size = Screen.PrimaryScreen.WorkingArea.Size;
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(50, 50, 50);
+
+        // Create MenuStrip
+        menuStrip = new MenuStrip();
+        var fileMenuItem = new ToolStripMenuItem("File");
+        var createMapMenuItem = new ToolStripMenuItem("Create New Map", null, CreateMapMenuItem_Click);
+        fileMenuItem.DropDownItems.Add(createMapMenuItem);
+        menuStrip.Items.Add(fileMenuItem);
+        menuStrip.Dock = DockStyle.Top;
+
+        // Add the MenuStrip to the form
+        Controls.Add(menuStrip);
 
         containerPanel = new DoubleBufferedPanel();
         containerPanel.Paint += ContainerPanel_Paint;
@@ -138,6 +142,7 @@ public class MapOverviewForm : Form
             containerPanel.Controls.Add(colLabel);
         }
     }
+
     private void InitializeGridPanels()
     {
         containerPanel.Controls.Clear();
@@ -182,7 +187,7 @@ public class MapOverviewForm : Form
 
             mapGridPanel.Tag = (contextMenu, tabPage);
             mapGridPanel.MouseClick += (s, e) => MapGridPanel_MouseClick(mapGridPanel, e);
-
+            mapGridPanel.InitializeDragAndDrop(tabPage);
             gridPanels.Add(tabPage, mapGridPanel);
             containerPanel.Controls.Add(mapGridPanel);
         }
@@ -197,6 +202,7 @@ public class MapOverviewForm : Form
             ShowNoMapsMessage();
         }
     }
+
     private void InitializePortalConnections()
     {
         foreach (CustomTabPage sourceTab in _tabPages)
@@ -227,6 +233,349 @@ public class MapOverviewForm : Form
         }
         containerPanel.MouseMove += ContainerPanel_MouseMoveForConnection;
         containerPanel.MouseClick += ContainerPanel_MouseClickForConnection;
+    }
+    #endregion
+
+    #region Event Handlers
+    private void CreateMapMenuItem_Click(object sender, EventArgs e)
+    {
+        // Collect existing positions
+        List<Point> existingPositions = new List<Point>();
+        foreach (var tabPage in _tabPages)
+        {
+            string[] coords = tabPage._txtMapCoordinates.Text.Split(',');
+            if (coords.Length == 2 && int.TryParse(coords[0], out int x) && int.TryParse(coords[1], out int y))
+            {
+                existingPositions.Add(new Point(x, y));
+            }
+        }
+
+        // Open the GridSelector form to create new maps
+        var gridSelector = new GridSelectorForm(existingPositions);
+        gridSelector.FormClosed += (s, args) =>
+        {
+            if (gridSelector.DialogResult == DialogResult.OK && gridSelector.SelectedCoordinates.HasValue)
+            {
+                // Prompt for Map ID
+                string mapId = PromptForMapId();
+                if (!string.IsNullOrEmpty(mapId))
+                {
+                    CreateNewMapAtCoordinates(gridSelector.SelectedCoordinates.Value, mapId);
+
+                    // Refresh MapOverviewForm to include the new maps
+                    InitializeGridPanels();
+                    InitializePortalConnections();
+                    PositionPanelsBasedOnCoordinates();
+                    try
+                    {
+                        UpdateConnections();
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error updating connections: {ex}");
+                    }
+                    //CenterViewOnFirstMap();
+                    containerPanel.Invalidate();
+                }
+                else
+                {
+                    MessageBox.Show("Map creation canceled.", "Canceled", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+        };
+        gridSelector.ShowDialog();
+    }
+
+    private void ContainerPanel_MouseDown(object sender, MouseEventArgs e)
+    {
+        if (e.Button == MouseButtons.Left)
+        {
+            isDragging = true;
+            lastMousePosition = e.Location;
+            containerPanel.Cursor = Cursors.Hand;
+        }
+    }
+
+    private void ContainerPanel_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!isDragging) return;
+
+        int deltaX = e.X - lastMousePosition.X;
+        int deltaY = e.Y - lastMousePosition.Y;
+
+        Point currentScroll = containerPanel.AutoScrollPosition;
+        Point newScrollPosition = new Point(
+            Math.Max(0, -(currentScroll.X + deltaX)),
+            Math.Max(0, -(currentScroll.Y + deltaY))
+        );
+
+        if (newScrollPosition != containerPanel.AutoScrollPosition)
+        {
+            containerPanel.AutoScrollPosition = newScrollPosition;
+        }
+
+        lastMousePosition = e.Location;
+    }
+
+    private void ContainerPanel_MouseUp(object sender, MouseEventArgs e)
+    {
+        isDragging = false;
+        containerPanel.Cursor = Cursors.Default;
+    }
+
+    private void ContainerPanel_Paint(object sender, PaintEventArgs e)
+    {
+        if (_isDrawing) return;
+
+        _isDrawing = true;
+        _drawStopwatch.Restart();
+
+        try
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            // Draw existing connections
+            foreach (var connection in connections)
+            {
+                DrawConnection(g, connection);
+            }
+
+            // Draw the current connection being made
+            if (isDrawingConnection && sourcePanel != null)
+            {
+                var startPoint = GetConnectionPoint(sourcePanel, sourcePortalPoint);
+                using (var pen = new Pen(Color.FromArgb(180, 135, 206, 250), 2))
+                {
+                    pen.DashStyle = DashStyle.Dash;
+                    g.DrawLine(pen, startPoint, currentMousePosition);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error in ContainerPanel_Paint: {ex}");
+        }
+        finally
+        {
+            _drawStopwatch.Stop();
+            _isDrawing = false;
+        }
+    }
+
+    private void ContainerPanel_MouseMoveForConnection(object sender, MouseEventArgs e)
+    {
+        if (isDrawingConnection)
+        {
+            currentMousePosition = e.Location;
+            containerPanel.Invalidate(); // Trigger repaint to update the line
+        }
+    }
+
+    private void ContainerPanel_MouseClickForConnection(object sender, MouseEventArgs e)
+    {
+        if (!isDrawingConnection || e.Button != MouseButtons.Left) return;
+
+        // Find the panel and grid position at click location
+        foreach (var kvp in gridPanels)
+        {
+            var panel = kvp.Value;
+            var tabPage = kvp.Key;
+
+            // Convert click position to panel coordinates
+            Point localPoint = new Point(
+                e.X - panel.Location.X,
+                e.Y - panel.Location.Y
+            );
+
+            // Check if click is within panel bounds
+            if (localPoint.X >= 0 && localPoint.X < panel.Width &&
+                localPoint.Y >= 0 && localPoint.Y < panel.Height)
+            {
+                // Convert to grid coordinates
+                int gridX = localPoint.X / CELL_SIZE;
+                int gridY = localPoint.Y / CELL_SIZE;
+
+                // Check if clicked on a portal
+                if (GetMarking(panel, gridX, gridY) == 0x40)
+                {
+                    var targetPortal = tabPage.Portals.FirstOrDefault(p =>
+                        p.FromX == gridX &&
+                        p.FromY == gridY);
+
+                    if (targetPortal != null && targetPortal != sourcePortal)
+                    {
+                        ConnectPortals(sourcePortal, targetPortal);
+                        FinishConnection();
+                        return;
+                    }
+                }
+            }
+        }
+    }
+    #endregion
+
+    #region Portal Management
+    private void StartConnectingPortals(CustomTabPage tabPage, MapGridPanel panel)
+    {
+        if (!isConnectingPortals)
+        {
+            // Starting a new connection
+            isConnectingPortals = true;
+            sourcePanel = panel;
+            sourceTabPage = tabPage;
+            sourcePortalPoint = new Point(_contextMenuPosition.x, _contextMenuPosition.y);
+            sourcePortal = tabPage.Portals.FirstOrDefault(p =>
+                p.FromX == _contextMenuPosition.x &&
+                p.FromY == _contextMenuPosition.y);
+
+            containerPanel.Cursor = Cursors.Cross;
+            MessageBox.Show("Select another portal to connect to.\nPress ESC or left-click anywhere else to cancel.",
+                          "Connect Portals", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        else
+        {
+            // Attempting to complete a connection
+            if (sourcePortal != null)
+            {
+                var targetPortal = tabPage.Portals.FirstOrDefault(p =>
+                    p.FromX == _contextMenuPosition.x &&
+                    p.FromY == _contextMenuPosition.y);
+
+                if (targetPortal != null && targetPortal != sourcePortal)
+                {
+                    ConnectPortals(sourcePortal, targetPortal);
+                    isConnectingPortals = false;
+                    sourcePortal = null;
+                    sourcePanel = null;
+                    sourceTabPage = null;
+                    containerPanel.Cursor = Cursors.Default;
+                }
+                else if (targetPortal == sourcePortal)
+                {
+                    MessageBox.Show("Cannot connect a portal to itself.",
+                                  "Invalid Connection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+        }
+    }
+
+    private void CancelPortalConnection()
+    {
+        isConnectingPortals = false;
+        sourcePortal = null;
+        sourcePanel = null;
+        sourceTabPage = null;
+        containerPanel.Cursor = Cursors.Default;
+        // Add visual feedback
+        MessageBox.Show("Portal connection cancelled.", "Connection Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private void HandlePortalConnection(object sender, PortalClickEventArgs e)
+    {
+        if (selectedPortal == null)
+        {
+            selectedPortal = e.Portal;
+            selectedPanel = e.Panel;
+            return;
+        }
+
+        if (selectedPortal != e.Portal)
+        {
+            ConnectPortals(selectedPortal, e.Portal);
+            selectedPortal = null;
+            selectedPanel = null;
+            isConnectingPortals = false;
+            PortalClicked -= HandlePortalConnection;
+            Refresh();
+        }
+    }
+
+    private void ConnectPortals(Portal source, Portal target)
+    {
+        try
+        {
+            source.MapTo = target.MapFrom;
+            source.ToX = target.FromX;
+            source.ToY = target.FromY;
+            source.cboMapTo.SelectedItem = target.MapFrom;
+            source.txtToX.Text = target.FromX.ToString();
+            source.txtToY.Text = target.FromY.ToString();
+
+            target.MapTo = source.MapFrom;
+            target.ToX = source.FromX;
+            target.ToY = source.FromY;
+            target.cboMapTo.SelectedItem = source.MapFrom;
+            target.txtToX.Text = source.FromX.ToString();
+            target.txtToY.Text = source.FromY.ToString();
+
+            var sourceKey = (sourceTabPage, new Point(source.FromX.Value, source.FromY.Value));
+            var targetKey = (target.customTabPage, new Point(target.FromX.Value, target.FromY.Value));
+
+            portalConnections[sourceKey] = targetKey;
+            portalConnections[targetKey] = sourceKey;
+
+            UpdateConnections();
+            MessageBox.Show("Portals connected successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error connecting portals: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void FinishConnection()
+    {
+        isDrawingConnection = false;
+        sourcePortal = null;
+        sourcePanel = null;
+        containerPanel.Cursor = Cursors.Default;
+        containerPanel.Invalidate();
+    }
+    #endregion
+
+    #region Utility Methods
+    private string PromptForMapId()
+    {
+        using (var inputDialog = new InputBox("Enter Map ID", "Please enter the Map ID:"))
+        {
+            if (inputDialog.ShowDialog() == DialogResult.OK)
+            {
+                return inputDialog.InputText;
+            }
+            else
+            {
+                return null;
+            }
+        }
+    }
+    private void CreateNewMapAtCoordinates(Point coordinates, string mapId)
+    {
+        // Load map data using the provided mapId
+        var mapData = _mainForm.loadedMaps.FirstOrDefault(m => m.Id.ToString() == mapId);
+        if (mapData == null)
+        {
+            MessageBox.Show($"Map with ID {mapId} not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
+        // Create a new CustomTabPage and set coordinates
+        var newTabPage = new CustomTabPage($"map_{mapId}", _mainForm, _mainForm.getMapNames)
+        {
+            AutoScroll = true
+        };
+        newTabPage._txtMapCoordinates.Text = $"{coordinates.X},{coordinates.Y}";
+
+        // Initialize the new map grid panel
+        newTabPage._mapGridPanel = new MapGridPanel();
+        newTabPage.SetMapVnum(int.Parse(mapId));
+        newTabPage.LoadMap(_mainForm);
+        newTabPage.DisplayMapGrid(mapData);
+
+        // Add the new tab to the TabControl
+        _mapTabControl.TabPages.Add(newTabPage);
+        TimeSpaceTool.mapTabs.Add(newTabPage);
+        _mapTabControl.SelectedTab = newTabPage;
     }
     private void MapGridPanel_MouseClick(MapGridPanel panel, MouseEventArgs e)
     {
@@ -278,180 +627,17 @@ public class MapOverviewForm : Form
         var firstPanel = gridPanels.First().Value;
 
         // Calculate the point to center on
-        Point panelCenter = new Point(
-            firstPanel.Location.X + (MAP_SIZE / 2),
-            firstPanel.Location.Y + (MAP_SIZE / 2)
+        int panelCenterX = firstPanel.Location.X + firstPanel.Width / 2;
+        int panelCenterY = firstPanel.Location.Y + firstPanel.Height / 2;
+
+        // Set AutoScrollPosition (negative values)
+        containerPanel.AutoScrollPosition = new Point(
+            panelCenterX - containerPanel.ClientSize.Width / 2,
+            panelCenterY - containerPanel.ClientSize.Height / 2
         );
-
-        // Calculate the scroll position needed to center the panel
-        Point scrollPosition = new Point(
-            Math.Max(0, panelCenter.X - (containerPanel.ClientSize.Width / 2)),
-            Math.Max(0, panelCenter.Y - (containerPanel.ClientSize.Height / 2))
-        );
-        containerPanel.AutoScroll = true;
-        containerPanel.AutoScrollPosition = scrollPosition;
     }
-    private void StartConnectingPortals(CustomTabPage tabPage, MapGridPanel panel)
-    {
-        if (!isConnectingPortals)
-        {
-            // Starting a new connection
-            isConnectingPortals = true;
-            sourcePanel = panel;
-            sourceTabPage = tabPage;
-            sourcePortalPoint = new Point(_contextMenuPosition.x, _contextMenuPosition.y);
-            sourcePortal = tabPage.Portals.FirstOrDefault(p =>
-                p.FromX == _contextMenuPosition.x &&
-                p.FromY == _contextMenuPosition.y);
-
-            containerPanel.Cursor = Cursors.Cross;
-            MessageBox.Show("Select another portal to connect to.\nPress ESC or left-click anywhere else to cancel.",
-                          "Connect Portals", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-        else
-        {
-            // Attempting to complete a connection
-            if (sourcePortal != null)
-            {
-                var targetPortal = tabPage.Portals.FirstOrDefault(p =>
-                    p.FromX == _contextMenuPosition.x &&
-                    p.FromY == _contextMenuPosition.y);
-
-                if (targetPortal != null && targetPortal != sourcePortal)
-                {
-                    ConnectPortals(sourcePortal, targetPortal);
-                    isConnectingPortals = false;
-                    sourcePortal = null;
-                    sourcePanel = null;
-                    sourceTabPage = null;
-                    containerPanel.Cursor = Cursors.Default;
-                }
-                else if (targetPortal == sourcePortal)
-                {
-                    MessageBox.Show("Cannot connect a portal to itself.",
-                                  "Invalid Connection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-            }
-        }
-    }
-    private void CancelPortalConnection()
-    {
-        isConnectingPortals = false;
-        sourcePortal = null;
-        sourcePanel = null;
-        sourceTabPage = null;
-        containerPanel.Cursor = Cursors.Default;
-        // Add visual feedback
-        MessageBox.Show("Portal connection cancelled.", "Connection Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information);
-    }
-    private void ContainerPanel_MouseMoveForConnection(object sender, MouseEventArgs e)
-    {
-        if (isDrawingConnection)
-        {
-            currentMousePosition = e.Location;
-            containerPanel.Invalidate(); // Trigger repaint to update the line
-        }
-    }
-    private void ContainerPanel_MouseClickForConnection(object sender, MouseEventArgs e)
-    {
-        if (!isDrawingConnection || e.Button != MouseButtons.Left) return;
-
-        // Find the panel and grid position at click location
-        foreach (var kvp in gridPanels)
-        {
-            var panel = kvp.Value;
-            var tabPage = kvp.Key;
-
-            // Convert click position to panel coordinates
-            Point localPoint = new Point(
-                e.X - panel.Location.X,
-                e.Y - panel.Location.Y
-            );
-
-            // Check if click is within panel bounds
-            if (localPoint.X >= 0 && localPoint.X < panel.Width &&
-                localPoint.Y >= 0 && localPoint.Y < panel.Height)
-            {
-                // Convert to grid coordinates
-                int gridX = localPoint.X / CELL_SIZE;
-                int gridY = localPoint.Y / CELL_SIZE;
-
-                // Check if clicked on a portal
-                if (GetMarking(panel, gridX, gridY) == 0x40)
-                {
-                    var targetPortal = tabPage.Portals.FirstOrDefault(p =>
-                        p.FromX == gridX &&
-                        p.FromY == gridY);
-
-                    if (targetPortal != null && targetPortal != sourcePortal)
-                    {
-                        ConnectPortals(sourcePortal, targetPortal);
-                        FinishConnection();
-                        return;
-                    }
-                }
-            }
-        }
-    }
-    private void FinishConnection()
-    {
-        isDrawingConnection = false;
-        sourcePortal = null;
-        sourcePanel = null;
-        containerPanel.Cursor = Cursors.Default;
-        containerPanel.Invalidate();
-    }
-    private void HandlePortalConnection(object sender, PortalClickEventArgs e)
-    {
-        if (selectedPortal == null)
-        {
-            selectedPortal = e.Portal;
-            selectedPanel = e.Panel;
-            return;
-        }
-
-        if (selectedPortal != e.Portal)
-        {
-            ConnectPortals(selectedPortal, e.Portal);
-            selectedPortal = null;
-            selectedPanel = null;
-            isConnectingPortals = false;
-            PortalClicked -= HandlePortalConnection;
-            Refresh();
-        }
-    }
-    private void ConnectPortals(Portal source, Portal target)
-    {
-        try
-        {
-            source.MapTo = target.MapFrom;
-            source.ToX = target.FromX;
-            source.ToY = target.FromY;
-            source.cboMapTo.SelectedItem = target.MapFrom;
-            source.txtToX.Text = target.FromX.ToString();
-            source.txtToY.Text = target.FromY.ToString();
-
-            target.MapTo = source.MapFrom;
-            target.ToX = source.FromX;
-            target.ToY = source.FromY;
-            target.cboMapTo.SelectedItem = source.MapFrom;
-            target.txtToX.Text = source.FromX.ToString();
-            target.txtToY.Text = source.FromY.ToString();
-
-            var sourceKey = (sourceTabPage, new Point(source.FromX.Value, source.FromY.Value));
-            var targetKey = (target.customTabPage, new Point(target.FromX.Value, target.FromY.Value));
-
-            portalConnections[sourceKey] = targetKey;
-            portalConnections[targetKey] = sourceKey;
-
-            UpdateConnections();
-            MessageBox.Show("Portals connected successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Error connecting portals: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-    }
+    #endregion
+    #region Panel Positioning and Drawing
     private void PositionPanelsBasedOnCoordinates()
     {
         if (!gridPanels.Any()) return;
@@ -482,7 +668,6 @@ public class MapOverviewForm : Form
     }
     private void UpdateConnections()
     {
-        LogDebug($"Starting UpdateConnections. Portal connections count: {portalConnections.Count}");
         connections.Clear();
         int addedCount = 0;
 
@@ -490,13 +675,11 @@ public class MapOverviewForm : Form
         {
             if (!gridPanels.TryGetValue(connection.Key.Item1, out var sourcePanel))
             {
-                LogDebug($"Source panel not found for {connection.Key.Item1.Text}");
                 continue;
             }
 
             if (!gridPanels.TryGetValue(connection.Value.Item1, out var targetPanel))
             {
-                LogDebug($"Target panel not found for {connection.Value.Item1.Text}");
                 continue;
             }
 
@@ -510,10 +693,8 @@ public class MapOverviewForm : Form
 
             connections.Add(newConnection);
             addedCount++;
-            LogDebug($"Added connection: {newConnection}");
         }
 
-        LogDebug($"UpdateConnections completed. Added {addedCount} connections");
         containerPanel.Invalidate();
     }
     private void UpdateContainerSize()
@@ -522,80 +703,6 @@ public class MapOverviewForm : Form
         int totalHeight = HEADER_SIZE + (GRID_SIZE + 1) * (MAP_SIZE + PADDING);
 
         containerPanel.AutoScrollMinSize = new Size(totalWidth, totalHeight);
-    }
-    private void ContainerPanel_MouseDown(object sender, MouseEventArgs e)
-    {
-        if (e.Button == MouseButtons.Left)
-        {
-            isDragging = true;
-            lastMousePosition = e.Location;
-            containerPanel.Cursor = Cursors.Hand;
-        }
-    }
-    private void ContainerPanel_MouseMove(object sender, MouseEventArgs e)
-    {
-        if (!isDragging) return;
-
-        int deltaX = e.X - lastMousePosition.X;
-        int deltaY = e.Y - lastMousePosition.Y;
-
-        Point currentScroll = containerPanel.AutoScrollPosition;
-        Point newScrollPosition = new Point(
-            Math.Max(0, -(currentScroll.X + deltaX)),
-            Math.Max(0, -(currentScroll.Y + deltaY))
-        );
-
-        if (newScrollPosition != containerPanel.AutoScrollPosition)
-        {
-            containerPanel.AutoScrollPosition = newScrollPosition;
-        }
-
-        lastMousePosition = e.Location;
-    }
-    private void ContainerPanel_MouseUp(object sender, MouseEventArgs e)
-    {
-        isDragging = false;
-        containerPanel.Cursor = Cursors.Default;
-    }
-    private void ContainerPanel_Paint(object sender, PaintEventArgs e)
-    {
-        if (_isDrawing) return;
-
-        _isDrawing = true;
-        _drawStopwatch.Restart();
-
-        try
-        {
-            var g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-
-            // Draw existing connections
-            foreach (var connection in connections)
-            {
-                DrawConnection(g, connection);
-            }
-
-            // Draw the current connection being made
-            if (isDrawingConnection && sourcePanel != null)
-            {
-                var startPoint = GetConnectionPoint(sourcePanel, sourcePortalPoint);
-                using (var pen = new Pen(Color.FromArgb(180, 135, 206, 250), 2))
-                {
-                    pen.DashStyle = DashStyle.Dash;
-                    g.DrawLine(pen, startPoint, currentMousePosition);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"Error in ContainerPanel_Paint: {ex}");
-        }
-        finally
-        {
-            _drawStopwatch.Stop();
-            LogDebug($"Paint completed in {_drawStopwatch.ElapsedMilliseconds}ms");
-            _isDrawing = false;
-        }
     }
     protected override void OnPaint(PaintEventArgs e)
     {
@@ -632,7 +739,7 @@ public class MapOverviewForm : Form
         }
         catch (Exception ex)
         {
-            LogDebug($"Error drawing connection {connection}: {ex}");
+            System.Diagnostics.Debug.WriteLine($"Error drawing connection {connection}: {ex}");
         }
     }
     private PointF GetConnectionPoint(MapGridPanel panel, Point gridPosition)
@@ -680,6 +787,9 @@ public class MapOverviewForm : Form
             }
         }
     }
+    #endregion
+
+    #region MapEvents Management
     private void AddPortal_Click(CustomTabPage tabPage, MapGridPanel panel, (int X, int Y) location)
     {
         if (tabPage.Portals.Count >= CustomTabPage.MAX_PORTALS)
@@ -869,5 +979,11 @@ public class MapOverviewForm : Form
                 break;
             }
         }
+    }
+    #endregion
+    protected override void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        CenterViewOnFirstMap();
     }
 }

@@ -4,6 +4,9 @@
     <Compile Update="CustomTabPage.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Update="InputBox.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="ItemSearchSystem\ItemSearchForm.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 
 namespace TimeSpace.MapgridPanel
@@ -212,15 +213,38 @@ namespace TimeSpace.MapgridPanel
                 for (int x = 0; x < _width; x++)
                 {
                     var color = GetColor(_grid[y * _width + x]);
+                    bool drawLockIcon = false;
+
+                    // Check for Portal and adjust color
+                    var portal = _parentTab?.Portals.FirstOrDefault(p => p.FromX == x && p.FromY == y);
+                    if (portal != null)
+                    {
+                        if (portal.PortalType == "TSEnd" || portal.PortalType == "TSEndClosed")
+                        {
+                            color = Color.DarkBlue;
+                        }
+
+                        if (portal.PortalType == "TSEndClosed" || portal.PortalType == "Locked")
+                        {
+                            drawLockIcon = true;
+                        }
+                    }
+
                     using var brush = new SolidBrush(color);
                     e.Graphics.FillRectangle(brush, x * _cellSize, y * _cellSize, _cellSize, _cellSize);
 
                     using var pen = new Pen(Color.Black);
                     e.Graphics.DrawRectangle(pen, x * _cellSize, y * _cellSize, _cellSize, _cellSize);
+
+                    // Draw lock icon if necessary
+                    if (drawLockIcon)
+                    {
+                        DrawLockIcon(e.Graphics, x, y);
+                    }
                 }
             }
 
-            // Draw ghost image while dragging
+            // Draw ghost image while dragging (existing code)
             if (_isDragging && _dragStart.HasValue)
             {
                 int cellX = _lastMousePosition.X / _cellSize;
@@ -384,7 +408,6 @@ namespace TimeSpace.MapgridPanel
         {
             if (_cellSize == 0)
             {
-                // Handle the error appropriately, e.g., log it or set a default value
                 _positionLabel.Visible = false;
                 return;
             }
@@ -394,9 +417,66 @@ namespace TimeSpace.MapgridPanel
 
             if (IsValidPosition(cellX, cellY))
             {
-                _positionLabel.Text = $"X: {cellX}, Y: {cellY}";
+                StringBuilder labelText = new StringBuilder();
+                labelText.AppendLine($"X: {cellX}, Y: {cellY}");
 
-                // Calculate position for the label
+                // Check for Portal
+                var portal = _parentTab?.Portals.FirstOrDefault(p => p.FromX == cellX && p.FromY == cellY);
+                if (portal != null)
+                {
+                    labelText.AppendLine($"portal_mapfrom: {portal.MapFrom} ({portal.FromX},{portal.FromY})");
+                    labelText.AppendLine($"portal_mapto: {portal.MapTo} ({portal.ToX},{portal.ToY})");
+                    labelText.AppendLine($"portal type: {portal.PortalType}");
+
+                    // Check if the portal is locked
+                    if (portal.PortalType == "TSEndClosed" || portal.PortalType == "Locked")
+                    {
+                        labelText.AppendLine("Locked: Yes");
+                    }
+                    else
+                    {
+                        labelText.AppendLine("Locked: No");
+                    }
+                }
+
+                // Check for Monster
+                foreach (DataGridViewRow row in _parentTab?.MonsterDataGridView.Rows)
+                {
+                    if (row.IsNewRow) continue;
+                    int x = Convert.ToInt32(row.Cells["X"].Value);
+                    int y = Convert.ToInt32(row.Cells["Y"].Value);
+                    int vnum = Convert.ToInt32(row.Cells["Vnum"].Value);
+                    if (x == cellX && y == cellY)
+                    {
+                        labelText.AppendLine($"Monster VNum: {vnum}");
+                        break;
+                    }
+                }
+
+                // Check for NPC
+                foreach (DataGridViewRow row in _parentTab?.NpcDataGridview.Rows)
+                {
+                    if (row.IsNewRow) continue;
+                    int x = Convert.ToInt32(row.Cells["X"].Value);
+                    int y = Convert.ToInt32(row.Cells["Y"].Value);
+                    int vnum = Convert.ToInt32(row.Cells["Vnum"].Value);
+                    if (x == cellX && y == cellY)
+                    {
+                        labelText.AppendLine($"NPC VNum: {vnum}");
+                        break;
+                    }
+                }
+
+                // Check for Objective
+                var mapObject = _parentTab?.Objects.FirstOrDefault(o => o.GetX() == cellX && o.GetY() == cellY);
+                if (mapObject != null)
+                {
+                    labelText.AppendLine($"Objective Type: {mapObject.ObjectType}");
+                }
+
+                _positionLabel.Text = labelText.ToString();
+
+                // Adjust label position
                 int labelX = Math.Clamp(e.X + 10, 0, Width - _positionLabel.Width);
                 int labelY = Math.Clamp(e.Y + 10, 0, Height - _positionLabel.Height);
 
@@ -797,7 +877,20 @@ namespace TimeSpace.MapgridPanel
             _undoStack.Push(command);
             _redoStack.Clear();
         }
+        private void DrawLockIcon(Graphics graphics, int cellX, int cellY)
+        {
+            int iconSize = _cellSize / 2;
+            int iconX = cellX * _cellSize + (_cellSize - iconSize) / 2;
+            int iconY = cellY * _cellSize + (_cellSize - iconSize) / 2;
 
+            // Draw lock body
+            Rectangle lockBody = new Rectangle(iconX, iconY + iconSize / 3, iconSize, iconSize * 2 / 3);
+            graphics.FillRectangle(Brushes.Black, lockBody);
+
+            // Draw shackle
+            Rectangle shackle = new Rectangle(iconX + iconSize / 4, iconY, iconSize / 2, iconSize / 3);
+            graphics.DrawArc(new Pen(Color.Black, 2), shackle, 0, 180);
+        }
         #endregion
     }
 }

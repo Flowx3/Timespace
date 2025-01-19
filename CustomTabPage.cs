@@ -582,7 +582,7 @@ namespace TimeSpace
             }
         }
 
-        private void DisplayMapGrid(MapDataDTO mapData)
+        public void DisplayMapGrid(MapDataDTO mapData)
         {
             MapGridPanel mapGridPanel = (MapGridPanel)this.Controls.Find("mapGridPanel", true).First();
             mapGridPanel.ResetGrid();
